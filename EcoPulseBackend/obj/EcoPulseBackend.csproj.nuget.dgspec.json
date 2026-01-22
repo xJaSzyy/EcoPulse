@@ -1,28 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Codes\\EcoPulse\\EcoPulseBackend\\EcoPulseBackend.csproj": {}
+    "/home/xjasz/RiderProjects/EcoPulse/EcoPulseBackend/EcoPulseBackend.csproj": {}
   },
   "projects": {
-    "D:\\Codes\\EcoPulse\\EcoPulseBackend\\EcoPulseBackend.csproj": {
+    "/home/xjasz/RiderProjects/EcoPulse/EcoPulseBackend/EcoPulseBackend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Codes\\EcoPulse\\EcoPulseBackend\\EcoPulseBackend.csproj",
+        "projectUniqueName": "/home/xjasz/RiderProjects/EcoPulse/EcoPulseBackend/EcoPulseBackend.csproj",
         "projectName": "EcoPulseBackend",
-        "projectPath": "D:\\Codes\\EcoPulse\\EcoPulseBackend\\EcoPulseBackend.csproj",
-        "packagesPath": "C:\\Users\\Степан\\.nuget\\packages\\",
-        "outputPath": "D:\\Codes\\EcoPulse\\EcoPulseBackend\\obj\\",
+        "projectPath": "/home/xjasz/RiderProjects/EcoPulse/EcoPulseBackend/EcoPulseBackend.csproj",
+        "packagesPath": "/home/xjasz/.nuget/packages/",
+        "outputPath": "/home/xjasz/RiderProjects/EcoPulse/EcoPulseBackend/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Степан\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/home/xjasz/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://api.nuget.org/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {},
+          "https://inka-registry.v2grp.ru/repository/inka_nuget/": {}
         },
         "frameworks": {
           "net9.0": {
@@ -34,13 +33,7 @@
           "warnAsError": [
             "NU1605"
           ]
-        },
-        "restoreAuditProperties": {
-          "enableAudit": "true",
-          "auditLevel": "low",
-          "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.300"
+        }
       },
       "frameworks": {
         "net9.0": {
@@ -64,7 +57,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/7.0.119/RuntimeIdentifierGraph.json"
         }
       }
     }
