@@ -18,16 +18,16 @@
 
 1. Склонируйте репозиторий
 ```
-   git clone https://github.com/xJaSzyy/EcoPulse.git
-   cd EcoPulse
+git clone https://github.com/xJaSzyy/EcoPulse.git
+cd EcoPulse
 ```
 
 2. Создайте файл окружения .env
 
 ```
-DB_USER=
-DB_PASSWORD=
-DB_NAME=
+DB_USER=your_username_here
+DB_PASSWORD=your_password_here  
+DB_NAME=your_db_name_here
 ```
 
 3. Запустите проект
