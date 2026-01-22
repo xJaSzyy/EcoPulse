@@ -1,16 +1,14 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-USER $APP_UID
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["EcoPulseBackend.csproj", "./"]
-RUN dotnet restore "EcoPulseBackend.csproj"
+COPY ["EcoPulseBackend/EcoPulseBackend.csproj", "EcoPulseBackend/"]
+RUN dotnet restore "EcoPulseBackend/EcoPulseBackend.csproj"
 COPY . .
-WORKDIR "/src/"
+WORKDIR "/src/EcoPulseBackend"
 RUN dotnet build "./EcoPulseBackend.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
