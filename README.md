@@ -13,3 +13,29 @@
 ## Архитектура
 
 ![Архитектура EcoPulse](docs/architecture.png)
+
+## Быстрый запуск
+
+1. Склонируйте репозиторий
+```
+   git clone https://github.com/xJaSzyy/EcoPulse.git
+   cd EcoPulse
+```
+
+2. Создайте файл окружения .env
+
+```
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+```
+
+3. Запустите проект
+
+```
+docker compose up -d --build
+```
+
+### Доступ к приложению
+* Frontend: http://localhost:3000
+* Backend Swagger: http://localhost:5000/swagger/index.html
