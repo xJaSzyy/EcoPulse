@@ -70,7 +70,413 @@ namespace EcoPulseBackend.Migrations
                             Name = "Твердые частицы",
                             Pollutant = 2,
                             ShortName = "PM2.5"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = 337,
+                            DailyAverageConcentration = 3f,
+                            MaxPermissibleConcentration = 5f,
+                            Name = "Углерода оксид (углерод окись; углерод моноокись; угарный газ)",
+                            Pollutant = 337,
+                            ShortName = "CO",
+                            SpecificEmission = 7.5f
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = 2704,
+                            DailyAverageConcentration = 1.5f,
+                            MaxPermissibleConcentration = 5f,
+                            Name = "Бензин (нефтяной, малосернистый) /в пересчете на углерод/",
+                            Pollutant = 2704,
+                            ShortName = "CH",
+                            SpecificEmission = 1f
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = 301,
+                            DailyAverageConcentration = 0.04f,
+                            Mass = 0.2695f,
+                            MaxPermissibleConcentration = 0.2f,
+                            Name = "Азота диоксид (двуокись азота; пероксид азота)",
+                            Pollutant = 301,
+                            ShortName = "NO2",
+                            SpecificEmission = 0.112f
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = 304,
+                            DailyAverageConcentration = 0.06f,
+                            Mass = 0.0444f,
+                            MaxPermissibleConcentration = 0.4f,
+                            Name = "Азота оксид (азот (II) оксид; азот монооксид)",
+                            Pollutant = 304,
+                            ShortName = "NO",
+                            SpecificEmission = 0.0182f
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Code = 330,
+                            DailyAverageConcentration = 0.05f,
+                            Mass = 1.0528f,
+                            MaxPermissibleConcentration = 0.5f,
+                            Name = "Серы диоксид",
+                            Pollutant = 330,
+                            ShortName = "SO2",
+                            SpecificEmission = 0.036f
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Code = 2754,
+                            MaxPermissibleConcentration = 1f,
+                            Name = "Углеводороды предельные C12 - C19 (растворители РПК-240, РПК-280)",
+                            Pollutant = 2754,
+                            ShortName = "углеводороды",
+                            SpecificEmission = 99.72f
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Code = 333,
+                            MaxPermissibleConcentration = 0.008f,
+                            Name = "Сероводород (дигидросульфид; водород сернистый; гидросульфид)",
+                            Pollutant = 333,
+                            ShortName = "дигидросульфид",
+                            SpecificEmission = 0.28f
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Code = 123,
+                            DailyAverageConcentration = 0.04f,
+                            Name = "диЖелезо триоксид (железа оксид; железо сесквиоксид) /в пересчете на железо/",
+                            Pollutant = 123,
+                            ShortName = "Fe203"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Code = 143,
+                            DailyAverageConcentration = 0.001f,
+                            MaxPermissibleConcentration = 0.01f,
+                            Name = "Марганец и его соединения /в пересчете на марганец (IV) оксид/",
+                            Pollutant = 143,
+                            ShortName = "MnO2"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Code = 342,
+                            DailyAverageConcentration = 0.005f,
+                            MaxPermissibleConcentration = 0.02f,
+                            Name = "Фториды газообразные /в пересчете на фтор/: гидрофторид (водород фторид, фторводород); кремний тетрафторид",
+                            Pollutant = 342,
+                            ShortName = "FluorideGases"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Code = 380,
+                            Mass = 4.9f,
+                            MaxPermissibleConcentration = 5f,
+                            Name = "Углерод диоксид",
+                            Pollutant = 380,
+                            ShortName = "CO2"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Code = 2,
+                            Mass = 15.72f,
+                            MaxPermissibleConcentration = 0.5f,
+                            Name = "Твердые частицы",
+                            Pollutant = 2,
+                            ShortName = "SP"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Code = 328,
+                            Name = "Сажа",
+                            Pollutant = 328,
+                            ShortName = "Soot"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Code = 184,
+                            DailyAverageConcentration = 0.0003f,
+                            MaxPermissibleConcentration = 0.001f,
+                            Name = "Соединения свинца",
+                            Pollutant = 184,
+                            ShortName = "LeadCompounds"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Code = 1325,
+                            DailyAverageConcentration = 0.003f,
+                            MaxPermissibleConcentration = 0.035f,
+                            Name = "Формальдегид",
+                            Pollutant = 1325,
+                            ShortName = "CH2O"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Code = 703,
+                            Name = "Бенз(а)пирен",
+                            Pollutant = 703,
+                            ShortName = "C20H12"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Code = 3749,
+                            Name = "Пыль каменного угля",
+                            Pollutant = 3749,
+                            ShortName = "CoalDust"
                         });
+                });
+
+            modelBuilder.Entity("EcoPulseBackend.Models.VaporConcentration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<float>("AutumnWinterVaporConcentration")
+                        .HasColumnType("real");
+
+                    b.Property<int>("ClimateZone")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("MaxVaporConcentration")
+                        .HasColumnType("real");
+
+                    b.Property<int>("OilProduct")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReservoirType")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("SpringSummerVaporConcentration")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("VaporConcentrations");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AutumnWinterVaporConcentration = 205f,
+                            ClimateZone = 1,
+                            MaxVaporConcentration = 464f,
+                            OilProduct = 1,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 248f
+                        },
+                        new
+                        {
+                            Id = 2,
+                            AutumnWinterVaporConcentration = 0.79f,
+                            ClimateZone = 1,
+                            MaxVaporConcentration = 1.49f,
+                            OilProduct = 2,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 1.06f
+                        },
+                        new
+                        {
+                            Id = 3,
+                            AutumnWinterVaporConcentration = 0.1f,
+                            ClimateZone = 1,
+                            MaxVaporConcentration = 0.16f,
+                            OilProduct = 3,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 0.1f
+                        },
+                        new
+                        {
+                            Id = 4,
+                            AutumnWinterVaporConcentration = 250f,
+                            ClimateZone = 2,
+                            MaxVaporConcentration = 580f,
+                            OilProduct = 1,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 310f
+                        },
+                        new
+                        {
+                            Id = 5,
+                            AutumnWinterVaporConcentration = 0.96f,
+                            ClimateZone = 2,
+                            MaxVaporConcentration = 1.86f,
+                            OilProduct = 2,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 1.32f
+                        },
+                        new
+                        {
+                            Id = 6,
+                            AutumnWinterVaporConcentration = 0.12f,
+                            ClimateZone = 2,
+                            MaxVaporConcentration = 0.2f,
+                            OilProduct = 3,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 0.12f
+                        },
+                        new
+                        {
+                            Id = 7,
+                            AutumnWinterVaporConcentration = 310f,
+                            ClimateZone = 3,
+                            MaxVaporConcentration = 701.8f,
+                            OilProduct = 1,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 375.1f
+                        },
+                        new
+                        {
+                            Id = 8,
+                            AutumnWinterVaporConcentration = 1.19f,
+                            ClimateZone = 3,
+                            MaxVaporConcentration = 2.25f,
+                            OilProduct = 2,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 1.6f
+                        },
+                        new
+                        {
+                            Id = 9,
+                            AutumnWinterVaporConcentration = 0.15f,
+                            ClimateZone = 3,
+                            MaxVaporConcentration = 0.24f,
+                            OilProduct = 3,
+                            ReservoirType = 1,
+                            SpringSummerVaporConcentration = 0.15f
+                        },
+                        new
+                        {
+                            Id = 10,
+                            AutumnWinterVaporConcentration = 172.2f,
+                            ClimateZone = 1,
+                            MaxVaporConcentration = 384f,
+                            OilProduct = 1,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 255f
+                        },
+                        new
+                        {
+                            Id = 11,
+                            AutumnWinterVaporConcentration = 0.66f,
+                            ClimateZone = 1,
+                            MaxVaporConcentration = 1.24f,
+                            OilProduct = 2,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 0.88f
+                        },
+                        new
+                        {
+                            Id = 12,
+                            AutumnWinterVaporConcentration = 0.08f,
+                            ClimateZone = 1,
+                            MaxVaporConcentration = 0.13f,
+                            OilProduct = 3,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 0.08f
+                        },
+                        new
+                        {
+                            Id = 13,
+                            AutumnWinterVaporConcentration = 210.2f,
+                            ClimateZone = 2,
+                            MaxVaporConcentration = 480f,
+                            OilProduct = 1,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 255f
+                        },
+                        new
+                        {
+                            Id = 14,
+                            AutumnWinterVaporConcentration = 0.8f,
+                            ClimateZone = 2,
+                            MaxVaporConcentration = 1.55f,
+                            OilProduct = 2,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 1.1f
+                        },
+                        new
+                        {
+                            Id = 15,
+                            AutumnWinterVaporConcentration = 0.1f,
+                            ClimateZone = 2,
+                            MaxVaporConcentration = 0.16f,
+                            OilProduct = 3,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 0.1f
+                        },
+                        new
+                        {
+                            Id = 16,
+                            AutumnWinterVaporConcentration = 260.4f,
+                            ClimateZone = 3,
+                            MaxVaporConcentration = 508f,
+                            OilProduct = 1,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 308.5f
+                        },
+                        new
+                        {
+                            Id = 17,
+                            AutumnWinterVaporConcentration = 0.99f,
+                            ClimateZone = 3,
+                            MaxVaporConcentration = 1.88f,
+                            OilProduct = 2,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 1.33f
+                        },
+                        new
+                        {
+                            Id = 18,
+                            AutumnWinterVaporConcentration = 0.12f,
+                            ClimateZone = 3,
+                            MaxVaporConcentration = 0.19f,
+                            OilProduct = 3,
+                            ReservoirType = 2,
+                            SpringSummerVaporConcentration = 0.12f
+                        });
+                });
+
+            modelBuilder.Entity("EcoPulseBackend.Models.VehicleSpecificEmission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Pollutant")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("SpecificEmission")
+                        .HasColumnType("real");
+
+                    b.Property<int>("VehicleType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("VehicleSpecificEmissions");
                 });
 #pragma warning restore 612, 618
         }

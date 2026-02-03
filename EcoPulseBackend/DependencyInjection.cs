@@ -9,8 +9,15 @@ public static class DependencyInjection
 {
     public static void AddServices(this IServiceCollection services)
     {
-        services.AddScoped<IEmissionService, EmissionService>();
+        services.AddScoped<IGasolineGeneratorService, GasolineGeneratorService>();
+        services.AddScoped<IReservoirsService, ReservoirsService>();
+        services.AddScoped<IDuringMetalMachiningService, DuringMetalMachiningService>();
+        services.AddScoped<IDuringWeldingOperationsService, DuringWeldingOperationsService>();
         services.AddScoped<IMaximumSingleService, MaximumSingleService>();
+        services.AddScoped<IVehicleFlowService, VehicleFlowService>();
+        services.AddScoped<ITrafficLightQueueService, TrafficLightQueueService>();
+        services.AddScoped<IOpenCoalWarehouseService, OpenCoalWarehouseService>();
+        services.AddScoped<IEmissionService, EmissionService>();
     }
 
     public static void AddDatabase(this IServiceCollection services, ConfigurationManager configuration)
