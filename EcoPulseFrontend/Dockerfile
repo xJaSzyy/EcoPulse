@@ -1,6 +1,12 @@
-FROM node:20-alpine
+FROM node:22.12-alpine AS base
+
 WORKDIR /app
-COPY . .
-RUN npm ci && npm run build && npm install -g serve
+
+COPY package*.json ./
+RUN npm install
+
+COPY . ./
+
 EXPOSE 3000
-CMD ["serve", "-s", "dist", "-l", "3000"]
+
+CMD ["npm", "run", "dev"]
