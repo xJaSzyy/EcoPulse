@@ -174,7 +174,7 @@ watchDebounced(
     },
     {
       deep: true,
-      debounce: 30,
+      debounce: 10,
       maxWait: 1000,
     }
 );

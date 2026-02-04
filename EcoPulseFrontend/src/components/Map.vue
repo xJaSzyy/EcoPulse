@@ -200,21 +200,30 @@ const cityDropdownOpen = ref(false)
 const editPanelOpen = ref(false)
 
 const toggleCityDropdown = async () => {
-  if (cityDropdownOpen.value) {
-    await updateLayers()
-
-    const lastCities = JSON.parse(localStorage.getItem("selectedCities"))
+  if (cityDropdownOpen.value) {  
+    const lastCities = JSON.parse(localStorage.getItem("selectedCities") || '[]')
     localStorage.setItem("selectedCities", JSON.stringify(selectedCities.value))
 
-    if (selectedCities.value.length === 1 && lastCities[0].id !== selectedCities.value[0].id) {
-      const selectedCity = await getCityById(selectedCities.value[0].id)
-      const view = map.value.getView()
-      view.setCenter(fromLonLat([selectedCity.location.lat, selectedCity.location.lon]))
-      view.setZoom(12)
+    if (selectedCities.value.length === 1) {
+      try {
+        const selectedCity = await getCityById(selectedCities.value[0].id)
+        if (selectedCity?.location) {
+          const view = map.value.getView()
+          view.setCenter(fromLonLat([
+            selectedCity.location.lon, 
+            selectedCity.location.lat
+          ]))
+          view.setZoom(12)
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки города:', error)
+      }
     }
+    
+    await updateLayers()
   }
-
-  cityDropdownOpen.value = !cityDropdownOpen.value;
+  
+  cityDropdownOpen.value = !cityDropdownOpen.value
 }
 
 const toggleEditPanel = () => {
@@ -650,7 +659,7 @@ onMounted(async () => {
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
     const selectedCity = await getCityById(selectedCities.value[0].id)
-    coords = [selectedCity.location.lat, selectedCity.location.lon]
+    coords = [selectedCity.location.lon, selectedCity.location.lat]
   }
 
   map.value = new Map({
