@@ -1,5 +1,7 @@
 using EcoPulseBackend.Contexts;
+using EcoPulseBackend.Extensions;
 using EcoPulseBackend.Interfaces;
+using EcoPulseBackend.Models.DangerZone;
 using EcoPulseBackend.Models.MaximumSingle;
 using EcoPulseBackend.Models.Result;
 
@@ -7,6 +9,13 @@ namespace EcoPulseBackend.Services;
 
 public class MaximumSingleService : IMaximumSingleService
 {
+    private readonly ApplicationDbContext _dbContext;
+    
+    public MaximumSingleService(ApplicationDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+    
     private float _heightSource; 
     private int _sedimentationRateRatio; 
     private float _diameterSource; 
@@ -21,13 +30,6 @@ public class MaximumSingleService : IMaximumSingleService
     private float _velocityRatio;
     private float _buoyancyParam;
     private float _effectiveBuoyancy;
-
-    private readonly ApplicationDbContext _dbContext;
-
-    public MaximumSingleService(ApplicationDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
 
     private void Setup(MaximumSingleEmissionsCalculateModel model)
     {
@@ -81,6 +83,90 @@ public class MaximumSingleService : IMaximumSingleService
         }
 
         return result;
+    }
+    
+    public SingleDangerZone CalculateDangerZone(MaximumSingleEmissionsCalculateModel model)
+    {
+        var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == model.Pollutant);
+
+        if (!pollutantInfo.Mass.HasValue)
+        {
+            return new SingleDangerZone();
+        }
+        
+        Setup(model);
+        
+        var distances = Enumerable.Range(1, model.Distance / 5).Select(i => i * 5f).ToList();
+        
+        var concentrations = GetNormalSurfaceConcentration(distances, (float)pollutantInfo.Mass);
+        return CalculateSingleDangerZone(concentrations, (float)pollutantInfo.Mass, model.WindSpeed);
+    }
+    
+    private SingleDangerZone CalculateSingleDangerZone(List<float> concentrations, float mass, float windSpeed)
+    {
+        var maxIndex = int.MinValue;
+        var maxDistance = double.MinValue;
+        var minDistance = double.MinValue;
+
+        var valuesUpMax = new List<double>();
+        
+        var maxConcentration = concentrations.Max();
+        for (var i = 0; i < concentrations.Count; i++)
+        {
+            valuesUpMax.Add(concentrations[i]);
+
+            if (maxConcentration == concentrations[i])
+            {
+                maxIndex = i;
+                maxDistance = (i + 1) * 5;
+                break;
+            }
+        }
+
+        double med;
+
+        valuesUpMax.Sort();
+        
+        if (valuesUpMax.Count % 2 == 0)
+        {
+            med = (valuesUpMax[(valuesUpMax.Count / 2)] + valuesUpMax[(valuesUpMax.Count / 2) - 1]) / 2;
+        }
+        else
+        {
+            med = valuesUpMax[(valuesUpMax.Count / 2)];
+        }
+
+        for (var i = maxIndex; i < concentrations.Count; i++)
+        {
+            if (concentrations[i] < med)
+            {
+                minDistance = (i + 1) * 5;
+                break;
+            }
+        }
+
+        const float windAverageSpeed = 3f;
+
+        var windSpeedCoeff =  windSpeed != 0  ? windAverageSpeed / windSpeed : windAverageSpeed;
+        windSpeedCoeff /= 2.1f;
+        
+        var dangerZoneLength = (minDistance / Math.Sqrt(Math.Sqrt(mass))) * (1 / windSpeedCoeff);
+        var dangerZoneWidth = Math.Round((minDistance - maxDistance) * 2 * windSpeedCoeff, 2) * Math.Sqrt(mass);
+
+        var sortedConcentrations = concentrations.OrderByDescending(c => c).Take(100).ToList();
+        var avgConcentration = sortedConcentrations.Average();
+        
+        var pm = avgConcentration * 1000;
+
+        var color = DangerZoneUtils.GetColorByConcentration(pm);
+        
+        return new SingleDangerZone()
+        {
+            Length = dangerZoneLength,
+            Width = dangerZoneWidth,
+            Color = color,
+            AverageConcentration = avgConcentration
+        };
     }
     
     private List<float> GetNormalSurfaceConcentration(List<float> distances, float mass)
@@ -185,7 +271,7 @@ public class MaximumSingleService : IMaximumSingleService
         cM = (_tempStratificationRatio * mass * _sedimentationRateRatio * m * n * nu / ((float)Math.Pow(_heightSource, 2) * (float)Math.Pow(_volumeFlow * _tempDiff, 1f / 3f)));
         return cM;
     }
-    
+
     private float GetDistanceFromEmissionSourceSingle()
     {
         float maxDistance = 0;

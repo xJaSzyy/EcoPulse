@@ -1,8 +1,11 @@
 ﻿using EcoPulseBackend.Contexts;
 using EcoPulseBackend.Enums;
+using EcoPulseBackend.Extensions;
 using EcoPulseBackend.Interfaces;
+using EcoPulseBackend.Models.DangerZone;
 using EcoPulseBackend.Models.Result;
 using EcoPulseBackend.Models.TrafficLightQueue;
+using EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
 
 namespace EcoPulseBackend.Services;
 
@@ -24,6 +27,41 @@ public class TrafficLightQueueService : ITrafficLightQueueService
         };
 
         return pollutants.OrderBy(p => (int)p).Select(pollutant => CalculateTrafficLightQueueEmissions(pollutant, model)).OfType<EmissionsResult>().ToList();
+    }
+    
+    public List<TrafficLightQueueDangerZone> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources)
+    {
+        var result = new List<TrafficLightQueueDangerZone>();
+        
+        foreach (var source in emissionSources)
+        {
+            var calculateModel = new TrafficLightQueueEmissionsCalculateModel
+            {
+                VehicleGroups = source.VehicleGroups,
+                TrafficLightCycles = source.TrafficLightCycles,
+                TrafficLightStopTime = source.TrafficLightStopTime
+            };
+            
+            var emissionsResult = CalculateTrafficLightQueueEmissions(Pollutant.NO2, calculateModel);
+
+            if (emissionsResult == null)
+            {
+                return [];
+            }
+            
+            var maximumEmission = emissionsResult.MaximumEmission;
+            var color = DangerZoneUtils.GetColorByConcentration(maximumEmission);
+            
+            result.Add(new TrafficLightQueueDangerZone
+            {
+                EmissionSourceId = source.Id,
+                Location = source.Location,
+                Color = color,
+                AverageConcentration = emissionsResult.MaximumEmission
+            });
+        }
+
+        return result;
     }
     
     private EmissionsResult? CalculateTrafficLightQueueEmissions(Pollutant pollutant, TrafficLightQueueEmissionsCalculateModel model)

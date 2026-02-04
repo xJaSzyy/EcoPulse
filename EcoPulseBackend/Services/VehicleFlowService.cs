@@ -1,8 +1,11 @@
 ﻿using EcoPulseBackend.Contexts;
 using EcoPulseBackend.Enums;
+using EcoPulseBackend.Extensions;
 using EcoPulseBackend.Interfaces;
+using EcoPulseBackend.Models.DangerZone;
 using EcoPulseBackend.Models.Result;
 using EcoPulseBackend.Models.VehicleFlow;
+using EcoPulseBackend.Models.VehicleFlowEmissionSource;
 
 namespace EcoPulseBackend.Services;
 
@@ -24,6 +27,56 @@ public class VehicleFlowService : IVehicleFlowService
         };
 
         return pollutants.OrderBy(p => (int)p).Select(pollutant => CalculateVehicleFlowEmissions(pollutant, model)).OfType<EmissionsResult>().ToList();
+    }
+    
+    public List<VehicleFlowDangerZone> CalculateDangerZones(List<VehicleFlowEmissionSource> emissionSources)
+    {
+        var result = new List<VehicleFlowDangerZone>();
+        
+        foreach (var source in emissionSources)
+        {
+            var points = source.Points;
+            
+            float length = 0;
+            for (var i = 1; i < points.Count; i++)
+            {
+                length += (float)GeoUtils.DistanceMeters(points[i - 1], points[i]);
+            }
+            
+            var calculateModel = new VehicleFlowEmissionsCalculateModel
+            {
+                VehicleGroups =
+                [
+                    new VehicleGroup
+                    {
+                        VehicleType = source.VehicleType,
+                        MaxTrafficIntensity = source.MaxTrafficIntensity * (length / 1000f),
+                        AverageSpeed = source.AverageSpeed
+                    }
+                ],
+                Length = length
+            };
+            
+            var emissionsResult = CalculateVehicleFlowEmissions(Pollutant.NO2, calculateModel);
+
+            if (emissionsResult == null)
+            {
+                return [];
+            }
+            
+            var maximumEmission = emissionsResult.MaximumEmission;
+            var color = DangerZoneUtils.GetColorByConcentration(maximumEmission);
+            
+            result.Add(new VehicleFlowDangerZone
+            {
+                EmissionSourceId = source.Id,
+                Points = points,
+                Color = color,
+                AverageConcentration = emissionsResult.MaximumEmission
+            });
+        }
+
+        return result;
     }
     
     private EmissionsResult? CalculateVehicleFlowEmissions(Pollutant pollutant, VehicleFlowEmissionsCalculateModel model)
