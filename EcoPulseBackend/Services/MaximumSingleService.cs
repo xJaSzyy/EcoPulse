@@ -165,7 +165,7 @@ public class MaximumSingleService : IMaximumSingleService
             Length = dangerZoneLength,
             Width = dangerZoneWidth,
             Color = color,
-            AverageConcentration = avgConcentration
+            AverageConcentration = (float)Math.Round(avgConcentration * 1000, 2)
         };
     }
     

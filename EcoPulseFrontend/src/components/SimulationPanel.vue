@@ -114,7 +114,7 @@
 
       <div class="emission-level">
         <label>Уровень загрязнения: </label>
-        <span>{{ Math.round(data.averageConcentration * 100000) / 100 }} мкг/м3</span>
+        <span>{{ data.averageConcentration }} мкг/м3</span>
       </div>
     </div>
   </div>

@@ -443,7 +443,7 @@ function createEllipse(dangerZone) {
   ellipseFeature.set('dangerData', dangerZone);
   ellipseFeature.set('emissionSourceId', dangerZone.emissionSourceId);
   ellipseFeature.set('dangerColor', dangerZone.color);
-  ellipseFeature.set('averageConcentration', Math.round(dangerZone.averageConcentration * 100000) / 100 || 'N/A'); 
+  ellipseFeature.set('averageConcentration', dangerZone.averageConcentration || 'N/A'); 
 
   return ellipseFeature;
 }
