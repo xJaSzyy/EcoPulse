@@ -5,6 +5,7 @@ using EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
 using EcoPulseBackend.Models.VehicleFlowEmissionSource;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Controllers;
 
@@ -23,17 +24,14 @@ public class EmissionSourceController : ControllerBase
     {
         var emissionSource = new SingleEmissionSource
         {
-            Location = new Coordinates
-            {
-                Lon = model.Lon,
-                Lat = model.Lat
-            },
+            Location = model.Location,
             EjectedTemp = model.EjectedTemp,
             AvgExitSpeed = model.AvgExitSpeed,
             HeightSource = model.HeightSource,
             DiameterSource = model.DiameterSource,
             TempStratificationRatio = model.TempStratificationRatio,
-            SedimentationRateRatio = model.SedimentationRateRatio
+            SedimentationRateRatio = model.SedimentationRateRatio, 
+            CityId = model.CityId
         };
         
         _dbContext.SingleEmissionSources.Add(emissionSource);
@@ -65,8 +63,7 @@ public class EmissionSourceController : ControllerBase
             return NotFound();
         }
         
-        emissionSource.Location.Lon = model.Lon;
-        emissionSource.Location.Lat = model.Lat;
+        emissionSource.Location = model.Location;
         emissionSource.EjectedTemp = model.EjectedTemp;
         emissionSource.AvgExitSpeed = model.AvgExitSpeed;
         emissionSource.HeightSource = model.HeightSource;

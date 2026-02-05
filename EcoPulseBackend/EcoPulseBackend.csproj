@@ -10,6 +10,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.20" />
+        <PackageReference Include="NetTopologySuite.IO.GeoJSON4STJ" Version="2.5.0" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.18" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="7.0.18" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>

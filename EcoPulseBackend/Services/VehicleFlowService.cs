@@ -40,7 +40,7 @@ public class VehicleFlowService : IVehicleFlowService
             float length = 0;
             for (var i = 1; i < points.Count; i++)
             {
-                length += (float)GeoUtils.DistanceMeters(points[i - 1], points[i]);
+                length += (float)points[i - 1].Distance(points[i]);
             }
             
             var calculateModel = new VehicleFlowEmissionsCalculateModel

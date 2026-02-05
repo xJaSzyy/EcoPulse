@@ -1,5 +1,7 @@
 using EcoPulseBackend.Contexts;
+using EcoPulseBackend.Models.City;
 using Microsoft.AspNetCore.Mvc;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Controllers;
 
@@ -23,6 +25,21 @@ public class CityController : ControllerBase
             return NotFound();
         }
 
+        return Ok(city);
+    }
+
+    [HttpPost("city")]
+    public async Task<IActionResult> CreateCity([FromBody] CityAddModel model)
+    {
+        var city = new City
+        {
+            Location = model.Location,
+            Name = model.Name
+        };
+        
+        _dbContext.Cities.Add(city);
+        await _dbContext.SaveChangesAsync();
+        
         return Ok(city);
     }
 }

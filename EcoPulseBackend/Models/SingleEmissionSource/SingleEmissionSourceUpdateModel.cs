@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using EcoPulseBackend.Enums;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Models.SingleEmissionSource;
 
@@ -13,15 +15,8 @@ public class SingleEmissionSourceUpdateModel
     /// </summary>
     public int Id { get; set; }
     
-    /// <summary>
-    /// Долгота
-    /// </summary>
-    public float Lon { get; set; }
-    
-    /// <summary>
-    /// Широта
-    /// </summary>
-    public float Lat { get; set; }
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point Location { get; set; } = null!;
     
     /// <summary>
     /// Температура выбрасываемой ГВС
