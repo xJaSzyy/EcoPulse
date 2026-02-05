@@ -13,6 +13,18 @@ public static class DangerZoneUtils
 
         return color;
     }
+
+    public static string GetPollutionLevelByConcentration(float concentration)
+    {
+        var color = PollutionLevelMap[225.4];
+        foreach (var pair in PollutionLevelMap.Where(pair => concentration <= pair.Key))
+        {
+            color = pair.Value;
+            break;
+        }
+
+        return color;
+    }
     
     private static readonly SortedDictionary<double, string> ColorMap = new()
     {
@@ -22,5 +34,15 @@ public static class DangerZoneUtils
         { 55.4, "rgba(251, 153, 86, 1)" },
         { 35.4, "rgba(248, 212, 97, 1)" },
         { 9.0, "rgba(171, 209, 98, 1)" }
+    };
+    
+    private static readonly SortedDictionary<double, string> PollutionLevelMap = new()
+    {
+        { 9999, "экстремальный"},
+        { 225.4, "очень высокий" },
+        { 125.4, "высокий" },
+        { 55.4, "средний" },
+        { 35.4, "низкий" },
+        { 9.0, "очень низкий" }
     };
 }

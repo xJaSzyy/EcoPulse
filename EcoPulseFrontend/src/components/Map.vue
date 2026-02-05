@@ -300,7 +300,9 @@ async function buildSimulation(data) {
   source.addFeature(pointFeature);
 
   simulationData.value = {
-    averageConcentration: dangerZone.averageConcentration
+    averageConcentration: dangerZone.averageConcentration,
+    pollutionLevel: dangerZone.pollutionLevel,
+    color: dangerZone.color
   }
 }
 
@@ -777,7 +779,9 @@ onMounted(async () => {
       }
 
       simulationData.value = {
-        averageConcentration: found.averageConcentration
+        averageConcentration: found.averageConcentration,
+        pollutionLevel: found.pollutionLevel,
+        color: found.color
       }
     }
   });

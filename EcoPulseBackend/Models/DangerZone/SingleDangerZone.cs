@@ -44,4 +44,9 @@ public class SingleDangerZone
     /// Угол направления
     /// </summary>
     public double Angle { get; set; }
+
+    /// <summary>
+    /// Уровень загрязнения
+    /// </summary>
+    public string PollutionLevel { get; set; } = null!;
 }

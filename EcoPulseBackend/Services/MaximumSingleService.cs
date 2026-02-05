@@ -159,13 +159,15 @@ public class MaximumSingleService : IMaximumSingleService
         var pm = avgConcentration * 1000;
 
         var color = DangerZoneUtils.GetColorByConcentration(pm);
+        var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(pm);
         
         return new SingleDangerZone()
         {
             Length = dangerZoneLength,
             Width = dangerZoneWidth,
             Color = color,
-            AverageConcentration = (float)Math.Round(avgConcentration * 1000, 2)
+            AverageConcentration = (float)Math.Round(avgConcentration * 1000, 2),
+            PollutionLevel = pollutionLevel
         };
     }
     

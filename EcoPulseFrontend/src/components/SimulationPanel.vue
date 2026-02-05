@@ -112,9 +112,18 @@
         </div>
       </div>
 
-      <div class="emission-level">
-        <label>Уровень загрязнения: </label>
+      <div class="average-concentration">
+        <label>Концентрация: </label>
         <span>{{ data.averageConcentration }} мкг/м3</span>
+      </div>
+
+      <div class="pollution-level">
+        <label>Уровень загрязнения - </label>
+        <span>{{ data.pollutionLevel }}</span>
+        <span 
+          class="pollution-level-color" 
+          :style="{ 'background-color': data.color }"
+        ></span>
       </div>
     </div>
   </div>
@@ -147,7 +156,9 @@ const formData = reactive({
 });
 
 const data = reactive({
-  averageConcentration: 0
+  averageConcentration: 0,
+  pollutionLevel: "",
+  color: "rgb(0, 0, 0)"
 });
 
 const averageConcentration = reactive(0);
@@ -428,5 +439,26 @@ const emitClose = () => {
   text-align: right;
   font-size: 14px;
   color: #666;
+}
+
+.pollution-level {
+  font-size: 14px;
+  color: #444;
+  display: flex;        
+  align-items: center;  
+  gap: 6px;            
+}
+
+.average-concentration {
+  font-size: 14px;
+    color: #444;
+}
+
+.pollution-level-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    margin-right: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
 }
 </style>
