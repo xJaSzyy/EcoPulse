@@ -112,7 +112,8 @@
   />
 
   <SimulationPanel
-      :startData="simulationStartData"
+      v-model:data="simulationData"  
+      :start-data="simulationStartData"
       v-if="showSimulationPanel"
       @buildSimulation="buildSimulation"
       @close="closeSimulationPanel"
@@ -159,6 +160,7 @@ const map = ref(null)
 const weather = ref(null)
 const showSimulationPanel = ref(false)
 const simulationStartData = ref(null)
+const simulationData = ref(null)
 
 const createModeFlow = ref(false)
 const createModeQueue = ref(false)
@@ -174,8 +176,8 @@ const olLayers = reactive({
 })
 
 const layersState = reactive({
-  single: {visible: false},
-  vehicleFlow: {visible: true},
+  single: {visible: true},
+  vehicleFlow: {visible: false},
   vehicleQueue: {visible: false}
 })
 
@@ -296,6 +298,10 @@ async function buildSimulation(data) {
   });
   pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
   source.addFeature(pointFeature);
+
+  simulationData.value = {
+    averageConcentration: dangerZone.averageConcentration
+  }
 }
 
 async function updateSingleLayer() {
@@ -411,11 +417,9 @@ function createEllipse(dangerZone) {
   const semiMinor = dangerZone.width;
 
   const center = fromLonLat([dangerZone.lon, dangerZone.lat]);
-
   const angle = 0.5 * Math.PI - (dangerZone.angle * Math.PI) / 180;
 
   const points = [];
-
   const offsetX = (semiMajor / 1) * Math.cos(angle);
   const offsetY = (semiMajor / 1) * Math.sin(angle);
   const shiftedCenter = [center[0] + offsetX, center[1] + offsetY];
@@ -439,6 +443,7 @@ function createEllipse(dangerZone) {
   ellipseFeature.set('dangerData', dangerZone);
   ellipseFeature.set('emissionSourceId', dangerZone.emissionSourceId);
   ellipseFeature.set('dangerColor', dangerZone.color);
+  ellipseFeature.set('averageConcentration', Math.round(dangerZone.averageConcentration * 100000) / 100 || 'N/A'); 
 
   return ellipseFeature;
 }
@@ -454,7 +459,7 @@ function getColorWithAlpha(baseColor, alpha = 0.75) {
 }
 
 function createSingleLayer(dangerZones) {
-  const singleSource = new VectorSource()
+  const singleSource = new VectorSource();
 
   dangerZones.forEach(dangerZone => {
     const ellipse = createEllipse(dangerZone);
@@ -464,12 +469,11 @@ function createSingleLayer(dangerZones) {
     const pointFeature = new Feature({
       geometry: new Point(fromLonLat([dangerZone.lon, dangerZone.lat])),
       type: 'boiler'
-    })
+    });
     pointFeature.set('dangerColor', dangerZone.color);
     pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
-
-    singleSource.addFeature(pointFeature)
-  })
+    singleSource.addFeature(pointFeature);
+  });
 
   const pointStyle = new Style({
     image: new Icon({
@@ -481,7 +485,7 @@ function createSingleLayer(dangerZones) {
     })
   });
 
-  const ellipseStyle = new Style({
+  const ellipseFillStyle = new Style({
     fill: new Fill({
       color: 'black'
     }),
@@ -490,17 +494,35 @@ function createSingleLayer(dangerZones) {
     })
   });
 
+  const textStyle = new Style({
+    text: new Text({
+      font: 'bold 18px roboto',
+      fill: new Fill({
+        color: 'black'
+      }),
+      textAlign: 'center',
+      textBaseline: 'middle'
+    })
+  });
+
   return new VectorLayer({
     source: singleSource,
-    visible: false,
+    visible: true,
     zIndex: 3,
     style: feature => {
       const geom = feature.getGeometry();
       const color = getColorWithAlpha(feature.get('dangerColor'), 0.6);
 
       if (geom.getType() === 'Polygon') {
-        ellipseStyle.getFill().setColor(color);
-        return ellipseStyle;
+        ellipseFillStyle.getFill().setColor(color);
+        
+        const avgConc = feature.get('averageConcentration');
+        if (avgConc && avgConc !== 'N/A') {
+          textStyle.getText().setText(avgConc.toString());
+          return [ellipseFillStyle, textStyle];
+        }
+        
+        return ellipseFillStyle;
       }
 
       if (geom.getType() === 'Point') {
@@ -547,7 +569,7 @@ function createVehicleFlowLayer(dangerZones) {
 
   return new VectorLayer({
     source: vehicleFlowSource,
-    visible: true,
+    visible: false,
     zIndex: 1,
     style: feature => {
       const geomType = feature.getGeometry().getType();
@@ -751,6 +773,11 @@ onMounted(async () => {
         windDirection: weather.value.windDirection,
         tempStratificationRatio: emissionSource.tempStratificationRatio,
         sedimentationRateRatio: emissionSource.sedimentationRateRatio,
+        
+      }
+
+      simulationData.value = {
+        averageConcentration: found.averageConcentration
       }
     }
   });

@@ -96,10 +96,10 @@
           />
           <div class="wind-visual">
             <div class="compass-rose">
-              <span class="compass-point north">N</span>
-              <span class="compass-point east">E</span>
-              <span class="compass-point south">S</span>
-              <span class="compass-point west">W</span>
+              <span class="compass-point north">С</span>
+              <span class="compass-point east">В</span>
+              <span class="compass-point south">Ю</span>
+              <span class="compass-point west">З</span>
               <div class="wind-arrow" :style="{ transform: `rotate(${formData.windDirection}deg)` }">
                 ↑
               </div>
@@ -112,6 +112,10 @@
         </div>
       </div>
 
+      <div class="emission-level">
+        <label>Уровень загрязнения: </label>
+        <span>{{ Math.round(data.averageConcentration * 100000) / 100 }} мкг/м3</span>
+      </div>
     </div>
   </div>
 </template>
@@ -124,6 +128,7 @@ const emit = defineEmits(["buildSimulation", "close"]);
 
 const props = defineProps({
   startData: Object,
+  data: Object
 });
 
 const formData = reactive({
@@ -138,8 +143,14 @@ const formData = reactive({
   windSpeed: 0,
   windDirection: 0,
   tempStratificationRatio: 0,
-  sedimentationRateRatio: 0
+  sedimentationRateRatio: 0,
 });
+
+const data = reactive({
+  averageConcentration: 0
+});
+
+const averageConcentration = reactive(0);
 
 const cardinalDirection = computed(() => {
   const deg = formData.windDirection;
@@ -163,6 +174,16 @@ watch(
     { immediate: true }
 );
 
+watch(
+  () => props.data,
+  (newData) => {
+    if (newData) {
+      Object.assign(data, newData);
+    }
+  },
+  { immediate: true }
+);
+
 watchDebounced(
     formData,
     () => {
@@ -174,7 +195,7 @@ watchDebounced(
     },
     {
       deep: true,
-      debounce: 10,
+      debounce: 1,
       maxWait: 1000,
     }
 );
@@ -208,13 +229,7 @@ const emitClose = () => {
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(to right,
-  #4CAF50 0%,    /* 0° - 90° */
-  #FF9800 25%,   /* 90° - 180° */
-  #F44336 50%,   /* 180° - 270° */
-  #2196F3 75%,   /* 270° - 360° */
-  #4CAF50 100%   /* 360° */
-  );
+  background: #e0e0e0;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -226,18 +241,7 @@ const emitClose = () => {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: white;
-  border: 3px solid #007bff;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.wind-direction-slider::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: white;
-  border: 3px solid #007bff;
+  background: #007bff;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
