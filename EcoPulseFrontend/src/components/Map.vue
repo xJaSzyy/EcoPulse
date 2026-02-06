@@ -211,10 +211,7 @@ const toggleCityDropdown = async () => {
         const selectedCity = await getCityById(selectedCities.value[0].id)
         if (selectedCity?.location) {
           const view = map.value.getView()
-          view.setCenter(fromLonLat([
-            selectedCity.location.lon, 
-            selectedCity.location.lat
-          ]))
+          view.setCenter(fromLonLat(selectedCity.location.coordinates))
           view.setZoom(12)
         }
       } catch (error) {
@@ -248,13 +245,14 @@ async function handleTwoPointsSelected(p1, p2) {
 
   await addVehicleFlowEmissionSource({
     cityId: selectedCityId,
-    points: [
-      {lon: p1[0], lat: p1[1]},
-      {lon: p2[0], lat: p2[1]},
-    ],
+    points: {
+      type: "LineString",
+      coordinates: [p1, p2]
+    },
     vehicleType: 1,
     maxTrafficIntensity: 35 / 2,
     averageSpeed: 40 / 2,
+    streetName: streetName.value
   });
 
   await updateVehicleFlowLayer();
@@ -275,8 +273,7 @@ async function buildSimulation(data) {
   });
 
   dangerZone.emissionSourceId = data.emissionSourceId;
-  dangerZone.lon = data.lon;
-  dangerZone.lat = data.lat;
+  dangerZone.location = data.location;
   dangerZone.angle = data.windDirection;
 
   const singleLayer = olLayers.single;
@@ -293,7 +290,7 @@ async function buildSimulation(data) {
   source.addFeature(ellipse);
 
   const pointFeature = new Feature({
-    geometry: new Point(fromLonLat([dangerZone.lon, dangerZone.lat])),
+    geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
     type: 'boiler'
   });
   pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
@@ -329,7 +326,7 @@ async function updateSingleLayer() {
     source.addFeature(ellipse);
 
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.lon, dangerZone.lat])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'boiler'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -357,7 +354,7 @@ async function updateVehicleFlowLayer() {
   source.clear();
 
   vehicleFlowDangerZones.forEach(dz => {
-    const coords = dz.points.map(p => fromLonLat([p.lon, p.lat]));
+    const coords = dz.points.coordinates.map(([lon, lat]) => fromLonLat([lon, lat]));
 
     const lineFeature = new Feature({
       geometry: new LineString(coords),
@@ -390,7 +387,7 @@ async function updateVehicleQueueLayer() {
 
   vehicleQueueDangerZones.forEach(dangerZone => {
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.lon, dangerZone.location.lat])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'queue'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -418,7 +415,7 @@ function createEllipse(dangerZone) {
   const semiMajor = dangerZone.length;
   const semiMinor = dangerZone.width;
 
-  const center = fromLonLat([dangerZone.lon, dangerZone.lat]);
+  const center = fromLonLat(dangerZone.location.coordinates);
   const angle = 0.5 * Math.PI - (dangerZone.angle * Math.PI) / 180;
 
   const points = [];
@@ -469,7 +466,7 @@ function createSingleLayer(dangerZones) {
     singleSource.addFeature(ellipse);
 
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.lon, dangerZone.lat])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'boiler'
     });
     pointFeature.set('dangerColor', dangerZone.color);
@@ -540,7 +537,7 @@ function createVehicleFlowLayer(dangerZones) {
   const vehicleFlowSource = new VectorSource();
 
   dangerZones.forEach(dz => {
-    const coords = dz.points.map(p => fromLonLat([p.lon, p.lat]));
+    const coords = dz.points.coordinates.map(([lon, lat]) => fromLonLat([lon, lat]));
 
     const lineFeature = new Feature({
       geometry: new LineString(coords),
@@ -597,7 +594,7 @@ function createVehicleQueueLayer(dangerZones) {
 
   dangerZones.forEach(dangerZone => {
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.lon, dangerZone.location.lat])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'queue'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -683,7 +680,7 @@ onMounted(async () => {
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
     const selectedCity = await getCityById(selectedCities.value[0].id)
-    coords = [selectedCity.location.lon, selectedCity.location.lat]
+    coords = selectedCity.location.coordinates;
   }
 
   map.value = new Map({
@@ -733,15 +730,20 @@ onMounted(async () => {
       const coord3857 = evt.coordinate
       const [lon, lat] = toLonLat(coord3857)
 
+      const selectedCityId = selectedCities.value.length > 0
+      ? selectedCities.value[0].id
+      : null;
+
       await addTrafficLightQueueEmissionSource({
         location: {
-          lon: lon,
-          lat: lat
+          type: "Point",
+          coordinates: [lon, lat]
         },
         vehicleType: 1,
         vehiclesCount: randomInt(1, 5),
         trafficLightCycles: 12,
-        trafficLightStopTime: 60
+        trafficLightStopTime: 60,
+        cityId: selectedCityId
       })
 
       await updateVehicleQueueLayer()
@@ -764,8 +766,7 @@ onMounted(async () => {
 
       simulationStartData.value = {
         emissionSourceId: emissionSource.id,
-        lon: emissionSource.location.lon,
-        lat: emissionSource.location.lat,
+        location: emissionSource.location,
         ejectedTemp: emissionSource.ejectedTemp,
         airTemp: weather.value.temperature,
         avgExitSpeed: emissionSource.avgExitSpeed,
@@ -775,7 +776,6 @@ onMounted(async () => {
         windDirection: weather.value.windDirection,
         tempStratificationRatio: emissionSource.tempStratificationRatio,
         sedimentationRateRatio: emissionSource.sedimentationRateRatio,
-        
       }
 
       simulationData.value = {
@@ -821,17 +821,17 @@ function updateModifyFlow() {
     if (!feature) return;
 
     const geom = feature.getGeometry();
-    const coords = geom.getCoordinates();
+    const coords3857 = geom.getCoordinates();
 
     const emissionSourceId = feature.get('emissionSourceId');
-    const points = coords.map(c => {
-      const [lon, lat] = toLonLat(c);
-      return {lon, lat};
-    });
+    const coords4326 = coords3857.map(([x, y]) => toLonLat([x, y]));
 
     await updateVehicleFlowEmissionSource({
       id: emissionSourceId,
-      points: points,
+      points: {
+        type: "LineString",
+        coordinates: coords4326
+      },
       streetName: streetName.value
     });
 

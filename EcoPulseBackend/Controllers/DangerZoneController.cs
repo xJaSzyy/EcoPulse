@@ -54,8 +54,7 @@ public class DangerZoneController : ControllerBase
 
             var dangerZone = _emissionService.MaximumSingleService.CalculateDangerZone(calculateModel);
             dangerZone.EmissionSourceId = emissionSource.Id;
-            dangerZone.Lon = emissionSource.Location.Lon;
-            dangerZone.Lat = emissionSource.Location.Lat;
+            dangerZone.Location = emissionSource.Location;
             dangerZone.Angle = model.WindDirection;
             
             result.Add(dangerZone);

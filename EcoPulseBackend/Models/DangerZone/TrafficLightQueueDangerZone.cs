@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using NetTopologySuite.Geometries;
+
 namespace EcoPulseBackend.Models.DangerZone;
 
 public class TrafficLightQueueDangerZone
@@ -10,7 +13,8 @@ public class TrafficLightQueueDangerZone
     /// <summary>
     /// Координаты
     /// </summary>
-    public Coordinates Location { get; set; } = null!;
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point Location { get; set; } = null!;
     
     /// <summary>
     /// Цвет зоны выброса

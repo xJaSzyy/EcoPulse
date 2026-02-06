@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using EcoPulseBackend.Models.TrafficLightQueue;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
 
@@ -27,7 +29,8 @@ public class TrafficLightQueueEmissionSource
     /// <summary>
     /// Начальные координаты
     /// </summary>
-    public Coordinates Location { get; set; } = null!;
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point Location { get; set; } = null!;
     
     /// <summary>
     /// Список групп транспортных средств, стоящих в очереди

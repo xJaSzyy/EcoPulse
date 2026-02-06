@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EcoPulseBackend.Enums;
 using EcoPulseBackend.Models;
 using EcoPulseBackend.Models.City;
@@ -33,39 +32,39 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(builder);
         
-        builder.Entity<SingleEmissionSource>()
-            .OwnsOne(
-                e => e.Location,
-                cb =>
-                {
-                    cb.Property(c => c.Lon).HasColumnName("Lon");
-                    cb.Property(c => c.Lat).HasColumnName("Lat");
-                });
+        builder.HasPostgresExtension("postgis");
+    
+        builder.Entity<SingleEmissionSource>(entity =>
+        {
+            entity.Property(e => e.Location)
+                .HasColumnType("geometry(Point, 4326)");  
         
-        builder.Entity<VehicleFlowEmissionSource>()
-            .Property(e => e.Points)
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<List<Coordinates>>(v, (JsonSerializerOptions?)null)!);
+            entity.HasIndex(e => e.Location).HasMethod("GIST");
+        });
+        
+        builder.Entity<VehicleFlowEmissionSource>(entity =>
+        {
+            entity.Property(e => e.Points)
+                .HasColumnType("geometry(LineString, 4326)");
+    
+            entity.HasIndex(e => e.Points).HasMethod("GIST");
+        });
 
+        builder.Entity<TrafficLightQueueEmissionSource>(entity =>
+        {
+            entity.Property(e => e.Location)
+                .HasColumnType("geometry(Point, 4326)");  
         
-        builder.Entity<TrafficLightQueueEmissionSource>()
-            .OwnsOne(
-                e => e.Location,
-                cb =>
-                {
-                    cb.Property(c => c.Lon).HasColumnName("Lon");
-                    cb.Property(c => c.Lat).HasColumnName("Lat");
-                });
+            entity.HasIndex(e => e.Location).HasMethod("GIST");
+        });
         
-        builder.Entity<City>()
-            .OwnsOne(
-                e => e.Location,
-                cb =>
-                {
-                    cb.Property(c => c.Lon).HasColumnName("Lon");
-                    cb.Property(c => c.Lat).HasColumnName("Lat");
-                });
+        builder.Entity<City>(entity =>
+        {
+            entity.Property(e => e.Location)
+                .HasColumnType("geometry(Point, 4326)");  
+        
+            entity.HasIndex(e => e.Location).HasMethod("GIST");
+        });
 
         builder.Entity<PollutantInfo>().HasData(
             new PollutantInfo

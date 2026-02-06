@@ -37,11 +37,7 @@ public class VehicleFlowService : IVehicleFlowService
         {
             var points = source.Points;
             
-            float length = 0;
-            for (var i = 1; i < points.Count; i++)
-            {
-                length += (float)GeoUtils.DistanceMeters(points[i - 1], points[i]);
-            }
+            var length = (float)GeoUtils.CalculateHaversineLength(points.Coordinates);
             
             var calculateModel = new VehicleFlowEmissionsCalculateModel
             {

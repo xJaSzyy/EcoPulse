@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using EcoPulseBackend.Models.TrafficLightQueue;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
 
@@ -7,7 +9,8 @@ public class TrafficLightQueueEmissionSourceAddModel
     /// <summary>
     /// Начальные координаты
     /// </summary>
-    public Coordinates Location { get; set; } = null!;
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point Location { get; set; } = null!;
     
     /// <summary>
     /// Список групп транспортных средств, стоящих в очереди
@@ -23,4 +26,9 @@ public class TrafficLightQueueEmissionSourceAddModel
     /// Продолжительность действия запрещающего сигнала светофора (включая желтый цвет)
     /// </summary>
     public float TrafficLightStopTime { get; set; }
+    
+    /// <summary>
+    /// Идентификатор города
+    /// </summary>
+    public int CityId { get; set; }
 }

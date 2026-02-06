@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using NetTopologySuite.Geometries;
+
 namespace EcoPulseBackend.Models.DangerZone;
 
 /// <summary>
@@ -10,15 +13,8 @@ public class SingleDangerZone
     /// </summary>
     public int EmissionSourceId { get; set; }
     
-    /// <summary>
-    /// Долгота
-    /// </summary>
-    public double Lon { get; set; }
-    
-    /// <summary>
-    /// Широта
-    /// </summary>
-    public double Lat { get; set; }
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point Location { get; set; } = null!;
     
     /// <summary>
     /// Длина зоны выброса

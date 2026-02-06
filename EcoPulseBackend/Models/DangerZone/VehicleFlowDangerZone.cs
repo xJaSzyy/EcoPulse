@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using NetTopologySuite.Geometries;
+
 namespace EcoPulseBackend.Models.DangerZone;
 
 /// <summary>
@@ -10,7 +13,8 @@ public class VehicleFlowDangerZone
     /// </summary>
     public int EmissionSourceId { get; set; }
     
-    public List<Coordinates> Points { get; set; } = null!;
+    [Column(TypeName = "geometry(LineString, 4326)")]
+    public LineString Points { get; set; } = null!;
 
     /// <summary>
     /// Цвет зоны выброса
