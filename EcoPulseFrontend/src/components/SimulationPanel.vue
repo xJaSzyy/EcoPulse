@@ -142,8 +142,7 @@ const props = defineProps({
 
 const formData = reactive({
   emissionSourceId: 0,
-  lon: 0,
-  lat: 0,
+  location: null,
   ejectedTemp: 0,
   airTemp: 0,
   avgExitSpeed: 0,

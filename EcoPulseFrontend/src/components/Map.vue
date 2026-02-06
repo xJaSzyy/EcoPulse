@@ -275,8 +275,7 @@ async function buildSimulation(data) {
   });
 
   dangerZone.emissionSourceId = data.emissionSourceId;
-  dangerZone.lon = data.lon;
-  dangerZone.lat = data.lat;
+  dangerZone.location = data.location;
   dangerZone.angle = data.windDirection;
 
   const singleLayer = olLayers.single;
@@ -293,7 +292,7 @@ async function buildSimulation(data) {
   source.addFeature(ellipse);
 
   const pointFeature = new Feature({
-    geometry: new Point(fromLonLat([dangerZone.lon, dangerZone.lat])),
+    geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
     type: 'boiler'
   });
   pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
@@ -467,8 +466,6 @@ function createSingleLayer(dangerZones) {
     const ellipse = createEllipse(dangerZone);
     ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
     singleSource.addFeature(ellipse);
-
-    console.log(dangerZone);
 
     const pointFeature = new Feature({
       geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
@@ -766,8 +763,7 @@ onMounted(async () => {
 
       simulationStartData.value = {
         emissionSourceId: emissionSource.id,
-        lon: emissionSource.location.coordinates[0],
-        lat: emissionSource.location.coordinates[1],
+        location: emissionSource.location,
         ejectedTemp: emissionSource.ejectedTemp,
         airTemp: weather.value.temperature,
         avgExitSpeed: emissionSource.avgExitSpeed,
@@ -777,7 +773,6 @@ onMounted(async () => {
         windDirection: weather.value.windDirection,
         tempStratificationRatio: emissionSource.tempStratificationRatio,
         sedimentationRateRatio: emissionSource.sedimentationRateRatio,
-        
       }
 
       simulationData.value = {
