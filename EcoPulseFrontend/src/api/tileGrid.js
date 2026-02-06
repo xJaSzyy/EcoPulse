@@ -19,7 +19,7 @@ export async function calculateTileGridInfo(id, tileSize = 1000) {
     return await response.json();
 }
 
-export async function calculateTileGridDangerOverlay(id, dangerZone, tileSize = 1000) {
+export async function calculateTileGridDangerOverlay(id, dangerZones, tileSize = 1000) {
     const endpoint = `${API_BASE_URL}/tile-grid/city/${id}/danger-overlay`;
     const url = `${endpoint}?tileSize=${tileSize}`;
     
@@ -29,7 +29,7 @@ export async function calculateTileGridDangerOverlay(id, dangerZone, tileSize = 
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(dangerZone)
+        body: JSON.stringify(dangerZones)
     });
 
     if (!response.ok) {

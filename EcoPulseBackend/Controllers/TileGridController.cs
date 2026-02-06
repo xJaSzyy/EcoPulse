@@ -34,7 +34,7 @@ public class TileGridController : ControllerBase
     }
     
     [HttpPost("tile-grid/city/{id}/danger-overlay")]
-    public IActionResult GetTileGridWithDangerOverlay(int id, [FromBody] Polygon dangerZone, [FromQuery] double tileSize = 1000)
+    public IActionResult GetTileGridWithDangerOverlay(int id, [FromBody] List<Polygon> dangerZones, [FromQuery] double tileSize = 1000)
     {
         var city = _dbContext.Cities.FirstOrDefault(c => c.Id == id);
     
@@ -47,12 +47,11 @@ public class TileGridController : ControllerBase
         var latStep = tileSize / 111000; 
         var lonStep = tileSize / (111000 * Math.Cos(centerLat * Math.PI / 180)); 
     
-        var tiles = GenerateTileGridWithDangerOverlay(city.Polygon, dangerZone, latStep, lonStep);
+        var tiles = GenerateTileGridWithDangerOverlay(city.Polygon, dangerZones, latStep, lonStep);
         return Ok(tiles);
     }
 
-    private List<TileModel> GenerateTileGridWithDangerOverlay(Polygon mainPolygon, Polygon dangerZone, 
-        double latStep, double lonStep)
+    private List<TileModel> GenerateTileGridWithDangerOverlay(Polygon mainPolygon, List<Polygon> dangerZones, double latStep, double lonStep)
     {
         var envelope = mainPolygon.EnvelopeInternal;
         var tiles = new List<TileModel>();
@@ -69,7 +68,7 @@ public class TileGridController : ControllerBase
 
                 if (mainPolygon.Intersects(tilePolygon))
                 {
-                    var intersectsDanger = dangerZone.Intersects(tilePolygon);
+                    var intersectsDanger = dangerZones.Any(x => x.Intersects(tilePolygon));
                     tiles.Add(new TileModel
                     {
                         Tile = tilePolygon,
