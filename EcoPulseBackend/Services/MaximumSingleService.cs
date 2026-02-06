@@ -4,6 +4,7 @@ using EcoPulseBackend.Interfaces;
 using EcoPulseBackend.Models.DangerZone;
 using EcoPulseBackend.Models.MaximumSingle;
 using EcoPulseBackend.Models.Result;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Services;
 
@@ -99,7 +100,54 @@ public class MaximumSingleService : IMaximumSingleService
         var distances = Enumerable.Range(1, model.Distance / 5).Select(i => i * 5f).ToList();
         
         var concentrations = GetNormalSurfaceConcentration(distances, (float)pollutantInfo.Mass);
-        return CalculateSingleDangerZone(concentrations, (float)pollutantInfo.Mass, model.WindSpeed);
+        var result = CalculateSingleDangerZone(concentrations, (float)pollutantInfo.Mass, model.WindSpeed);
+    
+        if (result.Length > 0 && result.Width > 0)
+        {
+            result.Polygon = CreateDangerZonePolygon(model.SourceLocation, result.Width, result.Length, model.WindDirection);
+        }
+
+        return result;
+    }
+    
+    private Polygon CreateDangerZonePolygon(Point center, double width, double length, double angle)
+    {
+        var geomFactory = new GeometryFactory(new PrecisionModel(), 4326);
+        const int segments = 24;
+        var coordinates = new Coordinate[segments + 1];
+
+        var angleRad = 0.5 * Math.PI - (angle * Math.PI) / 180;
+        var cosA = Math.Cos(angleRad);
+        var sinA = Math.Sin(angleRad);
+
+        var metersPerDegreeLon = 111320.0 * Math.Cos(center.Y * Math.PI / 180.0);
+        var metersPerDegreeLat = 111320.0;
+
+        var offsetX = (length / 2.0) * cosA;  
+        var offsetY = (length / 2.0) * sinA;  
+        var shiftedLon = center.X + offsetX / metersPerDegreeLon;
+        var shiftedLat = center.Y + offsetY / metersPerDegreeLat;
+
+        for (var i = 0; i <= segments; i++)
+        {
+            var theta = (360.0 - i * 15.0) * Math.PI / 180.0;
+            var x = (length / 2.0) * Math.Cos(theta);
+            var y = (width / 2.0) * Math.Sin(theta);
+    
+            var rotatedX = x * cosA - y * sinA;
+            var rotatedY = x * sinA + y * cosA;
+    
+            coordinates[i] = new Coordinate(
+                shiftedLon + rotatedX / metersPerDegreeLon,
+                shiftedLat + rotatedY / metersPerDegreeLat
+            );
+        }
+
+        var linearRing = geomFactory.CreateLinearRing(coordinates);
+        var polygon = geomFactory.CreatePolygon(linearRing);
+        polygon.SRID = 4326;
+
+        return polygon;
     }
     
     private SingleDangerZone CalculateSingleDangerZone(List<float> concentrations, float mass, float windSpeed)

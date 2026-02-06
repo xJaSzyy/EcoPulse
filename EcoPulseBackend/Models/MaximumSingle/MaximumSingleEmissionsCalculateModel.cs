@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using EcoPulseBackend.Enums;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Models.MaximumSingle;
 
@@ -57,6 +59,11 @@ public class MaximumSingleEmissionsCalculateModel
     /// Скорость ветра
     /// </summary>
     public float WindSpeed { get; set; }
+    
+    /// <summary>
+    /// Направление ветра
+    /// </summary>
+    public float WindDirection { get; set; }
 
     /// <summary>
     /// Расстояние от источника выброса
@@ -68,4 +75,10 @@ public class MaximumSingleEmissionsCalculateModel
     /// Количество максимальных точек
     /// </summary>
     public int MaxCount { get; set; }
+    
+    /// <summary>
+    /// Координаты
+    /// </summary>
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point SourceLocation { get; set; } = null!;
 }

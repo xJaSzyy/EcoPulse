@@ -49,13 +49,14 @@ public class DangerZoneController : ControllerBase
                 TempStratificationRatio = emissionSource.TempStratificationRatio,
                 SedimentationRateRatio = emissionSource.SedimentationRateRatio,
                 WindSpeed = model.WindSpeed,
-                Distance = 10000
+                WindDirection = model.WindDirection,
+                Distance = 10000,
+                SourceLocation = emissionSource.Location
             };
 
             var dangerZone = _emissionService.MaximumSingleService.CalculateDangerZone(calculateModel);
             dangerZone.EmissionSourceId = emissionSource.Id;
             dangerZone.Location = emissionSource.Location;
-            dangerZone.Angle = model.WindDirection;
             
             result.Add(dangerZone);
         }

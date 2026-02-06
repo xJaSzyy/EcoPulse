@@ -280,12 +280,13 @@ async function buildSimulation(data) {
     tempStratificationRatio: data.tempStratificationRatio,
     sedimentationRateRatio: data.sedimentationRateRatio,
     windSpeed: data.windSpeed,
+    windDirection: data.windDirection,
     distance: 10000,
+    sourceLocation: data.location
   });
 
   dangerZone.emissionSourceId = data.emissionSourceId;
   dangerZone.location = data.location;
-  dangerZone.angle = data.windDirection;
 
   const singleLayer = olLayers.single;
   const source = singleLayer.getSource();
@@ -423,31 +424,15 @@ async function closeSimulationPanel() {
 }
 
 function createEllipse(dangerZone) {
-  const semiMajor = dangerZone.length;
-  const semiMinor = dangerZone.width;
-
-  const center = fromLonLat(dangerZone.location.coordinates);
-  const angle = 0.5 * Math.PI - (dangerZone.angle * Math.PI) / 180;
-
-  const points = [];
-  const offsetX = (semiMajor / 1) * Math.cos(angle);
-  const offsetY = (semiMajor / 1) * Math.sin(angle);
-  const shiftedCenter = [center[0] + offsetX, center[1] + offsetY];
-
-  for (let i = 360; i >= 0; i -= 15) {
-    const theta = (i * Math.PI) / 180;
-    const x = semiMajor * Math.cos(theta);
-    const y = semiMinor * Math.sin(theta);
-
-    const rotatedX = x * Math.cos(angle) - y * Math.sin(angle);
-    const rotatedY = x * Math.sin(angle) + y * Math.cos(angle);
-
-    points.push([shiftedCenter[0] + rotatedX, shiftedCenter[1] + rotatedY]);
-  }
-  points.push(points[0]);
-
+  
+  const polygonCoords = dangerZone.polygon.coordinates[0];
+  
+  const coords = polygonCoords.map(coord => 
+    fromLonLat(coord)
+  );
+  
   const ellipseFeature = new Feature({
-    geometry: new Polygon([points]),
+    geometry: new Polygon([coords])
   });
 
   ellipseFeature.set('dangerData', dangerZone);
@@ -473,6 +458,7 @@ function createSingleLayer(dangerZones) {
 
   dangerZones.forEach(dangerZone => {
     const ellipse = createEllipse(dangerZone);
+    console.log('Feature geometry:', ellipse.getGeometry().getExtent());
     ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
     singleSource.addFeature(ellipse);
 

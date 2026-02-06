@@ -16,6 +16,9 @@ public class SingleDangerZone
     [Column(TypeName = "geometry(Point, 4326)")]
     public Point Location { get; set; } = null!;
     
+    [Column(TypeName = "geometry(Polygon, 4326)")]
+    public Polygon Polygon { get; set; } = null!;
+    
     /// <summary>
     /// Длина зоны выброса
     /// </summary>
@@ -35,11 +38,6 @@ public class SingleDangerZone
     /// Среднее значение из n макисмальных концентраций
     /// </summary>
     public float AverageConcentration { get; set; }
-    
-    /// <summary>
-    /// Угол направления
-    /// </summary>
-    public double Angle { get; set; }
 
     /// <summary>
     /// Уровень загрязнения
