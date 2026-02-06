@@ -730,15 +730,20 @@ onMounted(async () => {
       const coord3857 = evt.coordinate
       const [lon, lat] = toLonLat(coord3857)
 
+      const selectedCityId = selectedCities.value.length > 0
+      ? selectedCities.value[0].id
+      : null;
+
       await addTrafficLightQueueEmissionSource({
         location: {
-          lon: lon,
-          lat: lat
+          type: "Point",
+          coordinates: [lon, lat]
         },
         vehicleType: 1,
         vehiclesCount: randomInt(1, 5),
         trafficLightCycles: 12,
-        trafficLightStopTime: 60
+        trafficLightStopTime: 60,
+        cityId: selectedCityId
       })
 
       await updateVehicleQueueLayer()

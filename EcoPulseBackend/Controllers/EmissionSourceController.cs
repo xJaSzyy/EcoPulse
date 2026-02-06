@@ -155,7 +155,8 @@ public class EmissionSourceController : ControllerBase
             Location = model.Location,
             TrafficLightCycles = model.TrafficLightCycles,
             TrafficLightStopTime = model.TrafficLightStopTime,
-            VehicleGroups = model.VehicleGroups
+            VehicleGroups = model.VehicleGroups,
+            CityId = model.CityId
         };
         
         _dbContext.TrafficLightQueueEmissionSources.Add(emissionSource);

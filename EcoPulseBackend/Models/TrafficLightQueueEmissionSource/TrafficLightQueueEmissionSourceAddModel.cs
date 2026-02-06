@@ -26,4 +26,9 @@ public class TrafficLightQueueEmissionSourceAddModel
     /// Продолжительность действия запрещающего сигнала светофора (включая желтый цвет)
     /// </summary>
     public float TrafficLightStopTime { get; set; }
+    
+    /// <summary>
+    /// Идентификатор города
+    /// </summary>
+    public int CityId { get; set; }
 }
