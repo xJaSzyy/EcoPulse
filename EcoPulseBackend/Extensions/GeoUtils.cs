@@ -1,32 +1,28 @@
 using EcoPulseBackend.Models;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Extensions;
 
 public static class GeoUtils
 {
-    private const double EarthRadiusMeters = 6371000; 
-
-    public static double DistanceMeters(Coordinates a, Coordinates b)
+    public static double CalculateHaversineLength(Coordinate[] coords)
     {
-        var lat1 = DegreesToRadians(a.Lat);
-        var lon1 = DegreesToRadians(a.Lon);
-        var lat2 = DegreesToRadians(b.Lat);
-        var lon2 = DegreesToRadians(b.Lon);
+        double length = 0;
+        const double R = 6371000; 
 
-        var dLat = lat2 - lat1;
-        var dLon = lon2 - lon1;
+        for (int i = 1; i < coords.Length; i++)
+        {
+            var p1 = coords[i - 1];
+            var p2 = coords[i];
 
-        var sinLat = Math.Sin(dLat / 2);
-        var sinLon = Math.Sin(dLon / 2);
-
-        var h = sinLat * sinLat +
-                Math.Cos(lat1) * Math.Cos(lat2) *
-                sinLon * sinLon;
-
-        var c = 2 * Math.Atan2(Math.Sqrt(h), Math.Sqrt(1 - h));
-
-        return EarthRadiusMeters * c;
+            double dLat = (p2.Y - p1.Y) * Math.PI / 180;
+            double dLon = (p2.X - p1.X) * Math.PI / 180;
+            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                       Math.Cos(p1.Y * Math.PI / 180) * Math.Cos(p2.Y * Math.PI / 180) *
+                       Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            length += R * c;
+        }
+        return length;
     }
-
-    private static double DegreesToRadians(double deg) => deg * Math.PI / 180.0;
 }
