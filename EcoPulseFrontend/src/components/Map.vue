@@ -245,13 +245,14 @@ async function handleTwoPointsSelected(p1, p2) {
 
   await addVehicleFlowEmissionSource({
     cityId: selectedCityId,
-    points: [
-      {lon: p1[0], lat: p1[1]},
-      {lon: p2[0], lat: p2[1]},
-    ],
+    points: {
+      type: "LineString",
+      coordinates: [p1, p2]
+    },
     vehicleType: 1,
     maxTrafficIntensity: 35 / 2,
     averageSpeed: 40 / 2,
+    streetName: streetName.value
   });
 
   await updateVehicleFlowLayer();
@@ -815,17 +816,17 @@ function updateModifyFlow() {
     if (!feature) return;
 
     const geom = feature.getGeometry();
-    const coords = geom.getCoordinates();
+    const coords3857 = geom.getCoordinates();
 
     const emissionSourceId = feature.get('emissionSourceId');
-    const points = coords.map(c => {
-      const [lon, lat] = toLonLat(c);
-      return {lon, lat};
-    });
+    const coords4326 = coords3857.map(([x, y]) => toLonLat([x, y]));
 
     await updateVehicleFlowEmissionSource({
       id: emissionSourceId,
-      points: points,
+      points: {
+        type: "LineString",
+        coordinates: coords4326
+      },
       streetName: streetName.value
     });
 
