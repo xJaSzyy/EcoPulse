@@ -211,10 +211,7 @@ const toggleCityDropdown = async () => {
         const selectedCity = await getCityById(selectedCities.value[0].id)
         if (selectedCity?.location) {
           const view = map.value.getView()
-          view.setCenter(fromLonLat([
-            selectedCity.location.coordinates[0], 
-            selectedCity.location.coordinates[1]
-          ]))
+          view.setCenter(fromLonLat(selectedCity.location.coordinates))
           view.setZoom(12)
         }
       } catch (error) {
@@ -328,7 +325,7 @@ async function updateSingleLayer() {
     source.addFeature(ellipse);
 
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'boiler'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -389,7 +386,7 @@ async function updateVehicleQueueLayer() {
 
   vehicleQueueDangerZones.forEach(dangerZone => {
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'queue'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -417,7 +414,7 @@ function createEllipse(dangerZone) {
   const semiMajor = dangerZone.length;
   const semiMinor = dangerZone.width;
 
-  const center = fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]]);
+  const center = fromLonLat(dangerZone.location.coordinates);
   const angle = 0.5 * Math.PI - (dangerZone.angle * Math.PI) / 180;
 
   const points = [];
@@ -468,7 +465,7 @@ function createSingleLayer(dangerZones) {
     singleSource.addFeature(ellipse);
 
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'boiler'
     });
     pointFeature.set('dangerColor', dangerZone.color);
@@ -596,7 +593,7 @@ function createVehicleQueueLayer(dangerZones) {
 
   dangerZones.forEach(dangerZone => {
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
+      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
       type: 'queue'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -682,7 +679,7 @@ onMounted(async () => {
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
     const selectedCity = await getCityById(selectedCities.value[0].id)
-    coords = [selectedCity.location.coordinates[0], selectedCity.location.coordinates[1]]
+    coords = selectedCity.location.coordinates;
   }
 
   map.value = new Map({
