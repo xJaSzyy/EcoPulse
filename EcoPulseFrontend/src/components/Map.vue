@@ -724,7 +724,7 @@ onMounted(async () => {
     cityIds: selectedCities.value.map(c => c.id)
   });
 
-  const tileGridInfo = await calculateTileGridInfo(1);
+  const tileGridInfo = await calculateTileGridInfo(1, 750);
 
   const {
     singleLayer,

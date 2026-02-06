@@ -16,7 +16,7 @@ public class TileGridController : ControllerBase
     }
 
     [HttpGet("tile-grid/city/{id}")]
-    public IActionResult GetTileGridByCityId(int id)
+    public IActionResult GetTileGridByCityId(int id, [FromQuery] double tileSize = 1000)
     {
         var city = _dbContext.Cities.FirstOrDefault(c => c.Id == id);
         
@@ -25,10 +25,9 @@ public class TileGridController : ControllerBase
             return NotFound();
         }
 
-        double tileSizeMeters = 500;
         var centerLat = city.Polygon.Centroid.Y; 
-        var latStep = tileSizeMeters / 111000; 
-        var lonStep = tileSizeMeters / (111000 * Math.Cos(centerLat * Math.PI / 180)); 
+        var latStep = tileSize / 111000; 
+        var lonStep = tileSize / (111000 * Math.Cos(centerLat * Math.PI / 180)); 
         
         var tiles = GenerateTileGridWithSteps(city.Polygon, latStep, lonStep);
         return Ok(tiles);
