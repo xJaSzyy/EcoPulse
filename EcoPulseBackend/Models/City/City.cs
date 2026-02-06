@@ -25,4 +25,10 @@ public class City
     /// </summary>
     [Column(TypeName = "geometry(Point, 4326)")]
     public Point Location { get; set; } = null!;
+
+    /// <summary>
+    /// Границы
+    /// </summary>
+    [Column(TypeName = "geometry(Polygon, 4326)")]
+    public Polygon Polygon { get; set; } = null!;
 }

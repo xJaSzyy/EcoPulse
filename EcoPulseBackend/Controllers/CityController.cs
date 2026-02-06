@@ -34,7 +34,8 @@ public class CityController : ControllerBase
         var city = new City
         {
             Location = model.Location,
-            Name = model.Name
+            Name = model.Name,
+            Polygon = model.Polygon
         };
         
         _dbContext.Cities.Add(city);

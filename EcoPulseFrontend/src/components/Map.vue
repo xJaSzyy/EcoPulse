@@ -28,6 +28,14 @@
         />
         Перекрестки
       </label>
+      <label>
+        <input
+            type="checkbox"
+            v-model="layersState.tileGrid.visible"
+            @change="toggleLayer('tileGrid')"
+        />
+        Сетка
+      </label>
     </div>
 
     <div class="edit-tool-panel">
@@ -141,6 +149,7 @@ import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
   calculateTrafficLightQueueDangerZones
 } from '../api/dangerZone.js';
+import { calculateTileGridInfo } from '../api/tileGrid.js';
 import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
@@ -172,13 +181,15 @@ const streetName = ref(null);
 const olLayers = reactive({
   single: null,
   vehicleFlow: null,
-  vehicleQueue: null
+  vehicleQueue: null,
+  tileGrid: null
 })
 
 const layersState = reactive({
   single: {visible: true},
   vehicleFlow: {visible: false},
-  vehicleQueue: {visible: false}
+  vehicleQueue: {visible: false},
+  tileGrid: {visible: false}
 })
 
 const levels = [
@@ -628,16 +639,58 @@ function createVehicleQueueLayer(dangerZones) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones) {
+function createTileGridLayer(tileGridInfo) {
+  const tileGridSource = new VectorSource();
+
+  tileGridInfo.forEach(tileInfo => {
+    const polygonCoords = tileInfo.tile.coordinates[0]; 
+    
+    const polygonFeature = new Feature({
+      geometry: new Polygon([
+        polygonCoords.map(coord => fromLonLat(coord))
+      ]),
+      color: tileInfo.color
+    });
+    
+    tileGridSource.addFeature(polygonFeature);
+  });
+
+  return new VectorLayer({
+    source: tileGridSource,
+    visible: false,
+    zIndex: 3,
+    style: feature => {
+      const color = getColorWithAlpha(feature.get('color'), 0.6);
+      
+      return new Style({
+        fill: new Fill({
+          color: color 
+        }),
+        stroke: new Stroke({
+          color: 'black', 
+          width: 1
+        })
+      });
+    }
+  });
+}
+
+
+
+
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridInfo) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
 
+  const tileGridLayer = createTileGridLayer(tileGridInfo);
+
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
   olLayers.vehicleQueue = vehicleQueueLayer;
+  olLayers.tileGrid = tileGridLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer};
+  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer};
 }
 
 onMounted(async () => {
@@ -671,11 +724,14 @@ onMounted(async () => {
     cityIds: selectedCities.value.map(c => c.id)
   });
 
+  const tileGridInfo = await calculateTileGridInfo(1);
+
   const {
     singleLayer,
     vehicleFlowLayer,
-    vehicleQueueLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones);
+    vehicleQueueLayer,
+    tileGridLayer
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridInfo);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
@@ -685,7 +741,7 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer],
+    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
