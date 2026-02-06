@@ -149,7 +149,7 @@ import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
   calculateTrafficLightQueueDangerZones
 } from '../api/dangerZone.js';
-import { calculateTileGridInfo } from '../api/tileGrid.js';
+import { calculateTileGridInfo, calculateTileGridDangerOverlay } from '../api/tileGrid.js';
 import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
@@ -424,9 +424,7 @@ async function closeSimulationPanel() {
 }
 
 function createEllipse(dangerZone) {
-  
   const polygonCoords = dangerZone.polygon.coordinates[0];
-  
   const coords = polygonCoords.map(coord => 
     fromLonLat(coord)
   );
@@ -710,14 +708,16 @@ onMounted(async () => {
     cityIds: selectedCities.value.map(c => c.id)
   });
 
-  const tileGridInfo = await calculateTileGridInfo(1, 750);
+  //const tileGridInfo = await calculateTileGridInfo(1, 750);
+
+  const tileGridInfo2 = await calculateTileGridDangerOverlay(1, singleDangerZones[0].polygon, 750);
 
   const {
     singleLayer,
     vehicleFlowLayer,
     vehicleQueueLayer,
     tileGridLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridInfo);
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridInfo2);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
