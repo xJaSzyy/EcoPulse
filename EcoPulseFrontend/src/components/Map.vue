@@ -212,8 +212,8 @@ const toggleCityDropdown = async () => {
         if (selectedCity?.location) {
           const view = map.value.getView()
           view.setCenter(fromLonLat([
-            selectedCity.location.lon, 
-            selectedCity.location.lat
+            selectedCity.location.coordinates[0], 
+            selectedCity.location.coordinates[1]
           ]))
           view.setZoom(12)
         }
@@ -329,7 +329,7 @@ async function updateSingleLayer() {
     source.addFeature(ellipse);
 
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.lon, dangerZone.lat])),
+      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
       type: 'boiler'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -357,7 +357,7 @@ async function updateVehicleFlowLayer() {
   source.clear();
 
   vehicleFlowDangerZones.forEach(dz => {
-    const coords = dz.points.map(p => fromLonLat([p.lon, p.lat]));
+    const coords = dz.points.coordinates.map(([lon, lat]) => fromLonLat([lon, lat]));
 
     const lineFeature = new Feature({
       geometry: new LineString(coords),
@@ -390,7 +390,7 @@ async function updateVehicleQueueLayer() {
 
   vehicleQueueDangerZones.forEach(dangerZone => {
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.lon, dangerZone.location.lat])),
+      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
       type: 'queue'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -418,7 +418,7 @@ function createEllipse(dangerZone) {
   const semiMajor = dangerZone.length;
   const semiMinor = dangerZone.width;
 
-  const center = fromLonLat([dangerZone.lon, dangerZone.lat]);
+  const center = fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]]);
   const angle = 0.5 * Math.PI - (dangerZone.angle * Math.PI) / 180;
 
   const points = [];
@@ -468,8 +468,10 @@ function createSingleLayer(dangerZones) {
     ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
     singleSource.addFeature(ellipse);
 
+    console.log(dangerZone);
+
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.lon, dangerZone.lat])),
+      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
       type: 'boiler'
     });
     pointFeature.set('dangerColor', dangerZone.color);
@@ -540,7 +542,7 @@ function createVehicleFlowLayer(dangerZones) {
   const vehicleFlowSource = new VectorSource();
 
   dangerZones.forEach(dz => {
-    const coords = dz.points.map(p => fromLonLat([p.lon, p.lat]));
+    const coords = dz.points.coordinates.map(([lon, lat]) => fromLonLat([lon, lat]));
 
     const lineFeature = new Feature({
       geometry: new LineString(coords),
@@ -597,7 +599,7 @@ function createVehicleQueueLayer(dangerZones) {
 
   dangerZones.forEach(dangerZone => {
     const pointFeature = new Feature({
-      geometry: new Point(fromLonLat([dangerZone.location.lon, dangerZone.location.lat])),
+      geometry: new Point(fromLonLat([dangerZone.location.coordinates[0], dangerZone.location.coordinates[1]])),
       type: 'queue'
     })
     pointFeature.set('dangerColor', dangerZone.color);
@@ -683,7 +685,7 @@ onMounted(async () => {
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
     const selectedCity = await getCityById(selectedCities.value[0].id)
-    coords = [selectedCity.location.lon, selectedCity.location.lat]
+    coords = [selectedCity.location.coordinates[0], selectedCity.location.coordinates[1]]
   }
 
   map.value = new Map({
@@ -764,8 +766,8 @@ onMounted(async () => {
 
       simulationStartData.value = {
         emissionSourceId: emissionSource.id,
-        lon: emissionSource.location.lon,
-        lat: emissionSource.location.lat,
+        lon: emissionSource.location.coordinates[0],
+        lat: emissionSource.location.coordinates[1],
         ejectedTemp: emissionSource.ejectedTemp,
         airTemp: weather.value.temperature,
         avgExitSpeed: emissionSource.avgExitSpeed,
