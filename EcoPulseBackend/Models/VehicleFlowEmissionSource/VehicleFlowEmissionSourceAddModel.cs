@@ -31,4 +31,9 @@ public class VehicleFlowEmissionSourceAddModel
     /// Средняя скорость движения транспортного потока
     /// </summary>
     public float AverageSpeed { get; set; }
+    
+    /// <summary>
+    /// Название улицы
+    /// </summary>
+    public string StreetName { get; set; } = null!;
 }

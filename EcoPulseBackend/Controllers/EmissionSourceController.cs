@@ -102,7 +102,8 @@ public class EmissionSourceController : ControllerBase
             Points  = model.Points,
             VehicleType = model.VehicleType,
             MaxTrafficIntensity = model.MaxTrafficIntensity,
-            AverageSpeed =  model.AverageSpeed
+            AverageSpeed =  model.AverageSpeed,
+            StreetName = model.StreetName
         };
         
         _dbContext.VehicleFlowEmissionSources.Add(emissionSource);
