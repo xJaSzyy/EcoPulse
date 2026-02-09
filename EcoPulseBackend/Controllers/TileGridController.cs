@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using EcoPulseBackend.Contexts;
-using EcoPulseBackend.Extensions;
+using EcoPulseBackend.Models.DangerZone;
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.Geometries;
 
@@ -34,7 +34,7 @@ public class TileGridController : ControllerBase
     }
     
     [HttpPost("tile-grid/city/{id}/danger-overlay")]
-    public IActionResult GetTileGridWithDangerOverlay(int id, [FromBody] List<Polygon> dangerZones, [FromQuery] double tileSize = 1000)
+    public IActionResult GetTileGridWithDangerOverlay(int id, [FromBody] List<SingleDangerZone> dangerZones, [FromQuery] double tileSize = 1000)
     {
         var city = _dbContext.Cities.FirstOrDefault(c => c.Id == id);
     
@@ -51,7 +51,7 @@ public class TileGridController : ControllerBase
         return Ok(tiles);
     }
 
-    private List<TileModel> GenerateTileGridWithDangerOverlay(Polygon mainPolygon, List<Polygon> dangerZones, double latStep, double lonStep)
+    private List<TileModel> GenerateTileGridWithDangerOverlay(Polygon mainPolygon, List<SingleDangerZone> dangerZones, double latStep, double lonStep)
     {
         var envelope = mainPolygon.EnvelopeInternal;
         var tiles = new List<TileModel>();
@@ -68,11 +68,11 @@ public class TileGridController : ControllerBase
 
                 if (mainPolygon.Intersects(tilePolygon))
                 {
-                    var intersectsDanger = dangerZones.Any(x => x.Intersects(tilePolygon));
+                    var intersectingDanger = dangerZones.FirstOrDefault(x => x.Polygon.Intersects(tilePolygon));
                     tiles.Add(new TileModel
                     {
                         Tile = tilePolygon,
-                        Color = intersectsDanger ? "rgba(255, 0, 0, 0.7)" : "rgb(255, 255, 255)"
+                        Color = intersectingDanger?.Color ?? "rgb(255, 255, 255)" 
                     });
                 }
             }

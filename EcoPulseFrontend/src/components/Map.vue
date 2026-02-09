@@ -710,7 +710,7 @@ onMounted(async () => {
 
   //const tileGridInfo = await calculateTileGridInfo(1, 750);
 
-  const tileGridInfo2 = await calculateTileGridDangerOverlay(1, singleDangerZones.map(z => z.polygon), 750);
+  const tileGridInfo2 = await calculateTileGridDangerOverlay(1, singleDangerZones, 750);
 
   const {
     singleLayer,
