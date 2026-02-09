@@ -1,39 +1,21 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using EcoPulseBackend.Contexts;
+using EcoPulseBackend.Interfaces;
 using EcoPulseBackend.Models.DangerZone;
 using Microsoft.AspNetCore.Mvc;
-using NetTopologySuite.Geometries;
 
 [ApiController]
 public class TileGridController : ControllerBase
 {
-    private readonly GeometryFactory _geometryFactory = new();
     private readonly ApplicationDbContext _dbContext;
+    private readonly ITileGridService _tileGridService;
 
-    public TileGridController(ApplicationDbContext dbContext)
+    public TileGridController(ApplicationDbContext dbContext, ITileGridService tileGridService)
     {
         _dbContext = dbContext;
-    }
-
-    [HttpGet("tile-grid/city/{id}")]
-    public IActionResult GetTileGridByCityId(int id, [FromQuery] double tileSize = 1000)
-    {
-        var city = _dbContext.Cities.FirstOrDefault(c => c.Id == id);
-        
-        if (city == null)
-        {
-            return NotFound();
-        }
-
-        var centerLat = city.Polygon.Centroid.Y; 
-        var latStep = tileSize / 111000; 
-        var lonStep = tileSize / (111000 * Math.Cos(centerLat * Math.PI / 180)); 
-        
-        var tiles = GenerateTileGridWithSteps(city.Polygon, latStep, lonStep);
-        return Ok(tiles);
+        _tileGridService = tileGridService;
     }
     
-    [HttpPost("tile-grid/city/{id}/danger-overlay")]
+    [HttpPost("tile-grid/city/{id}")]
     public IActionResult GetTileGridWithDangerOverlay(int id, [FromBody] List<SingleDangerZone> dangerZones, [FromQuery] double tileSize = 1000)
     {
         var city = _dbContext.Cities.FirstOrDefault(c => c.Id == id);
@@ -42,95 +24,9 @@ public class TileGridController : ControllerBase
         {
             return NotFound();
         }
-
-        var centerLat = city.Polygon.Centroid.Y; 
-        var latStep = tileSize / 111000; 
-        var lonStep = tileSize / (111000 * Math.Cos(centerLat * Math.PI / 180)); 
     
-        var tiles = GenerateTileGridWithDangerOverlay(city.Polygon, dangerZones, latStep, lonStep);
+        var tiles = _tileGridService.GenerateTileGrid(city.Polygon, dangerZones, tileSize);
+        
         return Ok(tiles);
     }
-
-    private List<TileModel> GenerateTileGridWithDangerOverlay(Polygon mainPolygon, List<SingleDangerZone> dangerZones, double latStep, double lonStep)
-    {
-        var envelope = mainPolygon.EnvelopeInternal;
-        var tiles = new List<TileModel>();
-
-        for (var lon = Math.Floor(envelope.MinX / lonStep) * lonStep;
-             lon < envelope.MaxX; 
-             lon += lonStep)
-        {
-            for (var lat = Math.Floor(envelope.MinY / latStep) * latStep;
-                 lat < envelope.MaxY; 
-                 lat += latStep)
-            {
-                var tilePolygon = CreateTilePolygon(lon, lat, lonStep, latStep);
-
-                if (mainPolygon.Intersects(tilePolygon))
-                {
-                    var intersectingDanger = dangerZones.FirstOrDefault(x => x.Polygon.Intersects(tilePolygon));
-                    tiles.Add(new TileModel
-                    {
-                        Tile = tilePolygon,
-                        Color = intersectingDanger?.Color ?? "rgb(255, 255, 255)" 
-                    });
-                }
-            }
-        }
-    
-        return tiles;
-    }
-
-    private List<TileModel> GenerateTileGridWithSteps(Polygon mainPolygon, double latStep, double lonStep)
-    {
-        var envelope = mainPolygon.EnvelopeInternal;
-
-        var tiles = new List<TileModel>();
-    
-        for (var lon = Math.Floor(envelope.MinX / lonStep) * lonStep;
-             lon < envelope.MaxX; 
-             lon += lonStep)
-        {
-            for (var lat = Math.Floor(envelope.MinY / latStep) * latStep;
-                 lat < envelope.MaxY; 
-                 lat += latStep)
-            {
-                var tilePolygon = CreateTilePolygon(lon, lat, lonStep, latStep);
-        
-                if (mainPolygon.Intersects(tilePolygon))
-                {
-                    tiles.Add(new TileModel
-                    {
-                        Tile = tilePolygon,
-                        Color = "rgb(255, 255, 255)"
-                    });
-                }
-            }
-        }
-        
-        return tiles;
-    }
-    
-    private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)
-    {
-        var coords = new[]
-        {
-            new Coordinate(minLon, minLat),
-            new Coordinate(minLon + lonSize, minLat),
-            new Coordinate(minLon + lonSize, minLat + latSize),
-            new Coordinate(minLon, minLat + latSize),
-            new Coordinate(minLon, minLat) 
-        };
-        
-        var linearRing = _geometryFactory.CreateLinearRing(coords);
-        return _geometryFactory.CreatePolygon(linearRing);
-    }
-}
-
-public class TileModel
-{
-    [Column(TypeName = "geometry(Polygon, 4326)")]
-    public Polygon Tile { get; set; } = null!;
-
-    public string Color { get; set; } = null!;
 }

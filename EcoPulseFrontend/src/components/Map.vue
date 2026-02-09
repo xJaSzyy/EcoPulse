@@ -149,7 +149,7 @@ import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
   calculateTrafficLightQueueDangerZones
 } from '../api/dangerZone.js';
-import { calculateTileGridInfo, calculateTileGridDangerOverlay } from '../api/tileGrid.js';
+import { calculateTileGrid } from '../api/tileGrid.js';
 import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
@@ -652,7 +652,7 @@ function createTileGridLayer(tileGridInfo) {
         }),
         stroke: new Stroke({
           color: 'black', 
-          width: 1
+          width: 0.5
         })
       });
     }
@@ -708,9 +708,7 @@ onMounted(async () => {
     cityIds: selectedCities.value.map(c => c.id)
   });
 
-  //const tileGridInfo = await calculateTileGridInfo(1, 750);
-
-  const tileGridInfo2 = await calculateTileGridDangerOverlay(1, singleDangerZones, 750);
+  const tileGridInfo2 = await calculateTileGrid(1, singleDangerZones, 750);
 
   const {
     singleLayer,

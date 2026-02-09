@@ -25,6 +25,13 @@ public static class DangerZoneUtils
 
         return color;
     }
+
+    public static string GetColorByIndex(int index)
+    {
+        var colors = ColorMap.ToList(); 
+        index = Math.Clamp(index, 0, colors.Count - 1);
+        return colors[index].Value;
+    }
     
     private static readonly SortedDictionary<double, string> ColorMap = new()
     {
