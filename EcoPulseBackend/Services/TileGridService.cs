@@ -33,7 +33,7 @@ public class TileGridService : ITileGridService
                 {
                     var intersectingDangers = dangerZones.Where(x => x.Polygon.Intersects(tilePolygon)).ToList();
                     var blendedColor = intersectingDangers.Count != 0
-                        ? BlendColors(intersectingDangers.Select(d => d.Color))
+                        ? BlendColors(intersectingDangers.Select(d => d.AverageConcentration))
                         : DangerZoneUtils.GetColorByIndex(0);
 
                     tiles.Add(new TileModel
@@ -62,32 +62,9 @@ public class TileGridService : ITileGridService
         var linearRing = _geometryFactory.CreateLinearRing(coords);
         return _geometryFactory.CreatePolygon(linearRing);
     }
-
-    private static (int r, int g, int b) ParseRgb(string? color)
+    
+    private static string BlendColors(IEnumerable<float> concentrations)
     {
-        if (string.IsNullOrWhiteSpace(color)) return (255, 255, 255);
-    
-        var match = System.Text.RegularExpressions.Regex.Match(color, @"rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)");
-        if (!match.Success)
-        {
-            return (255, 255, 255);
-        }
-    
-        return (
-            int.Parse(match.Groups[1].Value),
-            int.Parse(match.Groups[2].Value),
-            int.Parse(match.Groups[3].Value)
-        );
-    }
-
-    private static string BlendColors(IEnumerable<string> colors)
-    {
-        var parsed = colors.Select(ParseRgb).ToArray();
-    
-        var avgR = Math.Clamp(parsed.Sum(c => c.r) / parsed.Length, 0, 255);
-        var avgG = Math.Clamp(parsed.Sum(c => c.g) / parsed.Length, 0, 255);
-        var avgB = Math.Clamp(parsed.Sum(c => c.b) / parsed.Length, 0, 255);
-    
-        return $"rgb({avgR}, {avgG}, {avgB})";
+        return DangerZoneUtils.GetColorByConcentration(concentrations.Average());
     }
 }
