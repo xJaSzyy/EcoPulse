@@ -708,14 +708,20 @@ onMounted(async () => {
     cityIds: selectedCities.value.map(c => c.id)
   });
 
-  const tileGridInfo2 = await calculateTileGrid(1, singleDangerZones, 750);
+  const tileGrid = await calculateTileGrid({
+    cityId: 1,
+    tileSize: 750,
+    singleDangerZones: singleDangerZones,
+    vehicleFlowDangerZones: vehicleFlowDangerZones,
+    trafficLightQueueDangerZones: vehicleQueueDangerZones
+  });
 
   const {
     singleLayer,
     vehicleFlowLayer,
     vehicleQueueLayer,
     tileGridLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridInfo2);
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGrid);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {

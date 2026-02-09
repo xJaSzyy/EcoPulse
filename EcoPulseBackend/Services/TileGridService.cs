@@ -1,6 +1,5 @@
 using EcoPulseBackend.Extensions;
 using EcoPulseBackend.Interfaces;
-using EcoPulseBackend.Models.DangerZone;
 using EcoPulseBackend.Models.TileGrid;
 using NetTopologySuite.Geometries;
 
@@ -10,11 +9,11 @@ public class TileGridService : ITileGridService
 {
     private readonly GeometryFactory _geometryFactory = new();
     
-    public List<TileModel> GenerateTileGrid(Polygon mainPolygon, List<SingleDangerZone> dangerZones, double tileSize)
+    public List<TileModel> GenerateTileGrid(Polygon mainPolygon, TileGridCalculateModel model)
     {
         var centerLat = mainPolygon.Centroid.Y; 
-        var latStep = tileSize / 111000; 
-        var lonStep = tileSize / (111000 * Math.Cos(centerLat * Math.PI / 180)); 
+        var latStep = model.TileSize / 111000; 
+        var lonStep = model.TileSize / (111000 * Math.Cos(centerLat * Math.PI / 180)); 
         
         var envelope = mainPolygon.EnvelopeInternal;
         var tiles = new List<TileModel>();
@@ -31,9 +30,18 @@ public class TileGridService : ITileGridService
 
                 if (mainPolygon.Intersects(tilePolygon))
                 {
-                    var intersectingDangers = dangerZones.Where(x => x.Polygon.Intersects(tilePolygon)).ToList();
-                    var blendedColor = intersectingDangers.Count != 0
-                        ? BlendColors(intersectingDangers.Select(d => d.AverageConcentration))
+                    var intersectingSingleZones = model.SingleDangerZones.Where(x => x.Polygon.Intersects(tilePolygon)).ToList();
+                    var intersectingVehicleFlowZones = model.VehicleFlowDangerZones.Where(x => x.Points.Intersects(tilePolygon)).ToList();
+                    var intersectingTrafficLightQueueZones = model.TrafficLightQueueDangerZones.Where(x => x.Location.Intersects(tilePolygon)).ToList();
+
+                    var concentrations = intersectingSingleZones
+                        .Select(s => s.AverageConcentration)
+                        .Concat(intersectingVehicleFlowZones.Select(f => f.AverageConcentration))
+                        .Concat(intersectingTrafficLightQueueZones.Select(q => q.AverageConcentration))
+                        .ToList();
+                    
+                    var blendedColor = intersectingSingleZones.Count != 0 ||  intersectingVehicleFlowZones.Count != 0 || intersectingTrafficLightQueueZones.Count != 0
+                        ? BlendColors(concentrations )
                         : DangerZoneUtils.GetColorByIndex(0);
 
                     tiles.Add(new TileModel

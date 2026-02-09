@@ -1,21 +1,15 @@
 import {API_BASE_URL} from "./config.js";
 
-export async function calculateTileGrid(id, dangerZones, tileSize = 1000) {
-    const endpoint = `${API_BASE_URL}/tile-grid/city/${id}`;
-    const url = `${endpoint}?tileSize=${tileSize}`;
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(dangerZones)
+export async function calculateTileGrid(payload) {
+    const response = await fetch(API_BASE_URL + '/tile-grid/calculate', {
+        method: 'POST', headers: {
+            'Content-Type': 'application/json', 'Accept': 'application/json'
+        }, body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        throw new Error(`Request failed: ${response.status} ${errorText}`);
     }
 
     return await response.json();

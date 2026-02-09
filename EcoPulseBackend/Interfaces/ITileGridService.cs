@@ -6,5 +6,5 @@ namespace EcoPulseBackend.Interfaces;
 
 public interface ITileGridService
 {
-    List<TileModel> GenerateTileGrid(Polygon cityPolygon, List<SingleDangerZone> dangerZones, double tileSize);
+    List<TileModel> GenerateTileGrid(Polygon cityPolygon, TileGridCalculateModel model);
 }
