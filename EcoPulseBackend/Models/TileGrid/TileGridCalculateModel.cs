@@ -4,7 +4,7 @@ namespace EcoPulseBackend.Models.TileGrid;
 
 public class TileGridCalculateModel
 {
-    public int CityId { get; set; }
+    public List<int> CityIds { get; set; } = new();
     
     public double TileSize { get; set; }
     

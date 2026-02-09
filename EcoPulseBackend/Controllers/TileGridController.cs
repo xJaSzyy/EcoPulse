@@ -14,19 +14,26 @@ public class TileGridController : ControllerBase
         _dbContext = dbContext;
         _tileGridService = tileGridService;
     }
-    
+
     [HttpPost("tile-grid/calculate")]
     public IActionResult CalculateTileGrid([FromBody] TileGridCalculateModel model)
     {
-        var city = _dbContext.Cities.FirstOrDefault(c => c.Id == model.CityId);
-    
-        if (city == null)
+        var cities = _dbContext.Cities
+            .Where(c => model.CityIds.Contains(c.Id))
+            .ToList();
+
+        var results = new List<TileGridResult>();
+
+        foreach (var city in cities)
         {
-            return NotFound();
+            var tiles = _tileGridService.GenerateTileGrid(city.Polygon, model);
+            results.Add(new TileGridResult
+            {
+                CityId = city.Id,
+                Tiles = tiles
+            });
         }
-        
-        var tiles = _tileGridService.GenerateTileGrid(city.Polygon, model);
-        
-        return Ok(tiles);
+
+        return Ok(results);
     }
 }

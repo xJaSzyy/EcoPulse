@@ -622,17 +622,20 @@ function createVehicleQueueLayer(dangerZones) {
   });
 }
 
-function createTileGridLayer(tileGridInfo) {
+function createTileGridLayer(tileGridResult) {
   const tileGridSource = new VectorSource();
 
-  tileGridInfo.forEach(tileInfo => {
+  const allTiles = tileGridResult.flatMap(city => city.tiles);
+
+  allTiles.forEach(tileInfo => {
     const polygonCoords = tileInfo.tile.coordinates[0]; 
     
     const polygonFeature = new Feature({
       geometry: new Polygon([
         polygonCoords.map(coord => fromLonLat(coord))
       ]),
-      color: tileInfo.color
+      color: tileInfo.color,
+      cityId: tileInfo.cityId
     });
     
     tileGridSource.addFeature(polygonFeature);
@@ -658,12 +661,12 @@ function createTileGridLayer(tileGridInfo) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridInfo) {
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
 
-  const tileGridLayer = createTileGridLayer(tileGridInfo);
+  const tileGridLayer = createTileGridLayer(tileGridResult);
 
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
@@ -704,8 +707,8 @@ onMounted(async () => {
     cityIds: selectedCities.value.map(c => c.id)
   });
 
-  const tileGrid = await calculateTileGrid({
-    cityId: 1,
+  const tileGridResult = await calculateTileGrid({
+    cityIds: selectedCities.value.map(c => c.id),
     tileSize: 750,
     singleDangerZones: singleDangerZones,
     vehicleFlowDangerZones: vehicleFlowDangerZones,
@@ -717,7 +720,7 @@ onMounted(async () => {
     vehicleFlowLayer,
     vehicleQueueLayer,
     tileGridLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGrid);
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
