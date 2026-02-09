@@ -456,7 +456,6 @@ function createSingleLayer(dangerZones) {
 
   dangerZones.forEach(dangerZone => {
     const ellipse = createEllipse(dangerZone);
-    console.log('Feature geometry:', ellipse.getGeometry().getExtent());
     ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
     singleSource.addFeature(ellipse);
 
@@ -658,9 +657,6 @@ function createTileGridLayer(tileGridInfo) {
     }
   });
 }
-
-
-
 
 function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridInfo) {
   const singleLayer = createSingleLayer(singleDangerZones);

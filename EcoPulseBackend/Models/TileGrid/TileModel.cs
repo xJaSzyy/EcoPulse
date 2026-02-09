@@ -18,4 +18,9 @@ public class TileModel
     /// Цвет
     /// </summary>
     public string Color { get; set; } = null!;
+    
+    /// <summary>
+    /// Среднее значение концентрации
+    /// </summary>
+    public float AverageConcentration { get; set; }
 }

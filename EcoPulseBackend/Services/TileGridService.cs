@@ -39,15 +39,14 @@ public class TileGridService : ITileGridService
                         .Concat(intersectingVehicleFlowZones.Select(f => f.AverageConcentration))
                         .Concat(intersectingTrafficLightQueueZones.Select(q => q.AverageConcentration))
                         .ToList();
-                    
-                    var blendedColor = intersectingSingleZones.Count != 0 ||  intersectingVehicleFlowZones.Count != 0 || intersectingTrafficLightQueueZones.Count != 0
-                        ? BlendColors(concentrations )
-                        : DangerZoneUtils.GetColorByIndex(0);
 
+                    var blendedColor = BlendColors(concentrations);
+                    
                     tiles.Add(new TileModel
                     {
                         Tile = tilePolygon,
-                        Color = blendedColor
+                        Color = blendedColor,
+                        AverageConcentration = concentrations.Count != 0 ? (float)Math.Round(concentrations.Average(), 1) : -1
                     });
                 }
             }
@@ -71,8 +70,8 @@ public class TileGridService : ITileGridService
         return _geometryFactory.CreatePolygon(linearRing);
     }
     
-    private static string BlendColors(IEnumerable<float> concentrations)
+    private static string BlendColors(List<float> concentrations)
     {
-        return DangerZoneUtils.GetColorByConcentration(concentrations.Average());
+        return concentrations.Count == 0 ? DangerZoneUtils.GetColorByIndex(0) : DangerZoneUtils.GetColorByConcentration(concentrations.Average());
     }
 }
