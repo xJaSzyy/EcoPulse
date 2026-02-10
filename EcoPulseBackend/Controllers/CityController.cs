@@ -55,8 +55,8 @@ public class CityController : ControllerBase
         }
         
         city.Name = model.Name ??  city.Name;
-        city.Location = model.Location ??  city.Location;
-        city.Polygon = model.Polygon ??  city.Polygon;
+        city.Location = model.Location ?? city.Location;
+        city.Polygon = model.Polygon ?? city.Polygon;
         
         _dbContext.Cities.Update(city);
         await _dbContext.SaveChangesAsync();

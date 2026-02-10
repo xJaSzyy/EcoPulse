@@ -1,6 +1,7 @@
 using EcoPulseBackend.Enums;
 using EcoPulseBackend.Models;
 using EcoPulseBackend.Models.City;
+using EcoPulseBackend.Models.Enterprise;
 using EcoPulseBackend.Models.SingleEmissionSource;
 using EcoPulseBackend.Models.TrafficLightQueue;
 using EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
@@ -21,6 +22,8 @@ public class ApplicationDbContext : DbContext
     public virtual DbSet<VehicleGroupQueue> VehicleGroupQueues { get; set; } = null!;
     
     public virtual DbSet<City> Cities { get; set; } = null!;
+    
+    public virtual DbSet<Enterprise> Enterprises { get; set; } = null!;
     
     public ApplicationDbContext() {  }
     

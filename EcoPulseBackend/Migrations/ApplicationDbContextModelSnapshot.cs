@@ -53,6 +53,27 @@ namespace EcoPulseBackend.Migrations
                     b.ToTable("Cities");
                 });
 
+            modelBuilder.Entity("EcoPulseBackend.Models.Enterprise.Enterprise", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Polygon>("SanitaryArea")
+                        .IsRequired()
+                        .HasColumnType("geometry");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Enterprises");
+                });
+
             modelBuilder.Entity("EcoPulseBackend.Models.PollutantInfo", b =>
                 {
                     b.Property<int>("Id")
@@ -295,6 +316,9 @@ namespace EcoPulseBackend.Migrations
                     b.Property<float>("EjectedTemp")
                         .HasColumnType("real");
 
+                    b.Property<int?>("EnterpriseId")
+                        .HasColumnType("integer");
+
                     b.Property<float>("HeightSource")
                         .HasColumnType("real");
 
@@ -311,6 +335,8 @@ namespace EcoPulseBackend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CityId");
+
+                    b.HasIndex("EnterpriseId");
 
                     b.HasIndex("Location");
 
@@ -657,7 +683,13 @@ namespace EcoPulseBackend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("EcoPulseBackend.Models.Enterprise.Enterprise", "Enterprise")
+                        .WithMany("SingleEmissionSources")
+                        .HasForeignKey("EnterpriseId");
+
                     b.Navigation("City");
+
+                    b.Navigation("Enterprise");
                 });
 
             modelBuilder.Entity("EcoPulseBackend.Models.TrafficLightQueue.VehicleGroupQueue", b =>
@@ -689,6 +721,11 @@ namespace EcoPulseBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("City");
+                });
+
+            modelBuilder.Entity("EcoPulseBackend.Models.Enterprise.Enterprise", b =>
+                {
+                    b.Navigation("SingleEmissionSources");
                 });
 
             modelBuilder.Entity("EcoPulseBackend.Models.TrafficLightQueueEmissionSource.TrafficLightQueueEmissionSource", b =>
