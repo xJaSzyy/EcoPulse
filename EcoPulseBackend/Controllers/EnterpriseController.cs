@@ -17,14 +17,14 @@ public class EnterpriseController : ControllerBase
     [HttpGet("enterprise/{id:int}")]
     public IActionResult GetEnterpriseById(int id)
     {
-        var sanitaryArea = _dbContext.Enterprises.FirstOrDefault(c => c.Id == id);
+        var enterprise = _dbContext.Enterprises.FirstOrDefault(c => c.Id == id);
 
-        if (sanitaryArea == null)
+        if (enterprise == null)
         {
             return NotFound();
         }
 
-        return Ok(sanitaryArea);
+        return Ok(enterprise);
     }
 
     [HttpPost("enterprise")]
@@ -59,5 +59,16 @@ public class EnterpriseController : ControllerBase
         await _dbContext.SaveChangesAsync();
         
         return Ok(enterprise);
+    }
+    
+    [HttpPost("enterprise/sanitary-area")]
+    public IActionResult GetAllEnterpriseSanitaryAreas([FromBody] List<int> cityIds)
+    {
+        var sanitaryAreas = _dbContext.Enterprises
+            .Where(e => cityIds.Contains(e.CityId))
+            .Select(e => e.SanitaryArea)
+            .ToList();
+        
+        return Ok(sanitaryAreas);
     }
 }

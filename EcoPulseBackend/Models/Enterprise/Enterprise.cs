@@ -11,6 +11,10 @@ public class Enterprise
     public string Name { get; set; } = null!;
     
     public Polygon SanitaryArea { get; set; } = null!;
+    
+    public int CityId { get; set; }
+    
+    public City.City City { get; set; } = null!;
 
     public List<SingleEmissionSource.SingleEmissionSource> SingleEmissionSources { get; set; } = new();
 }
