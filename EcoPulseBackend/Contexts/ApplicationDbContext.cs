@@ -61,7 +61,10 @@ public class ApplicationDbContext : DbContext
         builder.Entity<City>(entity =>
         {
             entity.Property(e => e.Location)
-                .HasColumnType("geometry(Point, 4326)");  
+                .HasColumnType("geometry(Point, 4326)");
+
+            entity.Property(e => e.Polygon)
+                .HasColumnType("geometry(Polygon, 4326)");
         
             entity.HasIndex(e => e.Location).HasMethod("GIST");
         });

@@ -34,10 +34,31 @@ public class CityController : ControllerBase
         var city = new City
         {
             Location = model.Location,
-            Name = model.Name
+            Name = model.Name,
+            Polygon = model.Polygon
         };
         
         _dbContext.Cities.Add(city);
+        await _dbContext.SaveChangesAsync();
+        
+        return Ok(city);
+    }
+    
+    [HttpPut("city")]
+    public async Task<IActionResult> UpdateCity([FromBody] CityUpdateModel model)
+    {
+        var city = _dbContext.Cities.FirstOrDefault(c => c.Id == model.Id);
+
+        if (city == null)
+        {
+            return NotFound();
+        }
+        
+        city.Name = model.Name ??  city.Name;
+        city.Location = model.Location ??  city.Location;
+        city.Polygon = model.Polygon ??  city.Polygon;
+        
+        _dbContext.Cities.Update(city);
         await _dbContext.SaveChangesAsync();
         
         return Ok(city);

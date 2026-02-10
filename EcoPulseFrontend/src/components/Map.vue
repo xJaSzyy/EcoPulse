@@ -28,6 +28,14 @@
         />
         Перекрестки
       </label>
+      <label>
+        <input
+            type="checkbox"
+            v-model="layersState.tileGrid.visible"
+            @change="toggleLayer('tileGrid')"
+        />
+        Сетка
+      </label>
     </div>
 
     <div class="edit-tool-panel">
@@ -141,6 +149,7 @@ import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
   calculateTrafficLightQueueDangerZones
 } from '../api/dangerZone.js';
+import { calculateTileGrid } from '../api/tileGrid.js';
 import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
@@ -172,13 +181,15 @@ const streetName = ref(null);
 const olLayers = reactive({
   single: null,
   vehicleFlow: null,
-  vehicleQueue: null
+  vehicleQueue: null,
+  tileGrid: null
 })
 
 const layersState = reactive({
   single: {visible: true},
   vehicleFlow: {visible: false},
-  vehicleQueue: {visible: false}
+  vehicleQueue: {visible: false},
+  tileGrid: {visible: false}
 })
 
 const levels = [
@@ -269,12 +280,13 @@ async function buildSimulation(data) {
     tempStratificationRatio: data.tempStratificationRatio,
     sedimentationRateRatio: data.sedimentationRateRatio,
     windSpeed: data.windSpeed,
+    windDirection: data.windDirection,
     distance: 10000,
+    sourceLocation: data.location
   });
 
   dangerZone.emissionSourceId = data.emissionSourceId;
   dangerZone.location = data.location;
-  dangerZone.angle = data.windDirection;
 
   const singleLayer = olLayers.single;
   const source = singleLayer.getSource();
@@ -313,10 +325,10 @@ async function updateSingleLayer() {
   });
 
   const layer = olLayers.single;
-  if (!layer) return;
+  if (!layer) return singleDangerZones;
 
   const source = layer.getSource();
-  if (!source) return;
+  if (!source) return singleDangerZones;
 
   source.clear();
 
@@ -337,7 +349,9 @@ async function updateSingleLayer() {
 
   layer.changed();
 
-  updateModifyFlow()
+  await updateModifyFlow();
+
+  return singleDangerZones;
 }
 
 async function updateVehicleFlowLayer() {
@@ -346,10 +360,10 @@ async function updateVehicleFlowLayer() {
   });
 
   const layer = olLayers.vehicleFlow;
-  if (!layer) return;
+  if (!layer) return vehicleFlowDangerZones;
 
   const source = layer.getSource();
-  if (!source) return;
+  if (!source) return vehicleFlowDangerZones;
 
   source.clear();
 
@@ -369,7 +383,9 @@ async function updateVehicleFlowLayer() {
 
   layer.changed();
 
-  updateModifyFlow()
+  await updateModifyFlow();
+
+  return vehicleFlowDangerZones;
 }
 
 async function updateVehicleQueueLayer() {
@@ -378,10 +394,10 @@ async function updateVehicleQueueLayer() {
   });
 
   const layer = olLayers.vehicleQueue;
-  if (!layer) return;
+  if (!layer) return vehicleQueueDangerZones;
 
   const source = layer.getSource();
-  if (!source) return;
+  if (!source) return vehicleQueueDangerZones;
 
   source.clear();
 
@@ -397,12 +413,50 @@ async function updateVehicleQueueLayer() {
   })
 
   layer.changed();
+
+  return vehicleQueueDangerZones;
+}
+
+async function updateTileGridLayer(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones) {
+  const tileGridResult = await calculateTileGrid({
+    cityIds: selectedCities.value.map(c => c.id),
+    tileSize: 750,
+    singleDangerZones: singleDangerZones,
+    vehicleFlowDangerZones: vehicleFlowDangerZones,
+    trafficLightQueueDangerZones: vehicleQueueDangerZones
+  });
+
+  const layer = olLayers.tileGrid;
+  if (!layer) return;
+
+  const source = layer.getSource();
+  if (!source) return;
+
+  source.clear();
+
+  const allTiles = tileGridResult.flatMap(city => city.tiles);
+  allTiles.forEach(tileInfo => {
+    const polygonCoords = tileInfo.tile.coordinates[0]; 
+    
+    const polygonFeature = new Feature({
+      geometry: new Polygon([
+        polygonCoords.map(coord => fromLonLat(coord))
+      ]),
+      color: tileInfo.color,
+      cityId: tileInfo.cityId
+    });
+    
+    source.addFeature(polygonFeature);
+  });
+
+  layer.changed();
 }
 
 async function updateLayers() {
-  await updateSingleLayer();
-  await updateVehicleFlowLayer()
-  await updateVehicleQueueLayer()
+  const singleDangerZones = await updateSingleLayer();
+  const vehicleFlowDangerZones = await updateVehicleFlowLayer();
+  const vehicleQueueDangerZones = await updateVehicleQueueLayer();
+  await updateTileGridLayer(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones);
 }
 
 async function closeSimulationPanel() {
@@ -412,31 +466,13 @@ async function closeSimulationPanel() {
 }
 
 function createEllipse(dangerZone) {
-  const semiMajor = dangerZone.length;
-  const semiMinor = dangerZone.width;
-
-  const center = fromLonLat(dangerZone.location.coordinates);
-  const angle = 0.5 * Math.PI - (dangerZone.angle * Math.PI) / 180;
-
-  const points = [];
-  const offsetX = (semiMajor / 1) * Math.cos(angle);
-  const offsetY = (semiMajor / 1) * Math.sin(angle);
-  const shiftedCenter = [center[0] + offsetX, center[1] + offsetY];
-
-  for (let i = 360; i >= 0; i -= 15) {
-    const theta = (i * Math.PI) / 180;
-    const x = semiMajor * Math.cos(theta);
-    const y = semiMinor * Math.sin(theta);
-
-    const rotatedX = x * Math.cos(angle) - y * Math.sin(angle);
-    const rotatedY = x * Math.sin(angle) + y * Math.cos(angle);
-
-    points.push([shiftedCenter[0] + rotatedX, shiftedCenter[1] + rotatedY]);
-  }
-  points.push(points[0]);
-
+  const polygonCoords = dangerZone.polygon.coordinates[0];
+  const coords = polygonCoords.map(coord => 
+    fromLonLat(coord)
+  );
+  
   const ellipseFeature = new Feature({
-    geometry: new Polygon([points]),
+    geometry: new Polygon([coords])
   });
 
   ellipseFeature.set('dangerData', dangerZone);
@@ -628,16 +664,57 @@ function createVehicleQueueLayer(dangerZones) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones) {
+function createTileGridLayer(tileGridResult) {
+  const tileGridSource = new VectorSource();
+
+  const allTiles = tileGridResult.flatMap(city => city.tiles);
+  allTiles.forEach(tileInfo => {
+    const polygonCoords = tileInfo.tile.coordinates[0]; 
+    
+    const polygonFeature = new Feature({
+      geometry: new Polygon([
+        polygonCoords.map(coord => fromLonLat(coord))
+      ]),
+      color: tileInfo.color,
+      cityId: tileInfo.cityId
+    });
+    
+    tileGridSource.addFeature(polygonFeature);
+  });
+
+  return new VectorLayer({
+    source: tileGridSource,
+    visible: false,
+    zIndex: 3,
+    style: feature => {
+      const color = getColorWithAlpha(feature.get('color'), 0.6);
+      
+      return new Style({
+        fill: new Fill({
+          color: color 
+        }),
+        stroke: new Stroke({
+          color: 'black', 
+          width: 0.5
+        })
+      });
+    }
+  });
+}
+
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
 
+  const tileGridLayer = createTileGridLayer(tileGridResult);
+
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
   olLayers.vehicleQueue = vehicleQueueLayer;
+  olLayers.tileGrid = tileGridLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer};
+  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer};
 }
 
 onMounted(async () => {
@@ -653,7 +730,7 @@ onMounted(async () => {
     windDirection: currentWeather.windDirection,
   }
 
-  await updateLayers()
+  await updateLayers();
 
   const singleDangerZones = await calculateSingleDangerZones({
     pollutant: 2, // solid particles
@@ -671,11 +748,20 @@ onMounted(async () => {
     cityIds: selectedCities.value.map(c => c.id)
   });
 
+  const tileGridResult = await calculateTileGrid({
+    cityIds: selectedCities.value.map(c => c.id),
+    tileSize: 750,
+    singleDangerZones: singleDangerZones,
+    vehicleFlowDangerZones: vehicleFlowDangerZones,
+    trafficLightQueueDangerZones: vehicleQueueDangerZones
+  });
+
   const {
     singleLayer,
     vehicleFlowLayer,
-    vehicleQueueLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones);
+    vehicleQueueLayer,
+    tileGridLayer
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
@@ -685,7 +771,7 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer],
+    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
@@ -694,6 +780,8 @@ onMounted(async () => {
       zoom: false
     })
   })
+
+  initLayersState();
 
   map.value.on('singleclick', async (evt) => {
     const pixel = evt.pixel;
@@ -802,10 +890,10 @@ onMounted(async () => {
     }
   });
 
-  updateModifyFlow()
+  await updateModifyFlow();
 })
 
-function updateModifyFlow() {
+async function updateModifyFlow() {
   if (modifyFlow.value) {
     map.value.removeInteraction(modifyFlow.value);
   }
@@ -848,16 +936,45 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const initLayersState = () => {
+  const savedState = localStorage.getItem('layersState');
+  if (savedState) {
+    const parsedState = JSON.parse(savedState);
+    Object.keys(layersState).forEach(key => {
+      if (parsedState[key]) {
+        layersState[key].visible = parsedState[key].visible ?? true;
+      }
+    });
+  }
+
+  Object.keys(olLayers).forEach(key => {
+    if (olLayers[key]) {
+      olLayers[key].setVisible(layersState[key].visible);
+    }
+  });
+};
+
 const toggleLayer = key => {
   if (!olLayers[key]) return;
 
   const visible = layersState[key].visible;
   olLayers[key].setVisible(visible);
 
+  saveLayersState();
+
   if (key === 'vehicleFlow' && modifyFlow.value) {
     modifyFlow.value.setActive(visible);
   }
 };
+
+const saveLayersState = () => {
+  const stateToSave = {};
+  Object.keys(layersState).forEach(key => {
+    stateToSave[key] = { visible: layersState[key].visible };
+  });
+  localStorage.setItem('layersState', JSON.stringify(stateToSave));
+};
+
 </script>
 
 <style>
