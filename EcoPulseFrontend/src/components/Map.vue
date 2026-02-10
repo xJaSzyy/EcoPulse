@@ -36,6 +36,14 @@
         />
         Сетка
       </label>
+      <label>
+        <input
+            type="checkbox"
+            v-model="layersState.sanitaryArea.visible"
+            @change="toggleLayer('sanitaryArea')"
+        />
+        СЗЗ
+      </label>
     </div>
 
     <div class="edit-tool-panel">
@@ -150,6 +158,7 @@ import {
   calculateTrafficLightQueueDangerZones
 } from '../api/dangerZone.js';
 import { calculateTileGrid } from '../api/tileGrid.js';
+import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
 import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
@@ -182,14 +191,16 @@ const olLayers = reactive({
   single: null,
   vehicleFlow: null,
   vehicleQueue: null,
-  tileGrid: null
+  tileGrid: null,
+  sanitaryArea: null,
 })
 
 const layersState = reactive({
   single: {visible: true},
   vehicleFlow: {visible: false},
   vehicleQueue: {visible: false},
-  tileGrid: {visible: false}
+  tileGrid: {visible: false},
+  sanitaryArea: {visible: false},
 })
 
 const levels = [
@@ -702,19 +713,57 @@ function createTileGridLayer(tileGridResult) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult) {
+function createSanitaryAreaLayer(sanitaryAreas) {
+  const sanitaryAreaSource = new VectorSource();
+
+  sanitaryAreas.forEach(area => {
+    const polygonCoords = area.coordinates[0]; 
+    
+    const polygonFeature = new Feature({
+      geometry: new Polygon([
+        polygonCoords.map(coord => fromLonLat(coord))
+      ]),
+    });
+    
+    sanitaryAreaSource.addFeature(polygonFeature);
+  });
+
+  const hatchPattern = getHatchPattern(24);
+
+  return new VectorLayer({
+    source: sanitaryAreaSource,
+    visible: false,
+    zIndex: 3,
+    style: feature => {
+      return new Style({
+        fill: new Fill({ 
+          color: hatchPattern 
+        }),
+        stroke: new Stroke({
+          color: "black",
+          width: 1
+        })
+      });
+    }
+  });
+}
+
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
 
   const tileGridLayer = createTileGridLayer(tileGridResult);
 
+  const sanitaryAreaLayer = createSanitaryAreaLayer(sanitaryAreas);
+
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
   olLayers.vehicleQueue = vehicleQueueLayer;
   olLayers.tileGrid = tileGridLayer;
+  olLayers.sanitaryArea = sanitaryAreaLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer};
+  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer};
 }
 
 onMounted(async () => {
@@ -756,12 +805,15 @@ onMounted(async () => {
     trafficLightQueueDangerZones: vehicleQueueDangerZones
   });
 
+  const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
+
   const {
     singleLayer,
     vehicleFlowLayer,
     vehicleQueueLayer,
-    tileGridLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult);
+    tileGridLayer,
+    sanitaryAreaLayer
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
@@ -771,7 +823,7 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer],
+    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
@@ -974,6 +1026,24 @@ const saveLayersState = () => {
   });
   localStorage.setItem('layersState', JSON.stringify(stateToSave));
 };
+
+function getHatchPattern(size) {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  
+  canvas.width = size;
+  canvas.height = size;
+    
+  context.strokeStyle = 'black';
+  context.lineWidth = 1.5;
+    
+  context.beginPath();
+  context.moveTo(0, size);
+  context.lineTo(size, 0);
+  context.stroke();
+    
+  return context.createPattern(canvas, 'repeat');
+}
 
 </script>
 

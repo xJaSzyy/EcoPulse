@@ -28,6 +28,16 @@ public class SingleEmissionSource
     public City.City City { get; set; } = null!;
     
     /// <summary>
+    /// Идентификатор предприятия
+    /// </summary>
+    public int? EnterpriseId { get; set; }
+    
+    /// <summary>
+    /// Предприятие
+    /// </summary>
+    public Enterprise.Enterprise? Enterprise { get; set; } = null!;
+
+    /// <summary>
     /// Координаты
     /// </summary>
     [Column(TypeName = "geometry(Point, 4326)")]
