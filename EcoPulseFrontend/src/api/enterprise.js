@@ -14,3 +14,23 @@ export async function getAllEnterpriseSanitaryAreas(payload) {
 
     return await response.json();
 }
+
+export default {
+  getAll: async () => {
+    const res = await fetch(API_BASE_URL + '/enterprise')
+    return res.json()
+  },
+  create: async (payload) => {
+    const response = await fetch(API_BASE_URL + '/enterprise', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)  
+    });
+    return response.json();
+  },
+  delete: async (id) => {
+    await fetch(API_BASE_URL + '/enterprise/' + id, { method: 'DELETE' })
+  }
+}

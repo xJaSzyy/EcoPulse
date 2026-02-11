@@ -14,6 +14,14 @@ public class EnterpriseController : ControllerBase
         _dbContext = dbContext;
     }
 
+    [HttpGet("enterprise")]
+    public IActionResult GetAllEnterprises()
+    {
+        var enterprises = _dbContext.Enterprises.ToList();
+
+        return Ok(enterprises);
+    }
+    
     [HttpGet("enterprise/{id:int}")]
     public IActionResult GetEnterpriseById(int id)
     {
@@ -33,7 +41,8 @@ public class EnterpriseController : ControllerBase
         var enterprise = new Enterprise
         {
             Name = model.Name,
-            SanitaryArea = model.SanitaryArea
+            SanitaryArea = model.SanitaryArea,
+            CityId = model.CityId
         };
         
         _dbContext.Enterprises.Add(enterprise);
@@ -70,5 +79,21 @@ public class EnterpriseController : ControllerBase
             .ToList();
         
         return Ok(sanitaryAreas);
+    }
+    
+    [HttpDelete("enterprise/{id:int}")]
+    public async Task<IActionResult> DeleteEnterpriseById(int id)
+    {
+        var enterprise = _dbContext.Enterprises.FirstOrDefault(c => c.Id == id);
+
+        if (enterprise == null)
+        {
+            return NotFound();
+        }
+        
+        _dbContext.Enterprises.Remove(enterprise);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(enterprise);
     }
 }

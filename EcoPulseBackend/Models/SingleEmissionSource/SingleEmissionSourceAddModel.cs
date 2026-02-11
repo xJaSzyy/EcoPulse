@@ -51,4 +51,9 @@ public class SingleEmissionSourceAddModel
     /// Идентификатор города
     /// </summary>
     public int CityId { get; set; }
+    
+    /// <summary>
+    /// Идентификатор предприятия
+    /// </summary>
+    public int EnterpriseId { get; set; }
 }

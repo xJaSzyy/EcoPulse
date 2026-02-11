@@ -14,6 +14,14 @@ public class CityController : ControllerBase
     {
         _dbContext = dbContext;
     }
+    
+    [HttpGet("city")]
+    public IActionResult GetAllCities()
+    {
+        var cities = _dbContext.Cities.ToList();
+
+        return Ok(cities);
+    }
 
     [HttpGet("city/{id:int}")]
     public IActionResult GetCityById(int id)
@@ -61,6 +69,22 @@ public class CityController : ControllerBase
         _dbContext.Cities.Update(city);
         await _dbContext.SaveChangesAsync();
         
+        return Ok(city);
+    }
+    
+    [HttpDelete("city/{id:int}")]
+    public async Task<IActionResult> DeleteCityById(int id)
+    {
+        var city = _dbContext.Cities.FirstOrDefault(c => c.Id == id);
+
+        if (city == null)
+        {
+            return NotFound();
+        }
+        
+        _dbContext.Cities.Remove(city);
+        await _dbContext.SaveChangesAsync();
+
         return Ok(city);
     }
 }

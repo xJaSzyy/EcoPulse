@@ -46,7 +46,7 @@
       </label>
     </div>
 
-    <div class="edit-tool-panel">
+    <!--<div class="edit-tool-panel"> 
       <span class="edit-tool__label" @click="toggleEditPanel">
         Изменить
       </span>
@@ -64,8 +64,7 @@
             v-model="streetName"
         />
       </div>
-
-    </div>
+    </div>--->
 
     <div class="city-select">
       <span class="city-select__label" @click="toggleCityDropdown">
