@@ -207,6 +207,7 @@ const olLayers = reactive({
   vehicleQueue: null,
   tileGrid: null,
   sanitaryArea: null,
+  recommendation: null
 })
 
 const layersState = reactive({

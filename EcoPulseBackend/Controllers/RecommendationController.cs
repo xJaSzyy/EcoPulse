@@ -12,30 +12,55 @@ public class RecommendationController : ControllerBase
     public IActionResult GetRecommendations(TileGridResult model)
     {
         var recommendations = DefineRecommendations(model);
-        
+
         return Ok(recommendations);
     }
 
     private List<RecommendationResult> DefineRecommendations(TileGridResult model)
     {
         var recommendations = new List<RecommendationResult>();
-    
+
         foreach (var tile in model.Tiles)
         {
-            if (tile.AverageConcentration > 300)
+            if (tile.AverageConcentration > 90)
             {
-                recommendations.Add(new RecommendationResult
-                {
-                    Location = tile.Tile.Centroid,
-                    AverageConcentration = tile.AverageConcentration,
-                    Recommendation = "Поставить фильтр"
-                });
+                var recommendation = SelectRecommendation(tile);
+
+                recommendations.Add(recommendation);
             }
         }
-    
+
         return recommendations;
     }
 
+    private RecommendationResult SelectRecommendation(TileModel tile)
+    {
+        var location = tile.Tile.Centroid;
+        var recommendation = "нет рекомендации";
+
+        if (!tile.VehicleFlowDangerZones.Any() && !tile.VehicleQueueDangerZones.Any() && tile.SingleDangerZones.Any())
+        {
+            location = tile.SingleDangerZones.First().Polygon.Centroid;
+            recommendation = "слишком большой выброс";
+        }
+        else if (tile.VehicleFlowDangerZones.Any() && !tile.VehicleQueueDangerZones.Any() && !tile.SingleDangerZones.Any())
+        {
+            location = tile.VehicleFlowDangerZones.First().Points.GetPointN(tile.VehicleFlowDangerZones.First().Points.Count / 2);
+            recommendation = "дорога перегружена";
+        }
+        else if (tile.VehicleQueueDangerZones.Any() && !tile.SingleDangerZones.Any())
+        {
+            location = tile.VehicleQueueDangerZones.First().Location;
+            recommendation = "перекресток перегружен";
+        }
+
+        return new RecommendationResult
+        {
+            Location = location,
+            AverageConcentration = tile.AverageConcentration,
+            Recommendation = recommendation
+        };
+    }
 }
 
 public class RecommendationResult
