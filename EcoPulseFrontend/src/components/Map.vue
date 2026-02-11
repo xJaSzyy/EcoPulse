@@ -44,6 +44,14 @@
         />
         СЗЗ
       </label>
+      <label>
+        <input
+            type="checkbox"
+            v-model="layersState.recommendation.visible"
+            @change="toggleLayer('recommendation')"
+        />
+        Рекомендации
+      </label>
     </div>
 
     <div class="edit-tool-panel">
@@ -159,6 +167,7 @@ import {
 } from '../api/dangerZone.js';
 import { calculateTileGrid } from '../api/tileGrid.js';
 import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
+import { getRecommendations } from '../api/recommendation.js';
 import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
@@ -172,6 +181,8 @@ import {asArray} from "ol/color";
 import {altKeyOnly, singleClick} from 'ol/events/condition';
 import Text from 'ol/style/Text.js';
 import {getCityById} from "../api/city.js";
+import Overlay from 'ol/Overlay'
+
 
 const mapRoot = ref(null)
 const map = ref(null)
@@ -187,6 +198,9 @@ const modifyFlow = ref(null);
 const showInfo = ref(false);
 const streetName = ref(null);
 
+const recommendationPopup = ref(null)
+const currentRecommendation = ref(null)
+
 const olLayers = reactive({
   single: null,
   vehicleFlow: null,
@@ -201,6 +215,7 @@ const layersState = reactive({
   vehicleQueue: {visible: false},
   tileGrid: {visible: false},
   sanitaryArea: {visible: false},
+  recommendation: {visible: false}
 })
 
 const levels = [
@@ -259,6 +274,51 @@ function startCreateModeFlow() {
 function startCreateModeQueue() {
   createModeQueue.value = true
 }
+
+function showRecommendationPopup(coordinate, feature) {
+  currentRecommendation.value = {
+    pollutionLevel: "none",
+    averageConcentration: feature.get('averageConcentration'),
+    recommendation: feature.get('recommendation'),
+  }
+  
+  if (!recommendationPopup.value) {
+    recommendationPopup.value = new Overlay({
+      element: createRecommendationPopupElement(),
+      positioning: 'bottom-center',
+      stopEvent: false,
+      insertFirst: false,
+    })
+    map.value.addOverlay(recommendationPopup.value)
+  }
+  
+  recommendationPopup.value.setPosition(coordinate)
+}
+
+function hideRecommendationPopup() {
+  if (recommendationPopup.value) {
+    map.value.removeOverlay(recommendationPopup.value)
+    recommendationPopup.value = null
+  }
+  currentRecommendation.value = null
+}
+
+function createRecommendationPopupElement() {
+  const popup = document.createElement('div')
+  popup.className = 'recommendation-popup'
+  popup.innerHTML = `
+    <div class="popup-content">
+      <div class="popup-title">Рекомендация</div>
+      <div class="popup-text" v-if="currentRecommendation">
+        <strong>Уровень:</strong> ${currentRecommendation.value.pollutionLevel || 'N/A'}<br>
+        <strong>Концентрация:</strong> ${currentRecommendation.value.averageConcentration || 'N/A'} мкг/м³<br>
+        <strong>Рекомендация:</strong> ${currentRecommendation.value.recommendation || 'Нет данных'}
+      </div>
+    </div>
+  `
+  return popup
+}
+
 
 async function handleTwoPointsSelected(p1, p2) {
   const selectedCityId = selectedCities.value.length > 0
@@ -748,22 +808,61 @@ function createSanitaryAreaLayer(sanitaryAreas) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas) {
+function createRecommendationLayer(recommendations) {
+  const recommendationSource = new VectorSource()
+
+  recommendations.forEach(rec => {
+    const pointFeature = new Feature({
+      geometry: new Point(fromLonLat(rec.location.coordinates)),
+      type: 'recommendation'
+    })
+    pointFeature.set('averageConcentration', rec.averageConcentration);
+    pointFeature.set('recommendation', rec.recommendation);
+
+    recommendationSource.addFeature(pointFeature)
+  })
+
+  return new VectorLayer({
+    source: recommendationSource,
+    visible: false,
+    zIndex: 2,
+    style: feature => {
+      const geomType = feature.getGeometry().getType();
+      const color = getColorWithAlpha('rgb(255, 255, 0)', 0.75);
+
+      if (geomType === 'Point') {
+        return new Style({
+          image: new CircleStyle({
+            radius: 5,
+            fill: new Fill({color: color}),
+            stroke: new Stroke({
+              color: 'rgba(0, 0, 0, 0.5)',
+            })
+          }),
+        });
+      }
+
+      return null;
+    }
+  });
+}
+
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendations) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
-
   const tileGridLayer = createTileGridLayer(tileGridResult);
-
   const sanitaryAreaLayer = createSanitaryAreaLayer(sanitaryAreas);
+  const recommendationLayer = createRecommendationLayer(recommendations);
 
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
   olLayers.vehicleQueue = vehicleQueueLayer;
   olLayers.tileGrid = tileGridLayer;
   olLayers.sanitaryArea = sanitaryAreaLayer;
+  olLayers.recommendation = recommendationLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer};
+  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer, recommendationLayer};
 }
 
 onMounted(async () => {
@@ -807,13 +906,16 @@ onMounted(async () => {
 
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
 
+  const recommendations = await getRecommendations(tileGridResult[0]);
+
   const {
     singleLayer,
     vehicleFlowLayer,
     vehicleQueueLayer,
     tileGridLayer,
-    sanitaryAreaLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas);
+    sanitaryAreaLayer,
+    recommendationLayer
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendations);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
@@ -823,7 +925,7 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer],
+    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer, recommendationLayer],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
@@ -927,20 +1029,30 @@ onMounted(async () => {
   });
 
   map.value.on('pointermove', (evt) => {
-    if (evt.dragging) return;
+    if (evt.dragging) return
+    
+    const pixel = map.value.getEventPixel(evt.originalEvent)
+    
+    const allHit = map.value.hasFeatureAtPixel(pixel)
+    
+    const recHit = map.value.hasFeatureAtPixel(pixel, (feature, layer) => {
+      return layer === olLayers.recommendation
+    })
 
-    const pixel = map.value.getEventPixel(evt.originalEvent);
-    const hit = map.value.hasFeatureAtPixel(pixel, (feature, layer) => {
-      return layer === singleLayer && feature.getGeometry().getType() === 'Polygon';
-    });
-
-    const mapElement = map.value.getTargetElement();
-    if (hit) {
-      mapElement.style.cursor = 'pointer';
-    } else {
-      mapElement.style.cursor = '';
+    if (recHit) {
+      const features = map.value.getFeaturesAtPixel(pixel)
+      
+      const coordinate = evt.coordinate
+      showRecommendationPopup(coordinate, features[0]);
     }
-  });
+    else {
+      hideRecommendationPopup();
+    }
+
+    const mapElement = map.value.getTargetElement()
+    mapElement.style.cursor = recHit || allHit ? 'pointer' : ''
+  })
+
 
   await updateModifyFlow();
 })
@@ -1016,6 +1128,10 @@ const toggleLayer = key => {
 
   if (key === 'vehicleFlow' && modifyFlow.value) {
     modifyFlow.value.setActive(visible);
+  }
+
+  if (key === 'recommendation' && !visible) {
+    hideRecommendationPopup()
   }
 };
 
@@ -1219,4 +1335,29 @@ function getHatchPattern(size) {
   gap: 6px;
   margin-bottom: 4px;
 }
+
+.recommendation-popup {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  font-size: 12px;
+  min-width: 180px;
+  pointer-events: none;
+}
+
+.popup-content {
+  line-height: 1.4;
+}
+
+.popup-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.popup-text {
+  color: #555;
+}
+
 </style>
