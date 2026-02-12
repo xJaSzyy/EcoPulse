@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using EcoPulseBackend.Extensions;
 using EcoPulseBackend.Models.TileGrid;
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.Geometries;
@@ -22,10 +23,10 @@ public class RecommendationController : ControllerBase
 
         foreach (var tile in model.Tiles)
         {
-            if (tile.AverageConcentration > 90)
-            {
-                var recommendation = SelectRecommendation(tile);
+            var recommendation = SelectRecommendation(model.UserLocation, tile);
 
+            if (recommendation != null)
+            {
                 recommendations.Add(recommendation);
             }
         }
@@ -33,33 +34,56 @@ public class RecommendationController : ControllerBase
         return recommendations;
     }
 
-    private RecommendationResult SelectRecommendation(TileModel tile)
+    private RecommendationResult? SelectRecommendation(Point userLocation, TileModel tile)
     {
         var location = tile.Tile.Centroid;
         var recommendation = "нет рекомендации";
 
-        if (!tile.VehicleFlowDangerZones.Any() && !tile.VehicleQueueDangerZones.Any() && tile.SingleDangerZones.Any())
+        var singleAvgConcentration = tile.SingleDangerZones.Count > 0 ? tile.SingleDangerZones.Average(s => s.AverageConcentration) : 0;
+        var flowAvgConcentration = tile.VehicleFlowDangerZones.Count > 0 ? tile.VehicleFlowDangerZones.Average(s => s.AverageConcentration) : 0;
+        var queueAvgConcentration = tile.VehicleQueueDangerZones.Count > 0 ? tile.VehicleQueueDangerZones.Average(s => s.AverageConcentration) : 0;
+
+        var avgConcentration = singleAvgConcentration + flowAvgConcentration + queueAvgConcentration;
+        
+        Console.WriteLine(avgConcentration);
+        
+        if (avgConcentration < 225.5) 
+        {
+            return null;
+        }
+        
+        if (singleAvgConcentration > flowAvgConcentration && singleAvgConcentration > queueAvgConcentration)
         {
             location = tile.SingleDangerZones.First().Polygon.Centroid;
-            recommendation = "слишком большой выброс";
+            recommendation = "слишком большой выброс от котельной";
         }
-        else if (tile.VehicleFlowDangerZones.Any() && !tile.VehicleQueueDangerZones.Any() && !tile.SingleDangerZones.Any())
+        else if (flowAvgConcentration > singleAvgConcentration && flowAvgConcentration > queueAvgConcentration)
         {
             location = tile.VehicleFlowDangerZones.First().Points.GetPointN(tile.VehicleFlowDangerZones.First().Points.Count / 2);
             recommendation = "дорога перегружена";
         }
-        else if (tile.VehicleQueueDangerZones.Any() && !tile.SingleDangerZones.Any())
+        else if (queueAvgConcentration > singleAvgConcentration && queueAvgConcentration > flowAvgConcentration)
         {
             location = tile.VehicleQueueDangerZones.First().Location;
             recommendation = "перекресток перегружен";
         }
-        
-        // 1 постарайтесь обходить эту улицу в ближайшее время
 
+        var distance = GeoUtils.Distance(userLocation, location);
+
+        if (distance < 250)
+        {
+            recommendation = "закройте окна, большое скопление загрязнений от машин на соседнем перекрестке.";
+        }
+        
+        // 1 воздержитесь от прогулок по этой улице в ближайшее время
+        // 2 воздержитесь от прогулок рядом с этим перекрестком в ближайшее время 
+
+        Console.WriteLine(avgConcentration);
+        
         return new RecommendationResult
         {
             Location = location,
-            AverageConcentration = tile.AverageConcentration,
+            AverageConcentration = avgConcentration,
             Recommendation = recommendation
         };
     }
