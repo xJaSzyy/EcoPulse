@@ -9,14 +9,14 @@ namespace EcoPulseBackend.Controllers;
 public class RecommendationController : ControllerBase
 {
     [HttpPost("recommendation")]
-    public IActionResult GetRecommendations(TileGridResult model)
+    public IActionResult GetRecommendations(RecommendationGetModel model)
     {
         var recommendations = DefineRecommendations(model);
 
         return Ok(recommendations);
     }
 
-    private List<RecommendationResult> DefineRecommendations(TileGridResult model)
+    private List<RecommendationResult> DefineRecommendations(RecommendationGetModel model)
     {
         var recommendations = new List<RecommendationResult>();
 
@@ -53,6 +53,8 @@ public class RecommendationController : ControllerBase
             location = tile.VehicleQueueDangerZones.First().Location;
             recommendation = "перекресток перегружен";
         }
+        
+        // 1 постарайтесь обходить эту улицу в ближайшее время
 
         return new RecommendationResult
         {
@@ -80,4 +82,14 @@ public class RecommendationResult
     /// Рекомендация
     /// </summary>
     public string Recommendation { get; set; } = null!;
+}
+
+public class RecommendationGetModel
+{
+    public int CityId { get; set; }
+    
+    public List<TileModel> Tiles { get; set; } = new();
+    
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point UserLocation { get; set; } = null!;
 }

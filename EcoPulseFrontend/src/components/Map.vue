@@ -200,6 +200,7 @@ const streetName = ref(null);
 
 const recommendationPopup = ref(null)
 const currentRecommendation = ref(null)
+const userPosition = ref(null);
 
 const olLayers = reactive({
   single: null,
@@ -238,6 +239,30 @@ const cities = ref([
 const selectedCities = ref(JSON.parse(localStorage.getItem("selectedCities") || 'null') ?? [cities.value[0]])
 const cityDropdownOpen = ref(false)
 const editPanelOpen = ref(false)
+
+const getUserPosition = () => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          userPosition.value = 
+          {
+            "type": "Point", 
+            "coordinates": [position.coords.longitude, position.coords.latitude]
+          };
+          resolve(userPosition.value);
+        },
+        (error) => {
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
 
 const toggleCityDropdown = async () => {
   if (cityDropdownOpen.value) {  
@@ -907,7 +932,13 @@ onMounted(async () => {
 
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
 
-  const recommendations = await getRecommendations(tileGridResult[0]);
+  const userPos = await getUserPosition();
+  
+  const recommendations = await getRecommendations({
+    cityId: tileGridResult[0].cityId,
+    tiles: tileGridResult[0].tiles,
+    userLocation: userPosition.value
+  });
 
   const {
     singleLayer,
@@ -1056,7 +1087,6 @@ onMounted(async () => {
     const mapElement = map.value.getTargetElement()
     mapElement.style.cursor = allHit ? 'pointer' : ''
   })
-
 
   await updateModifyFlow();
 })
