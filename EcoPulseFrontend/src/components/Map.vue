@@ -1033,25 +1033,28 @@ onMounted(async () => {
     if (evt.dragging) return
     
     const pixel = map.value.getEventPixel(evt.originalEvent)
+    let recommendationFeature = null
     
-    const allHit = map.value.hasFeatureAtPixel(pixel)
-    
-    const recHit = map.value.hasFeatureAtPixel(pixel, (feature, layer) => {
-      return layer === olLayers.recommendation
+    map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
+      if (layer === olLayers.recommendation) {
+        recommendationFeature = feature
+        return false 
+      }
     })
 
-    if (recHit) {
-      const features = map.value.getFeaturesAtPixel(pixel)
-      
+    if (recommendationFeature) {
       const coordinate = evt.coordinate
-      showRecommendationPopup(coordinate, features[0]);
-    }
-    else {
-      hideRecommendationPopup();
+      showRecommendationPopup(coordinate, recommendationFeature)
+      
+      const mapElement = map.value.getTargetElement()
+      mapElement.style.cursor = 'pointer'
+    } else {
+      hideRecommendationPopup()
     }
 
+    const allHit = map.value.hasFeatureAtPixel(pixel)
     const mapElement = map.value.getTargetElement()
-    mapElement.style.cursor = recHit || allHit ? 'pointer' : ''
+    mapElement.style.cursor = allHit ? 'pointer' : ''
   })
 
 

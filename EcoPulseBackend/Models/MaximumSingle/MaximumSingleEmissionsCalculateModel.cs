@@ -80,5 +80,5 @@ public class MaximumSingleEmissionsCalculateModel
     /// Координаты
     /// </summary>
     [Column(TypeName = "geometry(Point, 4326)")]
-    public Point SourceLocation { get; set; } = null!;
+    public Point? SourceLocation { get; set; } = null!;
 }
