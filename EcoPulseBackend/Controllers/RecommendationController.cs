@@ -38,6 +38,7 @@ public class RecommendationController : ControllerBase
     {
         var location = tile.Tile.Centroid;
         var recommendation = "нет рекомендации";
+        var description = "";
 
         var singleAvgConcentration = tile.SingleDangerZones.Count > 0 ? tile.SingleDangerZones.Average(s => s.AverageConcentration) : 0;
         var flowAvgConcentration = tile.VehicleFlowDangerZones.Count > 0 ? tile.VehicleFlowDangerZones.Average(s => s.AverageConcentration) : 0;
@@ -55,36 +56,62 @@ public class RecommendationController : ControllerBase
         if (singleAvgConcentration > flowAvgConcentration && singleAvgConcentration > queueAvgConcentration)
         {
             location = tile.SingleDangerZones.First().Polygon.Centroid;
-            recommendation = "слишком большой выброс от котельной";
+            description = "слишком большой выброс от котельной";
         }
         else if (flowAvgConcentration > singleAvgConcentration && flowAvgConcentration > queueAvgConcentration)
         {
             location = tile.VehicleFlowDangerZones.First().Points.GetPointN(tile.VehicleFlowDangerZones.First().Points.Count / 2);
-            recommendation = "дорога перегружена";
+            description = "дорога перегружена";
         }
         else if (queueAvgConcentration > singleAvgConcentration && queueAvgConcentration > flowAvgConcentration)
         {
             location = tile.VehicleQueueDangerZones.First().Location;
-            recommendation = "перекресток перегружен";
+            description = "перекресток перегружен";
         }
 
         var distance = GeoUtils.Distance(userLocation, location);
 
         if (distance < 250)
         {
-            recommendation = "закройте окна, большое скопление загрязнений от машин на соседнем перекрестке.";
+            recommendation = "закройте окна";
+            
+            if (description == "дорога перегружена")
+            {
+                description = "большое скопление загрязнений от машин на соседней улице";
+            }
+            else if (description == "перекресток перегружен")
+            {
+                description = "большое скопление загрязнений от машин на соседнем перекрестке";
+            }
+            else if (description == "слишком большой выброс от котельной")
+            {
+                description = "вблизи большое скопление загрязнений от котельной";
+            }
+        } 
+        else if (distance < 500)
+        {
+            recommendation = "воздержитесь от прогулок";
+            
+            if (description == "дорога перегружена")
+            {
+                description = "большое скопление загрязнений от машин на ближайших улицах";
+            }
+            else if (description == "перекресток перегружен")
+            {
+                description = "большое скопление загрязнений от машин на ближайших перекрестках";
+            }
+            else if (description == "слишком большой выброс от котельной")
+            {
+                description = "большое скопление загрязнений от котельной";
+            }
         }
-        
-        // 1 воздержитесь от прогулок по этой улице в ближайшее время
-        // 2 воздержитесь от прогулок рядом с этим перекрестком в ближайшее время 
-
-        Console.WriteLine(avgConcentration);
         
         return new RecommendationResult
         {
             Location = location,
             AverageConcentration = avgConcentration,
-            Recommendation = recommendation
+            Recommendation = recommendation,
+            Description = description
         };
     }
 }
@@ -106,6 +133,8 @@ public class RecommendationResult
     /// Рекомендация
     /// </summary>
     public string Recommendation { get; set; } = null!;
+
+    public string Description { get; set; } = null!;
 }
 
 public class RecommendationGetModel

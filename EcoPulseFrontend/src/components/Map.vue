@@ -200,6 +200,8 @@ const streetName = ref(null);
 
 const recommendationPopup = ref(null)
 const currentRecommendation = ref(null)
+const singlePopup = ref(null)
+const currentSingle = ref(null)
 const userPosition = ref(null);
 
 const olLayers = reactive({
@@ -303,7 +305,7 @@ function startCreateModeQueue() {
 
 function showRecommendationPopup(coordinate, feature) {
   currentRecommendation.value = {
-    pollutionLevel: "none",
+    description: feature.get('description'),
     averageConcentration: feature.get('averageConcentration'),
     recommendation: feature.get('recommendation'),
   }
@@ -334,17 +336,69 @@ function createRecommendationPopupElement() {
   popup.className = 'recommendation-popup'
   popup.innerHTML = `
     <div class="popup-content">
-      <div class="popup-title">Рекомендация</div>
       <div class="popup-text" v-if="currentRecommendation">
-        <strong>Уровень:</strong> ${currentRecommendation.value.pollutionLevel || 'N/A'}<br>
-        <strong>Концентрация:</strong> ${currentRecommendation.value.averageConcentration || 'N/A'} мкг/м³<br>
-        <strong>Рекомендация:</strong> ${currentRecommendation.value.recommendation || 'Нет данных'}
+        <strong>Рекомендация:</strong> ${currentRecommendation.value.recommendation}<br>
+        <strong>Причина:</strong> ${currentRecommendation.value.description}<br>
+        <strong>Концентрация:</strong> ${Math.round(currentRecommendation.value.averageConcentration) || 'N/A'} мкг/м³
       </div>
     </div>
   `
   return popup
 }
 
+function showSinglePopup(coordinate, feature) {
+  currentSingle.value = feature.get('dangerData')
+  
+  const popupElement = createSinglePopupElement()
+  
+  if (!singlePopup.value) {
+    singlePopup.value = new Overlay({
+      element: popupElement,
+      positioning: 'bottom-center',
+      stopEvent: false,
+      insertFirst: false,
+    })
+    map.value.addOverlay(singlePopup.value)
+  } else {
+    singlePopup.value.setElement(popupElement)
+  }
+  
+  singlePopup.value.setPosition(coordinate)
+}
+
+function hideSinglePopup() {
+  if (singlePopup.value) {
+    map.value.removeOverlay(singlePopup.value)
+    singlePopup.value = null
+  }
+  currentSingle.value = null
+}
+
+function createSinglePopupElement() {
+  const popup = document.createElement('div')
+  popup.className = 'single-popup'
+  
+  popup.innerHTML = `
+    <div class="popup-content">
+      <div class="popup-text">
+        <div class="average-concentration">
+          <strong><label>Концентрация: </label></strong>
+          <span>${currentSingle.value.averageConcentration} мкг/м3</span>
+        </div>
+
+        <div class="legend-item">
+          <strong><label>Уровень загрязнения -&nbsp;</label></strong> 
+          <span>${currentSingle.value.pollutionLevel}&nbsp;</span> 
+          <span 
+            class="legend-color" 
+            style="background-color: ${currentSingle.value.color}"
+          ></span>
+        </div>
+      </div>
+    </div>
+  `
+  return popup
+}
 
 async function handleTwoPointsSelected(p1, p2) {
   const selectedCityId = selectedCities.value.length > 0
@@ -604,6 +658,8 @@ function createSingleLayer(dangerZones) {
     });
     pointFeature.set('dangerColor', dangerZone.color);
     pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
+    pointFeature.set('averageConcentration', dangerZone.averageConcentration);
+
     singleSource.addFeature(pointFeature);
   });
 
@@ -648,11 +704,11 @@ function createSingleLayer(dangerZones) {
       if (geom.getType() === 'Polygon') {
         ellipseFillStyle.getFill().setColor(color);
         
-        const avgConc = feature.get('averageConcentration');
+        /*const avgConc = feature.get('averageConcentration');
         if (avgConc && avgConc !== 'N/A') {
           textStyle.getText().setText(avgConc.toString());
           return [ellipseFillStyle, textStyle];
-        }
+        }*/
         
         return ellipseFillStyle;
       }
@@ -844,6 +900,7 @@ function createRecommendationLayer(recommendations) {
     })
     pointFeature.set('averageConcentration', rec.averageConcentration);
     pointFeature.set('recommendation', rec.recommendation);
+    pointFeature.set('description', rec.description);
 
     recommendationSource.addFeature(pointFeature)
   })
@@ -1065,11 +1122,16 @@ onMounted(async () => {
     
     const pixel = map.value.getEventPixel(evt.originalEvent)
     let recommendationFeature = null
+    let singleFeature = null
     
     map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
       if (layer === olLayers.recommendation) {
         recommendationFeature = feature
         return false 
+      }
+      else if (layer === olLayers.single) {
+        singleFeature = feature
+        return false
       }
     })
 
@@ -1081,6 +1143,16 @@ onMounted(async () => {
       mapElement.style.cursor = 'pointer'
     } else {
       hideRecommendationPopup()
+    }
+
+    if (singleFeature) {
+      const coordinate = evt.coordinate
+      showSinglePopup(coordinate, singleFeature)
+      
+      const mapElement = map.value.getTargetElement()
+      mapElement.style.cursor = 'pointer'
+    } else {
+      hideSinglePopup()
     }
 
     const allHit = map.value.hasFeatureAtPixel(pixel)
@@ -1267,6 +1339,22 @@ function getHatchPattern(size) {
   border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
+.pollution-level {
+  font-size: 14px;
+  color: #444;
+  display: flex;        
+  align-items: center;  
+  gap: 6px;            
+}
+
+.pollution-level-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    margin-right: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
 .legend-popup {
   position: fixed;
   inset: 0;
@@ -1370,7 +1458,7 @@ function getHatchPattern(size) {
   margin-bottom: 4px;
 }
 
-.recommendation-popup {
+.recommendation-popup, .single-popup {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
