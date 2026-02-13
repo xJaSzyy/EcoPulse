@@ -46,7 +46,7 @@
       </label>
     </div>
 
-    <div class="edit-tool-panel">
+    <!--<div class="edit-tool-panel">
       <span class="edit-tool__label" @click="toggleEditPanel">
         Изменить
       </span>
@@ -65,7 +65,7 @@
         />
       </div>
 
-    </div>
+    </div>-->
 
     <div class="city-select">
       <span class="city-select__label" @click="toggleCityDropdown">
@@ -117,6 +117,10 @@
         </div>
       </div>
     </div>
+
+    <div v-if="currentRecommendation?.recommendationLevel" class="recommendation-title">
+      {{ currentRecommendation.recommendationLevel }}: {{ currentRecommendation.recommendationText }}
+    </div>
   </div>
 
   <WeatherInfo
@@ -159,6 +163,7 @@ import {
 } from '../api/dangerZone.js';
 import { calculateTileGrid } from '../api/tileGrid.js';
 import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
+import { getRecommendations } from '../api/recommendation.js';
 import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
@@ -172,6 +177,8 @@ import {asArray} from "ol/color";
 import {altKeyOnly, singleClick} from 'ol/events/condition';
 import Text from 'ol/style/Text.js';
 import {getCityById} from "../api/city.js";
+import Overlay from 'ol/Overlay'
+
 
 const mapRoot = ref(null)
 const map = ref(null)
@@ -186,6 +193,11 @@ const createPoints = ref([])
 const modifyFlow = ref(null);
 const showInfo = ref(false);
 const streetName = ref(null);
+
+const singlePopup = ref(null)
+const currentSingle = ref(null)
+const userPosition = ref(null);
+const currentRecommendation = ref(null)
 
 const olLayers = reactive({
   single: null,
@@ -223,6 +235,30 @@ const selectedCities = ref(JSON.parse(localStorage.getItem("selectedCities") || 
 const cityDropdownOpen = ref(false)
 const editPanelOpen = ref(false)
 
+const getUserPosition = () => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          userPosition.value = 
+          {
+            "type": "Point", 
+            "coordinates": [position.coords.longitude, position.coords.latitude]
+          };
+          resolve(userPosition.value);
+        },
+        (error) => {
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
+
 const toggleCityDropdown = async () => {
   if (cityDropdownOpen.value) {  
     const lastCities = JSON.parse(localStorage.getItem("selectedCities") || '[]')
@@ -258,6 +294,60 @@ function startCreateModeFlow() {
 
 function startCreateModeQueue() {
   createModeQueue.value = true
+}
+
+function showSinglePopup(coordinate, feature) {
+  currentSingle.value = feature.get('dangerData')
+  
+  const popupElement = createSinglePopupElement()
+  
+  if (!singlePopup.value) {
+    singlePopup.value = new Overlay({
+      element: popupElement,
+      positioning: 'bottom-center',
+      stopEvent: false,
+      insertFirst: false,
+    })
+    map.value.addOverlay(singlePopup.value)
+  } else {
+    singlePopup.value.setElement(popupElement)
+  }
+  
+  singlePopup.value.setPosition(coordinate)
+}
+
+function hideSinglePopup() {
+  if (singlePopup.value) {
+    map.value.removeOverlay(singlePopup.value)
+    singlePopup.value = null
+  }
+  currentSingle.value = null
+}
+
+function createSinglePopupElement() {
+  const popup = document.createElement('div')
+  popup.className = 'single-popup'
+  
+  popup.innerHTML = `
+    <div class="popup-content">
+      <div class="popup-text">
+        <div class="average-concentration">
+          <strong><label>Концентрация: </label></strong>
+          <span>${currentSingle.value.averageConcentration} мкг/м3</span>
+        </div>
+
+        <div class="legend-item">
+          <strong><label>Уровень загрязнения -&nbsp;</label></strong> 
+          <span>${currentSingle.value.pollutionLevel}&nbsp;</span> 
+          <span 
+            class="legend-color" 
+            style="background-color: ${currentSingle.value.color}"
+          ></span>
+        </div>
+      </div>
+    </div>
+  `
+  return popup
 }
 
 async function handleTwoPointsSelected(p1, p2) {
@@ -518,13 +608,15 @@ function createSingleLayer(dangerZones) {
     });
     pointFeature.set('dangerColor', dangerZone.color);
     pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
+    pointFeature.set('averageConcentration', dangerZone.averageConcentration);
+
     singleSource.addFeature(pointFeature);
   });
 
   const pointStyle = new Style({
     image: new Icon({
       src: boilerIcon,
-      scale: 0.05,
+      scale: 0.055,
       anchor: [0.5, 1],
       anchorXUnits: 'fraction',
       anchorYUnits: 'fraction'
@@ -562,11 +654,11 @@ function createSingleLayer(dangerZones) {
       if (geom.getType() === 'Polygon') {
         ellipseFillStyle.getFill().setColor(color);
         
-        const avgConc = feature.get('averageConcentration');
+        /*const avgConc = feature.get('averageConcentration');
         if (avgConc && avgConc !== 'N/A') {
           textStyle.getText().setText(avgConc.toString());
           return [ellipseFillStyle, textStyle];
-        }
+        }*/
         
         return ellipseFillStyle;
       }
@@ -748,13 +840,11 @@ function createSanitaryAreaLayer(sanitaryAreas) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas) {
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendationResult) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
-
   const tileGridLayer = createTileGridLayer(tileGridResult);
-
   const sanitaryAreaLayer = createSanitaryAreaLayer(sanitaryAreas);
 
   olLayers.single = singleLayer;
@@ -806,6 +896,18 @@ onMounted(async () => {
   });
 
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
+
+  const userPos = await getUserPosition();
+  
+  const recommendationResult = await getRecommendations({
+    tiles: tileGridResult.flatMap(result => result.tiles),
+    userLocation: userPosition.value
+  });
+
+  currentRecommendation.value = {
+    recommendationLevel: recommendationResult.recommendationLevel,
+    recommendationText: recommendationResult.recommendationText
+  };
 
   const {
     singleLayer,
@@ -927,20 +1029,32 @@ onMounted(async () => {
   });
 
   map.value.on('pointermove', (evt) => {
-    if (evt.dragging) return;
+    if (evt.dragging) return
+    
+    const pixel = map.value.getEventPixel(evt.originalEvent)
+    let singleFeature = null
+    
+    map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
+      if (layer === olLayers.single) {
+        singleFeature = feature
+        return false
+      }
+    })
 
-    const pixel = map.value.getEventPixel(evt.originalEvent);
-    const hit = map.value.hasFeatureAtPixel(pixel, (feature, layer) => {
-      return layer === singleLayer && feature.getGeometry().getType() === 'Polygon';
-    });
-
-    const mapElement = map.value.getTargetElement();
-    if (hit) {
-      mapElement.style.cursor = 'pointer';
+    if (singleFeature) {
+      const coordinate = evt.coordinate
+      showSinglePopup(coordinate, singleFeature)
+      
+      const mapElement = map.value.getTargetElement()
+      mapElement.style.cursor = 'pointer'
     } else {
-      mapElement.style.cursor = '';
+      hideSinglePopup()
     }
-  });
+
+    const allHit = map.value.hasFeatureAtPixel(pixel)
+    const mapElement = map.value.getTargetElement()
+    mapElement.style.cursor = allHit ? 'pointer' : ''
+  })
 
   await updateModifyFlow();
 })
@@ -1117,6 +1231,22 @@ function getHatchPattern(size) {
   border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
+.pollution-level {
+  font-size: 14px;
+  color: #444;
+  display: flex;        
+  align-items: center;  
+  gap: 6px;            
+}
+
+.pollution-level-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    margin-right: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
 .legend-popup {
   position: fixed;
   inset: 0;
@@ -1218,5 +1348,46 @@ function getHatchPattern(size) {
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
+}
+
+.single-popup {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  font-size: 12px;
+  min-width: 180px;
+  pointer-events: none;
+}
+
+.popup-content {
+  line-height: 1.4;
+}
+
+.popup-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.popup-text {
+  color: #555;
+}
+
+.recommendation-title {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  z-index: 10;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

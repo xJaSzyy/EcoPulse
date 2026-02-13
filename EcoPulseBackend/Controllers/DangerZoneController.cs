@@ -23,6 +23,7 @@ public class DangerZoneController : ControllerBase
     public IActionResult CalculateMaximumSingleEmissionsDangerZone([FromBody] MaximumSingleEmissionsCalculateModel model)
     {
         var result = _emissionService.MaximumSingleService.CalculateDangerZone(model);
+        result.Location = model.SourceLocation ?? result.Location;
         
         return Ok(result);
     }

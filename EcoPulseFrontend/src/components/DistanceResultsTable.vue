@@ -72,8 +72,7 @@ const isPdKExceeded = (item) => {
   if (!props.data.pollutantInfo?.maxPermissibleConcentration) return false
   // Конвертируем г/час в мг/м³ (предполагаем стандартные условия)
   // Если нужна точная конвертация, уточните формулу
-  const concentration = item.maximumEmission * 1000 // упрощенная конвертация
-  return concentration > props.data.pollutantInfo.maxPermissibleConcentration
+  return item.maximumEmission > props.data.pollutantInfo.maxPermissibleConcentration
 }
 
 // Класс для ячейки с выбросом

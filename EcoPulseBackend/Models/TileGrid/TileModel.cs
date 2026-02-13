@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using EcoPulseBackend.Models.DangerZone;
 using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Models.TileGrid;
@@ -23,4 +24,10 @@ public class TileModel
     /// Среднее значение концентрации
     /// </summary>
     public float AverageConcentration { get; set; }
+    
+    public List<SingleDangerZone> SingleDangerZones { get; set; } = new();
+    
+    public List<VehicleFlowDangerZone> VehicleFlowDangerZones { get; set; } = new();
+    
+    public List<TrafficLightQueueDangerZone> VehicleQueueDangerZones { get; set; } = new();
 }

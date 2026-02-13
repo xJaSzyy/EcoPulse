@@ -39,14 +39,17 @@ public class TileGridService : ITileGridService
                         .Concat(intersectingVehicleFlowZones.Select(f => f.AverageConcentration))
                         .Concat(intersectingTrafficLightQueueZones.Select(q => q.AverageConcentration))
                         .ToList();
-
+                    
                     var blendedColor = BlendColors(concentrations);
                     
                     tiles.Add(new TileModel
                     {
                         Tile = tilePolygon,
                         Color = blendedColor,
-                        AverageConcentration = concentrations.Count != 0 ? (float)Math.Round(concentrations.Average(), 1) : -1
+                        AverageConcentration = concentrations.Count != 0 ? (float)Math.Round(concentrations.Average(), 1) : -1,
+                        SingleDangerZones = intersectingSingleZones,
+                        VehicleFlowDangerZones = intersectingVehicleFlowZones,
+                        VehicleQueueDangerZones = intersectingTrafficLightQueueZones
                     });
                 }
             }
