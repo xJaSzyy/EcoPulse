@@ -175,6 +175,7 @@ import {
   getSingleEmissionSourceById, updateVehicleFlowEmissionSource
 } from '../api/emissionSource.js';
 import boilerIcon from '../icons/boiler.png';
+import recommendationIcon from '../icons/recommendation.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
 import SimulationPanel from '../components/SimulationPanel.vue'
 import {asArray} from "ol/color";
@@ -666,7 +667,7 @@ function createSingleLayer(dangerZones) {
   const pointStyle = new Style({
     image: new Icon({
       src: boilerIcon,
-      scale: 0.05,
+      scale: 0.055,
       anchor: [0.5, 1],
       anchorXUnits: 'fraction',
       anchorYUnits: 'fraction'
@@ -905,24 +906,25 @@ function createRecommendationLayer(recommendations) {
     recommendationSource.addFeature(pointFeature)
   })
 
+  const pointStyle = new Style({
+    image: new Icon({
+      src: recommendationIcon,
+      scale: 0.075,
+      anchor: [0.5, 1],
+      anchorXUnits: 'fraction',
+      anchorYUnits: 'fraction'
+    })
+  });
+
   return new VectorLayer({
     source: recommendationSource,
     visible: false,
     zIndex: 2,
     style: feature => {
       const geomType = feature.getGeometry().getType();
-      const color = getColorWithAlpha('rgb(255, 255, 0)', 0.75);
 
       if (geomType === 'Point') {
-        return new Style({
-          image: new CircleStyle({
-            radius: 5,
-            fill: new Fill({color: color}),
-            stroke: new Stroke({
-              color: 'rgba(0, 0, 0, 0.5)',
-            })
-          }),
-        });
+        return pointStyle;
       }
 
       return null;

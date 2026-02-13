@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using EcoPulseBackend.Contexts;
 using EcoPulseBackend.Models.Weather;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,14 +10,19 @@ namespace EcoPulseBackend.Controllers;
 public class WeatherController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ApplicationDbContext _dbContext;
 
+    private const int CacheInMinutes = 15;
+    
     /// <summary>
     /// Конструктор
     /// </summary>
     /// <param name="httpClientFactory">IHttpClientFactory</param>
-    public WeatherController(IHttpClientFactory httpClientFactory)
+    /// <param name="dbContext"></param>
+    public WeatherController(IHttpClientFactory httpClientFactory, ApplicationDbContext dbContext)
     {
         _httpClientFactory = httpClientFactory;
+        _dbContext = dbContext;
     }
 
     /// <summary>
@@ -36,6 +42,22 @@ public class WeatherController : ControllerBase
 
         try
         {
+            var currentDate = DateTime.UtcNow.Date;
+
+            var weather = _dbContext.Weathers.FirstOrDefault(w => w.Date >= currentDate.AddMinutes(-CacheInMinutes) && w.Date <= currentDate);
+
+            if (weather != null)
+            {
+                return Ok(new WeatherViewModel
+                {
+                    Date = currentDate,
+                    Temperature = weather.Temperature,
+                    WindSpeed = weather.WindSpeed,
+                    WindDirection = weather.WindDirection,
+                    IconClass = weather.IconClass
+                });
+            }
+            
             var response = await httpClient.GetAsync(weatherUrl);
 
             if (!response.IsSuccessStatusCode)
@@ -48,13 +70,23 @@ public class WeatherController : ControllerBase
 
             var result = new WeatherViewModel
             {
-                Date = DateTime.UtcNow.Date,
+                Date = currentDate,
                 Temperature = (float)weatherResponse!.CurrentWeather.Temperature,
                 WindSpeed = (float)weatherResponse.CurrentWeather.WindSpeed,
                 WindDirection = (int)(weatherResponse.CurrentWeather.WindDirection + 180) % 360,
                 IconClass = GetWeatherInfo(weatherResponse.CurrentWeather.WeatherCode,
                     weatherResponse.CurrentWeather.IsDay == 1).IconClass
             };
+
+            _dbContext.Weathers.Add(new Weather
+            {
+                Date = currentDate,
+                Temperature = result.Temperature,
+                WindSpeed = result.WindSpeed,
+                WindDirection = result.WindDirection,
+                IconClass = result.IconClass
+            });
+            await _dbContext.SaveChangesAsync();
 
             return Ok(result);
         }

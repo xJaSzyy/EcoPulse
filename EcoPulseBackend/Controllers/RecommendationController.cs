@@ -46,8 +46,6 @@ public class RecommendationController : ControllerBase
 
         var avgConcentration = singleAvgConcentration + flowAvgConcentration + queueAvgConcentration;
         
-        Console.WriteLine(avgConcentration);
-        
         if (avgConcentration < 225.5) 
         {
             return null;
@@ -61,12 +59,36 @@ public class RecommendationController : ControllerBase
         else if (flowAvgConcentration > singleAvgConcentration && flowAvgConcentration > queueAvgConcentration)
         {
             location = tile.VehicleFlowDangerZones.First().Points.GetPointN(tile.VehicleFlowDangerZones.First().Points.Count / 2);
-            description = "дорога перегружена";
+            
+            //TODO переделать location у дорог
+            if (singleAvgConcentration > 35.5)
+            {
+                description = "дорога перегружена, небольшой выброс от котельной";
+            }
+            else if (queueAvgConcentration > 35.5)
+            {
+                description = "дорога и перекресток перегружены";
+            }
+            else
+            {
+                description = "дорога перегружена";
+            }
         }
         else if (queueAvgConcentration > singleAvgConcentration && queueAvgConcentration > flowAvgConcentration)
         {
             location = tile.VehicleQueueDangerZones.First().Location;
-            description = "перекресток перегружен";
+            if (singleAvgConcentration > 35.5)
+            {
+                description = "перекресток перегружен, небольшой выброс от котельной";
+            }
+            else if (flowAvgConcentration > 35.5)
+            {
+                description = "перекресток и дорога перегружены";
+            }
+            else
+            {
+                description = "перекресток перегружен";
+            }
         }
 
         var distance = GeoUtils.Distance(userLocation, location);

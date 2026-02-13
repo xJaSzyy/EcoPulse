@@ -6,6 +6,7 @@ using EcoPulseBackend.Models.SingleEmissionSource;
 using EcoPulseBackend.Models.TrafficLightQueue;
 using EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
 using EcoPulseBackend.Models.VehicleFlowEmissionSource;
+using EcoPulseBackend.Models.Weather;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcoPulseBackend.Contexts;
@@ -15,15 +16,13 @@ public class ApplicationDbContext : DbContext
     public virtual DbSet<PollutantInfo> PollutantInfos { get; set; } = null!;
     public virtual DbSet<VaporConcentration> VaporConcentrations { get; set; } = null!;
     public virtual DbSet<VehicleSpecificEmission> VehicleSpecificEmissions { get; set; } = null!;
-    
     public virtual DbSet<SingleEmissionSource> SingleEmissionSources { get; set; } = null!;
     public virtual DbSet<VehicleFlowEmissionSource> VehicleFlowEmissionSources { get; set; } = null!;
     public virtual DbSet<TrafficLightQueueEmissionSource> TrafficLightQueueEmissionSources { get; set; } = null!;
     public virtual DbSet<VehicleGroupQueue> VehicleGroupQueues { get; set; } = null!;
-    
     public virtual DbSet<City> Cities { get; set; } = null!;
-    
     public virtual DbSet<Enterprise> Enterprises { get; set; } = null!;
+    public virtual DbSet<Weather> Weathers { get; set; } = null!;
     
     public ApplicationDbContext() {  }
     
