@@ -9,7 +9,7 @@ namespace EcoPulseBackend.Controllers;
 public class RecommendationController : ControllerBase
 {
     [HttpPost("recommendation")]
-    public IActionResult GetRecommendations(RecommendationGetModel model)
+    public IActionResult GetRecommendation(RecommendationGetModel model)
     {
         var recommendation = SelectRecommendation(model);
 
