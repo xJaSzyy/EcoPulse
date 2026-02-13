@@ -53,25 +53,23 @@ public class RecommendationController : ControllerBase
         }
         else if (flowAvgConcentration > singleAvgConcentration && flowAvgConcentration > queueAvgConcentration)
         {
-            var minDistance = int.MaxValue;
-            
-            var flowDangerZone = tile.VehicleFlowDangerZones.First();
-            for (var pointIndex = 0; pointIndex < flowDangerZone.Points.Count; pointIndex++)
+            var rnd = new Random();
+            var flowZoneIndex = rnd.Next(0, tile.VehicleFlowDangerZones.Count);
+            var flowPointIndex = rnd.Next(0, 3);
+            location = flowPointIndex switch
             {
-                var point = flowDangerZone.Points.GetPointN(pointIndex);
-                
-                var distanceBetweenUserAndFlowPoint = GeoUtils.Distance(userLocation, point);
-                if (distanceBetweenUserAndFlowPoint < minDistance)
-                {
-                    minDistance = (int)distanceBetweenUserAndFlowPoint;
-                    location = point;
-                }
-            }
-            
-            //TODO переделать location у дорог
+                0 => tile.VehicleFlowDangerZones[flowZoneIndex].Points.StartPoint,
+                1 => tile.VehicleFlowDangerZones[flowZoneIndex].Points.Centroid,
+                _ => tile.VehicleFlowDangerZones[flowZoneIndex].Points.EndPoint
+            };
+
             if (singleAvgConcentration > 35.5)
             {
                 description = "дорога перегружена, небольшой выброс от котельной";
+                if (!tile.SingleDangerZones.Any(s => s.Polygon.Intersects(location)))
+                {
+                    location = tile.SingleDangerZones.First().Location;
+                }
             }
             else if (queueAvgConcentration > 35.5)
             {
@@ -142,8 +140,11 @@ public class RecommendationController : ControllerBase
             AverageConcentration = avgConcentration,
             Description = description
         });
-        
-        result.Recommendation = recommendation != string.Empty ? recommendation : result.Recommendation;
+
+        if (recommendation != string.Empty)
+        {
+            result.Recommendation = recommendation;
+        }
     }
 }
 
@@ -152,8 +153,11 @@ public class RecommendationResult
     /// <summary>
     /// Рекомендация
     /// </summary>
-    public string Recommendation { get; set; } = null!;
+    public string? Recommendation { get; set; }
 
+    /// <summary>
+    /// Точки скопления загрязнений
+    /// </summary>
     public List<HotSpot> HotSpots { get; set; } = [];
 }
 

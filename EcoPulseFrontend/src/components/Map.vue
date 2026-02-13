@@ -50,7 +50,7 @@
             v-model="layersState.hotSpot.visible"
             @change="toggleLayer('hotSpot')"
         />
-        Скопления
+        Горячие точки
       </label>
     </div>
 
@@ -125,6 +125,8 @@
         </div>
       </div>
     </div>
+
+    <div v-if="currentRecommendation" class="recommendation-title">{{ currentRecommendation }}</div>
   </div>
 
   <WeatherInfo
@@ -204,6 +206,7 @@ const currentHotSpot = ref(null)
 const singlePopup = ref(null)
 const currentSingle = ref(null)
 const userPosition = ref(null);
+const currentRecommendation = ref(null)
 
 const olLayers = reactive({
   single: null,
@@ -920,7 +923,7 @@ function createHotSpotLayer(recommendationResult) {
   return new VectorLayer({
     source: recommendationSource,
     visible: false,
-    zIndex: 2,
+    zIndex: 6,
     style: feature => {
       const geomType = feature.getGeometry().getType();
 
@@ -999,6 +1002,8 @@ onMounted(async () => {
     tiles: tileGridResult[0].tiles,
     userLocation: userPosition.value
   });
+
+  currentRecommendation.value = recommendationResult.recommendation;
 
   const {
     singleLayer,
@@ -1148,7 +1153,7 @@ onMounted(async () => {
       hideHotSpotPopup()
     }
 
-    if (singleFeature) {
+    if (singleFeature && !hotSpotFeature) {
       const coordinate = evt.coordinate
       showSinglePopup(coordinate, singleFeature)
       
@@ -1485,4 +1490,22 @@ function getHatchPattern(size) {
   color: #555;
 }
 
+.recommendation-title {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  z-index: 10;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>
