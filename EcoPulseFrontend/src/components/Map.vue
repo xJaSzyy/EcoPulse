@@ -44,17 +44,9 @@
         />
         СЗЗ
       </label>
-      <label>
-        <input
-            type="checkbox"
-            v-model="layersState.hotSpot.visible"
-            @change="toggleLayer('hotSpot')"
-        />
-        Горячие точки
-      </label>
     </div>
 
-    <div class="edit-tool-panel">
+    <!--<div class="edit-tool-panel">
       <span class="edit-tool__label" @click="toggleEditPanel">
         Изменить
       </span>
@@ -73,7 +65,7 @@
         />
       </div>
 
-    </div>
+    </div>-->
 
     <div class="city-select">
       <span class="city-select__label" @click="toggleCityDropdown">
@@ -126,7 +118,9 @@
       </div>
     </div>
 
-    <div v-if="currentRecommendation" class="recommendation-title">{{ currentRecommendation }}</div>
+    <div v-if="currentRecommendation?.recommendationLevel" class="recommendation-title">
+      {{ currentRecommendation.recommendationLevel }}: {{ currentRecommendation.recommendationText }}
+    </div>
   </div>
 
   <WeatherInfo
@@ -177,7 +171,6 @@ import {
   getSingleEmissionSourceById, updateVehicleFlowEmissionSource
 } from '../api/emissionSource.js';
 import boilerIcon from '../icons/boiler.png';
-import hotSpotIcon from '../icons/recommendation.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
 import SimulationPanel from '../components/SimulationPanel.vue'
 import {asArray} from "ol/color";
@@ -201,8 +194,6 @@ const modifyFlow = ref(null);
 const showInfo = ref(false);
 const streetName = ref(null);
 
-const hotSpotPopup = ref(null)
-const currentHotSpot = ref(null)
 const singlePopup = ref(null)
 const currentSingle = ref(null)
 const userPosition = ref(null);
@@ -214,7 +205,6 @@ const olLayers = reactive({
   vehicleQueue: null,
   tileGrid: null,
   sanitaryArea: null,
-  hotSpot: null
 })
 
 const layersState = reactive({
@@ -223,7 +213,6 @@ const layersState = reactive({
   vehicleQueue: {visible: false},
   tileGrid: {visible: false},
   sanitaryArea: {visible: false},
-  hotSpot: {visible: false}
 })
 
 const levels = [
@@ -305,51 +294,6 @@ function startCreateModeFlow() {
 
 function startCreateModeQueue() {
   createModeQueue.value = true
-}
-
-function showHotSpotPopup(coordinate, feature) {
-  currentHotSpot.value = {
-    description: feature.get('description'),
-    averageConcentration: feature.get('averageConcentration'),
-  }
-  
-  const popupElement = createHotSpotPopupElement()
-  
-  if (!hotSpotPopup.value) {
-    hotSpotPopup.value = new Overlay({
-      element: popupElement,
-      positioning: 'bottom-center',
-      stopEvent: false,
-      insertFirst: false,
-    })
-    map.value.addOverlay(hotSpotPopup.value)
-  } else {
-    hotSpotPopup.value.setElement(popupElement)
-  }
-  
-  hotSpotPopup.value.setPosition(coordinate)
-}
-
-function hideHotSpotPopup() {
-  if (hotSpotPopup.value) {
-    map.value.removeOverlay(hotSpotPopup.value)
-    hotSpotPopup.value = null
-  }
-  currentHotSpot.value = null
-}
-
-function createHotSpotPopupElement() {
-  const popup = document.createElement('div')
-  popup.className = 'hotSpot-popup'
-  popup.innerHTML = `
-    <div class="popup-content">
-      <div class="popup-text" v-if="currentHotSpot">
-        <strong>Причина:</strong> ${currentHotSpot.value.description}<br>
-        <strong>Общая концентрация:</strong> ${Math.round(currentHotSpot.value.averageConcentration) || 'N/A'} мкг/м³
-      </div>
-    </div>
-  `
-  return popup
 }
 
 function showSinglePopup(coordinate, feature) {
@@ -896,62 +840,20 @@ function createSanitaryAreaLayer(sanitaryAreas) {
   });
 }
 
-function createHotSpotLayer(recommendationResult) {
-  const recommendationSource = new VectorSource()
-
-  recommendationResult.hotSpots.forEach(rec => {
-    const pointFeature = new Feature({
-      geometry: new Point(fromLonLat(rec.location.coordinates)),
-      type: 'hotSpot'
-    })
-    pointFeature.set('averageConcentration', rec.averageConcentration);
-    pointFeature.set('description', rec.description);
-
-    recommendationSource.addFeature(pointFeature)
-  })
-
-  const pointStyle = new Style({
-    image: new Icon({
-      src: hotSpotIcon,
-      scale: 0.075,
-      anchor: [0.5, 1],
-      anchorXUnits: 'fraction',
-      anchorYUnits: 'fraction'
-    })
-  });
-
-  return new VectorLayer({
-    source: recommendationSource,
-    visible: false,
-    zIndex: 6,
-    style: feature => {
-      const geomType = feature.getGeometry().getType();
-
-      if (geomType === 'Point') {
-        return pointStyle;
-      }
-
-      return null;
-    }
-  });
-}
-
 function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendationResult) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
   const tileGridLayer = createTileGridLayer(tileGridResult);
   const sanitaryAreaLayer = createSanitaryAreaLayer(sanitaryAreas);
-  const hotSpotLayer = createHotSpotLayer(recommendationResult);
 
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
   olLayers.vehicleQueue = vehicleQueueLayer;
   olLayers.tileGrid = tileGridLayer;
   olLayers.sanitaryArea = sanitaryAreaLayer;
-  olLayers.hotSpot = hotSpotLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer, hotSpotLayer};
+  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer};
 }
 
 onMounted(async () => {
@@ -998,21 +900,22 @@ onMounted(async () => {
   const userPos = await getUserPosition();
   
   const recommendationResult = await getRecommendations({
-    cityId: tileGridResult[0].cityId,
-    tiles: tileGridResult[0].tiles,
+    tiles: tileGridResult.flatMap(result => result.tiles),
     userLocation: userPosition.value
   });
 
-  currentRecommendation.value = recommendationResult.recommendation;
+  currentRecommendation.value = {
+    recommendationLevel: recommendationResult.recommendationLevel,
+    recommendationText: recommendationResult.recommendationText
+  };
 
   const {
     singleLayer,
     vehicleFlowLayer,
     vehicleQueueLayer,
     tileGridLayer,
-    sanitaryAreaLayer,
-    hotSpotLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendationResult);
+    sanitaryAreaLayer
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
@@ -1022,7 +925,7 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer, hotSpotLayer],
+    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
@@ -1129,31 +1032,16 @@ onMounted(async () => {
     if (evt.dragging) return
     
     const pixel = map.value.getEventPixel(evt.originalEvent)
-    let hotSpotFeature = null
     let singleFeature = null
     
     map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
-      if (layer === olLayers.hotSpot) {
-        hotSpotFeature = feature
-        return false 
-      }
-      else if (layer === olLayers.single) {
+      if (layer === olLayers.single) {
         singleFeature = feature
         return false
       }
     })
 
-    if (hotSpotFeature) {
-      const coordinate = evt.coordinate
-      showHotSpotPopup(coordinate, hotSpotFeature)
-      
-      const mapElement = map.value.getTargetElement()
-      mapElement.style.cursor = 'pointer'
-    } else {
-      hideHotSpotPopup()
-    }
-
-    if (singleFeature && !hotSpotFeature) {
+    if (singleFeature) {
       const coordinate = evt.coordinate
       showSinglePopup(coordinate, singleFeature)
       
@@ -1242,10 +1130,6 @@ const toggleLayer = key => {
 
   if (key === 'vehicleFlow' && modifyFlow.value) {
     modifyFlow.value.setActive(visible);
-  }
-
-  if (key === 'hotSpot' && !visible) {
-    hideHotSpotPopup()
   }
 };
 
@@ -1466,7 +1350,7 @@ function getHatchPattern(size) {
   margin-bottom: 4px;
 }
 
-.hotSpot-popup, .single-popup {
+.single-popup {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -1499,9 +1383,7 @@ function getHatchPattern(size) {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
+  font-size: 14px;
   z-index: 10;
   white-space: nowrap;
   max-width: 90vw;

@@ -32,6 +32,12 @@ public static class DangerZoneUtils
         index = Math.Clamp(index, 0, colors.Count - 1);
         return colors[index].Value;
     }
+
+    public static int GetIndexByConcentration(float concentration)
+    {
+        var pair = ColorMap.FirstOrDefault(p => concentration <= p.Key);
+        return ColorMap.Values.ToList().IndexOf(pair.Value);
+    }
     
     private static readonly SortedDictionary<double, string> ColorMap = new()
     {
