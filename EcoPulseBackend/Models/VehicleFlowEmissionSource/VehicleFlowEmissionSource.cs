@@ -51,4 +51,9 @@ public class VehicleFlowEmissionSource
     /// Средняя скорость движения транспортного потока
     /// </summary>
     public float AverageSpeed { get; set; }
+    
+    /// <summary>
+    /// Дата и время последнего изменения
+    /// </summary>
+    public DateTimeOffset UpdatedAt { get; set; }
 }

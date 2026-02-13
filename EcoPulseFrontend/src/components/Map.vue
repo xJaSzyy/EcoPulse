@@ -178,7 +178,7 @@ import {altKeyOnly, singleClick} from 'ol/events/condition';
 import Text from 'ol/style/Text.js';
 import {getCityById} from "../api/city.js";
 import Overlay from 'ol/Overlay'
-
+import XYZ from 'ol/source/XYZ.js';
 
 const mapRoot = ref(null)
 const map = ref(null)
@@ -1064,7 +1064,7 @@ async function updateModifyFlow() {
     map.value.removeInteraction(modifyFlow.value);
   }
 
-  const mf = new Modify({
+  /*const mf = new Modify({
     source: olLayers.vehicleFlow.getSource(),
     filter: feature => feature.getGeometry().getType() === 'LineString',
     deleteCondition: event => altKeyOnly(event) && singleClick(event),
@@ -1093,7 +1093,7 @@ async function updateModifyFlow() {
   });
 
   map.value.addInteraction(mf);
-  modifyFlow.value = mf;
+  modifyFlow.value = mf;*/
 
   modifyFlow.value.setActive(layersState.vehicleFlow.visible);
 }

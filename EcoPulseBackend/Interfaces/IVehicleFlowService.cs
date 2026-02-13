@@ -16,11 +16,11 @@ public interface IVehicleFlowService
     /// <param name="model">Модель для расчета выбросов движущегося транспорта</param>
     /// <returns></returns>
     public List<EmissionsResult> CalculateEmissionsBatch(VehicleFlowEmissionsCalculateModel model);
-    
+
     /// <summary>
     /// Расчет нескольких зон выбросов
     /// </summary>
     /// <param name="emissionSources">Список источников выбросов</param>
     /// <returns></returns>
-    public List<VehicleFlowDangerZone> CalculateDangerZones(List<VehicleFlowEmissionSource> emissionSources);
+    public Task<List<VehicleFlowDangerZone>> CalculateDangerZones(List<VehicleFlowEmissionSource> emissionSources);
 }
