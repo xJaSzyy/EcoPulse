@@ -47,10 +47,10 @@
       <label>
         <input
             type="checkbox"
-            v-model="layersState.recommendation.visible"
-            @change="toggleLayer('recommendation')"
+            v-model="layersState.hotSpot.visible"
+            @change="toggleLayer('hotSpot')"
         />
-        Рекомендации
+        Скопления
       </label>
     </div>
 
@@ -175,7 +175,7 @@ import {
   getSingleEmissionSourceById, updateVehicleFlowEmissionSource
 } from '../api/emissionSource.js';
 import boilerIcon from '../icons/boiler.png';
-import recommendationIcon from '../icons/recommendation.png';
+import hotSpotIcon from '../icons/recommendation.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
 import SimulationPanel from '../components/SimulationPanel.vue'
 import {asArray} from "ol/color";
@@ -199,8 +199,8 @@ const modifyFlow = ref(null);
 const showInfo = ref(false);
 const streetName = ref(null);
 
-const recommendationPopup = ref(null)
-const currentRecommendation = ref(null)
+const hotSpotPopup = ref(null)
+const currentHotSpot = ref(null)
 const singlePopup = ref(null)
 const currentSingle = ref(null)
 const userPosition = ref(null);
@@ -211,7 +211,7 @@ const olLayers = reactive({
   vehicleQueue: null,
   tileGrid: null,
   sanitaryArea: null,
-  recommendation: null
+  hotSpot: null
 })
 
 const layersState = reactive({
@@ -220,7 +220,7 @@ const layersState = reactive({
   vehicleQueue: {visible: false},
   tileGrid: {visible: false},
   sanitaryArea: {visible: false},
-  recommendation: {visible: false}
+  hotSpot: {visible: false}
 })
 
 const levels = [
@@ -304,43 +304,45 @@ function startCreateModeQueue() {
   createModeQueue.value = true
 }
 
-function showRecommendationPopup(coordinate, feature) {
-  currentRecommendation.value = {
+function showHotSpotPopup(coordinate, feature) {
+  currentHotSpot.value = {
     description: feature.get('description'),
     averageConcentration: feature.get('averageConcentration'),
-    recommendation: feature.get('recommendation'),
   }
   
-  if (!recommendationPopup.value) {
-    recommendationPopup.value = new Overlay({
-      element: createRecommendationPopupElement(),
+  const popupElement = createHotSpotPopupElement()
+  
+  if (!hotSpotPopup.value) {
+    hotSpotPopup.value = new Overlay({
+      element: popupElement,
       positioning: 'bottom-center',
       stopEvent: false,
       insertFirst: false,
     })
-    map.value.addOverlay(recommendationPopup.value)
+    map.value.addOverlay(hotSpotPopup.value)
+  } else {
+    hotSpotPopup.value.setElement(popupElement)
   }
   
-  recommendationPopup.value.setPosition(coordinate)
+  hotSpotPopup.value.setPosition(coordinate)
 }
 
-function hideRecommendationPopup() {
-  if (recommendationPopup.value) {
-    map.value.removeOverlay(recommendationPopup.value)
-    recommendationPopup.value = null
+function hideHotSpotPopup() {
+  if (hotSpotPopup.value) {
+    map.value.removeOverlay(hotSpotPopup.value)
+    hotSpotPopup.value = null
   }
-  currentRecommendation.value = null
+  currentHotSpot.value = null
 }
 
-function createRecommendationPopupElement() {
+function createHotSpotPopupElement() {
   const popup = document.createElement('div')
-  popup.className = 'recommendation-popup'
+  popup.className = 'hotSpot-popup'
   popup.innerHTML = `
     <div class="popup-content">
-      <div class="popup-text" v-if="currentRecommendation">
-        <strong>Рекомендация:</strong> ${currentRecommendation.value.recommendation}<br>
-        <strong>Причина:</strong> ${currentRecommendation.value.description}<br>
-        <strong>Концентрация:</strong> ${Math.round(currentRecommendation.value.averageConcentration) || 'N/A'} мкг/м³
+      <div class="popup-text" v-if="currentHotSpot">
+        <strong>Причина:</strong> ${currentHotSpot.value.description}<br>
+        <strong>Общая концентрация:</strong> ${Math.round(currentHotSpot.value.averageConcentration) || 'N/A'} мкг/м³
       </div>
     </div>
   `
@@ -891,16 +893,15 @@ function createSanitaryAreaLayer(sanitaryAreas) {
   });
 }
 
-function createRecommendationLayer(recommendations) {
+function createHotSpotLayer(recommendationResult) {
   const recommendationSource = new VectorSource()
 
-  recommendations.forEach(rec => {
+  recommendationResult.hotSpots.forEach(rec => {
     const pointFeature = new Feature({
       geometry: new Point(fromLonLat(rec.location.coordinates)),
-      type: 'recommendation'
+      type: 'hotSpot'
     })
     pointFeature.set('averageConcentration', rec.averageConcentration);
-    pointFeature.set('recommendation', rec.recommendation);
     pointFeature.set('description', rec.description);
 
     recommendationSource.addFeature(pointFeature)
@@ -908,7 +909,7 @@ function createRecommendationLayer(recommendations) {
 
   const pointStyle = new Style({
     image: new Icon({
-      src: recommendationIcon,
+      src: hotSpotIcon,
       scale: 0.075,
       anchor: [0.5, 1],
       anchorXUnits: 'fraction',
@@ -932,22 +933,22 @@ function createRecommendationLayer(recommendations) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendations) {
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendationResult) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
   const tileGridLayer = createTileGridLayer(tileGridResult);
   const sanitaryAreaLayer = createSanitaryAreaLayer(sanitaryAreas);
-  const recommendationLayer = createRecommendationLayer(recommendations);
+  const hotSpotLayer = createHotSpotLayer(recommendationResult);
 
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
   olLayers.vehicleQueue = vehicleQueueLayer;
   olLayers.tileGrid = tileGridLayer;
   olLayers.sanitaryArea = sanitaryAreaLayer;
-  olLayers.recommendation = recommendationLayer;
+  olLayers.hotSpot = hotSpotLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer, recommendationLayer};
+  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer, hotSpotLayer};
 }
 
 onMounted(async () => {
@@ -993,7 +994,7 @@ onMounted(async () => {
 
   const userPos = await getUserPosition();
   
-  const recommendations = await getRecommendations({
+  const recommendationResult = await getRecommendations({
     cityId: tileGridResult[0].cityId,
     tiles: tileGridResult[0].tiles,
     userLocation: userPosition.value
@@ -1005,8 +1006,8 @@ onMounted(async () => {
     vehicleQueueLayer,
     tileGridLayer,
     sanitaryAreaLayer,
-    recommendationLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendations);
+    hotSpotLayer
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendationResult);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
@@ -1016,7 +1017,7 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer, recommendationLayer],
+    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer, hotSpotLayer],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
@@ -1123,12 +1124,12 @@ onMounted(async () => {
     if (evt.dragging) return
     
     const pixel = map.value.getEventPixel(evt.originalEvent)
-    let recommendationFeature = null
+    let hotSpotFeature = null
     let singleFeature = null
     
     map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
-      if (layer === olLayers.recommendation) {
-        recommendationFeature = feature
+      if (layer === olLayers.hotSpot) {
+        hotSpotFeature = feature
         return false 
       }
       else if (layer === olLayers.single) {
@@ -1137,14 +1138,14 @@ onMounted(async () => {
       }
     })
 
-    if (recommendationFeature) {
+    if (hotSpotFeature) {
       const coordinate = evt.coordinate
-      showRecommendationPopup(coordinate, recommendationFeature)
+      showHotSpotPopup(coordinate, hotSpotFeature)
       
       const mapElement = map.value.getTargetElement()
       mapElement.style.cursor = 'pointer'
     } else {
-      hideRecommendationPopup()
+      hideHotSpotPopup()
     }
 
     if (singleFeature) {
@@ -1238,8 +1239,8 @@ const toggleLayer = key => {
     modifyFlow.value.setActive(visible);
   }
 
-  if (key === 'recommendation' && !visible) {
-    hideRecommendationPopup()
+  if (key === 'hotSpot' && !visible) {
+    hideHotSpotPopup()
   }
 };
 
@@ -1460,7 +1461,7 @@ function getHatchPattern(size) {
   margin-bottom: 4px;
 }
 
-.recommendation-popup, .single-popup {
+.hotSpot-popup, .single-popup {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);

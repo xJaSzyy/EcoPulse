@@ -17,28 +17,23 @@ public class RecommendationController : ControllerBase
         return Ok(recommendations);
     }
 
-    private List<RecommendationResult> DefineRecommendations(RecommendationGetModel model)
+    private RecommendationResult DefineRecommendations(RecommendationGetModel model)
     {
-        var recommendations = new List<RecommendationResult>();
+        var recommendation = new RecommendationResult();
 
         foreach (var tile in model.Tiles)
         {
-            var recommendation = SelectRecommendation(model.UserLocation, tile);
-
-            if (recommendation != null)
-            {
-                recommendations.Add(recommendation);
-            }
+            SelectRecommendation(recommendation, model.UserLocation, tile);
         }
 
-        return recommendations;
+        return recommendation;
     }
 
-    private RecommendationResult? SelectRecommendation(Point userLocation, TileModel tile)
+    private void SelectRecommendation(RecommendationResult result, Point userLocation, TileModel tile)
     {
         var location = tile.Tile.Centroid;
-        var recommendation = "нет рекомендации";
-        var description = "";
+        var recommendation = string.Empty;
+        var description = string.Empty;
 
         var singleAvgConcentration = tile.SingleDangerZones.Count > 0 ? tile.SingleDangerZones.Average(s => s.AverageConcentration) : 0;
         var flowAvgConcentration = tile.VehicleFlowDangerZones.Count > 0 ? tile.VehicleFlowDangerZones.Average(s => s.AverageConcentration) : 0;
@@ -48,7 +43,7 @@ public class RecommendationController : ControllerBase
         
         if (avgConcentration < 225.5) 
         {
-            return null;
+            return;
         }
         
         if (singleAvgConcentration > flowAvgConcentration && singleAvgConcentration > queueAvgConcentration)
@@ -141,17 +136,38 @@ public class RecommendationController : ControllerBase
             }
         }
         
-        return new RecommendationResult
+        result.HotSpots.Add(new HotSpot
         {
             Location = location,
             AverageConcentration = avgConcentration,
-            Recommendation = recommendation,
             Description = description
-        };
+        });
+        
+        result.Recommendation = recommendation != string.Empty ? recommendation : result.Recommendation;
     }
 }
 
 public class RecommendationResult
+{
+    /// <summary>
+    /// Рекомендация
+    /// </summary>
+    public string Recommendation { get; set; } = null!;
+
+    public List<HotSpot> HotSpots { get; set; } = [];
+}
+
+public class RecommendationGetModel
+{
+    public int CityId { get; set; }
+    
+    public List<TileModel> Tiles { get; set; } = [];
+    
+    [Column(TypeName = "geometry(Point, 4326)")]
+    public Point UserLocation { get; set; } = null!;
+}
+
+public class HotSpot
 {
     /// <summary>
     /// Координаты
@@ -163,21 +179,9 @@ public class RecommendationResult
     /// Среднее значение концентрации
     /// </summary>
     public float AverageConcentration { get; set; }
-
+    
     /// <summary>
-    /// Рекомендация
+    /// Причина скопления загрязнений
     /// </summary>
-    public string Recommendation { get; set; } = null!;
-
     public string Description { get; set; } = null!;
-}
-
-public class RecommendationGetModel
-{
-    public int CityId { get; set; }
-    
-    public List<TileModel> Tiles { get; set; } = new();
-    
-    [Column(TypeName = "geometry(Point, 4326)")]
-    public Point UserLocation { get; set; } = null!;
 }
