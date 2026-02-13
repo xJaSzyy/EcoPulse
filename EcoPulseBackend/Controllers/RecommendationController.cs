@@ -58,7 +58,20 @@ public class RecommendationController : ControllerBase
         }
         else if (flowAvgConcentration > singleAvgConcentration && flowAvgConcentration > queueAvgConcentration)
         {
-            location = tile.VehicleFlowDangerZones.First().Points.GetPointN(tile.VehicleFlowDangerZones.First().Points.Count / 2);
+            var minDistance = int.MaxValue;
+            
+            var flowDangerZone = tile.VehicleFlowDangerZones.First();
+            for (var pointIndex = 0; pointIndex < flowDangerZone.Points.Count; pointIndex++)
+            {
+                var point = flowDangerZone.Points.GetPointN(pointIndex);
+                
+                var distanceBetweenUserAndFlowPoint = GeoUtils.Distance(userLocation, point);
+                if (distanceBetweenUserAndFlowPoint < minDistance)
+                {
+                    minDistance = (int)distanceBetweenUserAndFlowPoint;
+                    location = point;
+                }
+            }
             
             //TODO переделать location у дорог
             if (singleAvgConcentration > 35.5)

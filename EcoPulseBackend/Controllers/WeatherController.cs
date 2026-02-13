@@ -42,7 +42,7 @@ public class WeatherController : ControllerBase
 
         try
         {
-            var currentDate = DateTime.UtcNow.Date;
+            var currentDate = DateTime.UtcNow;
 
             var weather = _dbContext.Weathers.FirstOrDefault(w => w.Date >= currentDate.AddMinutes(-CacheInMinutes) && w.Date <= currentDate);
 
