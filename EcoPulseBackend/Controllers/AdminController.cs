@@ -1,4 +1,5 @@
 using EcoPulseBackend.Contexts;
+using EcoPulseBackend.Models.City;
 using EcoPulseBackend.Models.Weather;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,11 +15,14 @@ public class AdminController : ControllerBase
         _dbContext = dbContext;
     }
 
+    #region Weather
+
     [HttpGet("admin/weather")]
     public IActionResult GetWeather([FromQuery] int page, [FromQuery] int limit)
     {
         var total = _dbContext.Weathers.Count();
         var weathers = _dbContext.Weathers
+            .OrderBy(w => w.Id)
             .Skip((page - 1) * limit)  
             .Take(limit)
             .ToList();
@@ -90,6 +94,86 @@ public class AdminController : ControllerBase
 
         return Ok(weather);
     }
+
+    #endregion
+    
+    #region City
+
+    [HttpGet("admin/city")]
+    public IActionResult GetCity([FromQuery] int page, [FromQuery] int limit)
+    {
+        var total = _dbContext.Cities.Count();
+        var cities = _dbContext.Cities
+            .OrderBy(w => w.Id)
+            .Skip((page - 1) * limit)  
+            .Take(limit)
+            .ToList();
+
+        var result = new AdminResultModel<City>
+        {
+            Data = cities,
+            Total = total,
+            Page = page,
+            Limit = limit,
+            Pages = (int)Math.Ceiling((double)total / limit)
+        };
+        
+        return Ok(result);
+    }
+    
+    [HttpPost("admin/city")]
+    public async Task<IActionResult> AddCity([FromBody] CityAddModel model)
+    {
+        var city = new City
+        {
+            Name = model.Name,
+            Location = model.Location,
+            Polygon = model.Polygon
+        };
+        
+        _dbContext.Cities.Add(city);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(city);
+    }
+    
+    [HttpPut("admin/city")]
+    public async Task<IActionResult> UpdateCity([FromBody] CityUpdateModel model)
+    {
+        var city = _dbContext.Cities.FirstOrDefault(w => w.Id == model.Id);
+
+        if (city == null)
+        {
+            return NotFound();
+        }
+
+        city.Name = model.Name ?? city.Name;
+        city.Location = model.Location ?? city.Location;
+        city.Polygon = model.Polygon ?? city.Polygon;
+        
+        _dbContext.Cities.Update(city);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(city);
+    }
+    
+    [HttpDelete("admin/city/{id}")]
+    public async Task<IActionResult> DeleteCity(int id)
+    {
+        var city = _dbContext.Cities.FirstOrDefault(w => w.Id == id);
+
+        if (city == null)
+        {
+            return NotFound();
+        }
+        
+        _dbContext.Cities.Remove(city);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(city);
+    }
+
+    #endregion
 }
 
 public class AdminResultModel<T>

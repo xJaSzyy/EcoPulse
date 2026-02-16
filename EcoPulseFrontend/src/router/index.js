@@ -52,9 +52,19 @@ const routes = [
     component: () => import('../components/Map.vue')
   },
   {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../components/AdminDashboard.vue')
+  },
+  {
     path: '/admin/weather',
     name: 'admin-weather',
     component: () => import('../views/AdminWeatherView.vue')
+  },
+  {
+    path: '/admin/city',
+    name: 'admin-city',
+    component: () => import('../views/AdminCityView.vue')
   },
 ]
 
