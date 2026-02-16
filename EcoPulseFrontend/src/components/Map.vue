@@ -260,6 +260,11 @@ const getUserPosition = () => {
   };
 
 const toggleCityDropdown = async () => {
+  if (!cityDropdownOpen.value) {
+    cityDropdownOpen.value = true
+    return
+  }
+  
   if (cityDropdownOpen.value) {  
     const lastCities = JSON.parse(localStorage.getItem("selectedCities") || '[]')
     localStorage.setItem("selectedCities", JSON.stringify(selectedCities.value))
@@ -277,11 +282,11 @@ const toggleCityDropdown = async () => {
       }
     }
     
+    cityDropdownOpen.value = false
     await updateLayers()
   }
-  
-  cityDropdownOpen.value = !cityDropdownOpen.value
 }
+
 
 const toggleEditPanel = () => {
   editPanelOpen.value = !editPanelOpen.value
@@ -1095,7 +1100,7 @@ async function updateModifyFlow() {
   map.value.addInteraction(mf);
   modifyFlow.value = mf;*/
 
-  modifyFlow.value.setActive(layersState.vehicleFlow.visible);
+  //modifyFlow.value.setActive(layersState.vehicleFlow.visible);
 }
 
 function randomInt(min, max) {

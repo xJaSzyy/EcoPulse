@@ -41,6 +41,11 @@ public class TileGridService : ITileGridService
                         .ToList();
                     
                     var blendedColor = BlendColors(concentrations);
+
+                    if (concentrations.Count == 0)
+                    {
+                        continue;
+                    }
                     
                     tiles.Add(new TileModel
                     {
