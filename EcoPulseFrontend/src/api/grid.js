@@ -1,7 +1,7 @@
 import {API_BASE_URL} from "./config.js";
 
 export async function calculateTileGrid(payload) {
-    const response = await fetch(API_BASE_URL + '/tile-grid/calculate', {
+    const response = await fetch(API_BASE_URL + '/grid/tile', {
         method: 'POST', headers: {
             'Content-Type': 'application/json', 'Accept': 'application/json'
         }, body: JSON.stringify(payload)

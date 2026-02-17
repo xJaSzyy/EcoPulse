@@ -62,7 +62,12 @@ public class TileGridService : ITileGridService
     
         return tiles;
     }
-    
+
+    public List<TileModel> GenerateTileArea(Polygon cityPolygon, TileGridCalculateModel model)
+    {
+        throw new NotImplementedException();
+    }
+
     private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)
     {
         var coords = new[]
