@@ -2,6 +2,7 @@ using EcoPulseBackend.Contexts;
 using EcoPulseBackend.Interfaces;
 using EcoPulseBackend.Models.TileGrid;
 using Microsoft.AspNetCore.Mvc;
+using NetTopologySuite.Geometries;
 
 [ApiController]
 public class GridController : ControllerBase
@@ -48,7 +49,7 @@ public class GridController : ControllerBase
 
         foreach (var city in cities)
         {
-            var tiles = _tileGridService.GenerateTileGrid(city.Polygon, model);
+            var tiles = _tileGridService.GenerateTileArea(city.Polygon, model);
             results.Add(new TileGridResult
             {
                 CityId = city.Id,

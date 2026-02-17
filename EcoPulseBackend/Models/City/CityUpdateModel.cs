@@ -24,6 +24,6 @@ public class CityUpdateModel
     /// <summary>
     /// Границы
     /// </summary>
-    [Column(TypeName = "geometry(Polygon, 4326)")]
-    public Polygon? Polygon { get; set; } 
+    [Column(TypeName = "geometry(MultiPolygon, 4326)")]
+    public MultiPolygon? Polygon { get; set; } 
 }

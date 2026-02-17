@@ -66,7 +66,7 @@ public class ApplicationDbContext : DbContext
                 .HasColumnType("geometry(Point, 4326)");
 
             entity.Property(e => e.Polygon)
-                .HasColumnType("geometry(Polygon, 4326)");
+                .HasColumnType("geometry(MultiPolygon, 4326)");
         
             entity.HasIndex(e => e.Location).HasMethod("GIST");
         });

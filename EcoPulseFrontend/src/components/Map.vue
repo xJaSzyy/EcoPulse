@@ -183,7 +183,7 @@ import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
   calculateTrafficLightQueueDangerZones
 } from '../api/dangerZone.js';
-import { calculateTileGrid } from '../api/grid.js';
+import { calculateTileGrid, calculateTileArea } from '../api/grid.js';
 import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
 import { getRecommendations } from '../api/recommendation.js';
 import {getCurrentWeather} from '../api/weather.js';
@@ -930,9 +930,9 @@ onMounted(async () => {
     trafficLightQueueDangerZones: vehicleQueueDangerZones
   });
 
-  const areaGridResult = await calculateTileGrid({
+  const areaGridResult = await calculateTileArea({
     cityIds: selectedCities.value.map(c => c.id),
-    tileSize: 2500,
+    tileSize: 750,
     singleDangerZones: singleDangerZones,
     vehicleFlowDangerZones: vehicleFlowDangerZones,
     trafficLightQueueDangerZones: vehicleQueueDangerZones

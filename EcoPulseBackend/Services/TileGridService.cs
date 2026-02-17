@@ -9,7 +9,7 @@ public class TileGridService : ITileGridService
 {
     private readonly GeometryFactory _geometryFactory = new();
     
-    public List<TileModel> GenerateTileGrid(Polygon mainPolygon, TileGridCalculateModel model)
+    public List<TileModel> GenerateTileGrid(MultiPolygon mainPolygon, TileGridCalculateModel model)
     {
         var centerLat = mainPolygon.Centroid.Y; 
         var latStep = model.TileSize / 111000; 
@@ -42,10 +42,10 @@ public class TileGridService : ITileGridService
                     
                     var blendedColor = BlendColors(concentrations);
 
-                    if (concentrations.Count == 0)
+                    /*if (concentrations.Count == 0)
                     {
                         continue;
-                    }
+                    }*/
                     
                     tiles.Add(new TileModel
                     {
@@ -63,9 +63,22 @@ public class TileGridService : ITileGridService
         return tiles;
     }
 
-    public List<TileModel> GenerateTileArea(Polygon cityPolygon, TileGridCalculateModel model)
+    public List<TileModel> GenerateTileArea(MultiPolygon mainPolygon, TileGridCalculateModel model)
     {
-        throw new NotImplementedException();
+        var tiles = new List<TileModel>();
+
+        int i = 0;
+        foreach (var polygon in mainPolygon)
+        {
+            tiles.Add(new TileModel
+            {
+                Tile = polygon as Polygon,
+                Color = DangerZoneUtils.GetColorByIndex(i)
+            });
+            i++;
+        }
+
+        return tiles;
     }
 
     private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)
