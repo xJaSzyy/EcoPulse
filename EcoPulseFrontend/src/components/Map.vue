@@ -1250,7 +1250,7 @@ function getHatchPattern(size) {
 
 .tileLayer-panel {
   position: absolute;
-  top: 240px;
+  top: 144px;
   left: 24px;
   padding: 8px 12px;
   background: white;

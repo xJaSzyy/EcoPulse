@@ -8,12 +8,12 @@ using NetTopologySuite.Geometries;
 public class GridController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
-    private readonly ITileGridService _tileGridService;
+    private readonly IGridService _gridService;
 
-    public GridController(ApplicationDbContext dbContext, ITileGridService tileGridService)
+    public GridController(ApplicationDbContext dbContext, IGridService gridService)
     {
         _dbContext = dbContext;
-        _tileGridService = tileGridService;
+        _gridService = gridService;
     }
 
     [HttpPost("grid/tile")]
@@ -27,7 +27,12 @@ public class GridController : ControllerBase
 
         foreach (var city in cities)
         {
-            var tiles = _tileGridService.GenerateTileGrid(city.Polygon, model);
+            if (city.Polygon == null)
+            {
+                continue;
+            }
+            
+            var tiles = _gridService.GenerateTileGrid(city.Polygon, model);
             results.Add(new TileGridResult
             {
                 CityId = city.Id,
@@ -49,7 +54,12 @@ public class GridController : ControllerBase
 
         foreach (var city in cities)
         {
-            var tiles = _tileGridService.GenerateTileArea(city.Polygon, model);
+            if (city.Polygon == null)
+            {
+                continue;
+            }
+            
+            var tiles = _gridService.GenerateTileArea(city.Polygon, model);
             results.Add(new TileGridResult
             {
                 CityId = city.Id,

@@ -4,7 +4,7 @@ using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Interfaces;
 
-public interface ITileGridService
+public interface IGridService
 {
     List<TileModel> GenerateTileGrid(MultiPolygon cityPolygon, TileGridCalculateModel model);
     

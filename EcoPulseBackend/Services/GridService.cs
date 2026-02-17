@@ -5,7 +5,7 @@ using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Services;
 
-public class TileGridService : ITileGridService
+public class GridService : IGridService
 {
     private readonly GeometryFactory _geometryFactory = new();
     
@@ -67,15 +67,29 @@ public class TileGridService : ITileGridService
     {
         var tiles = new List<TileModel>();
 
-        int i = 0;
         foreach (var polygon in mainPolygon)
         {
+            var intersectingSingleZones = model.SingleDangerZones.Where(x => x.Polygon.Intersects(polygon)).ToList();
+            var intersectingVehicleFlowZones = model.VehicleFlowDangerZones.Where(x => x.Points.Intersects(polygon)).ToList();
+            var intersectingTrafficLightQueueZones = model.TrafficLightQueueDangerZones.Where(x => x.Location.Intersects(polygon)).ToList();
+
+            var concentrations = intersectingSingleZones
+                .Select(s => s.AverageConcentration)
+                .Concat(intersectingVehicleFlowZones.Select(f => f.AverageConcentration))
+                .Concat(intersectingTrafficLightQueueZones.Select(q => q.AverageConcentration))
+                .ToList();
+                    
+            var blendedColor = BlendColors(concentrations);
+            
             tiles.Add(new TileModel
             {
-                Tile = polygon as Polygon,
-                Color = DangerZoneUtils.GetColorByIndex(i)
+                Tile = (polygon as Polygon)!,
+                Color = blendedColor,
+                AverageConcentration = concentrations.Count != 0 ? (float)Math.Round(concentrations.Average(), 1) : -1,
+                SingleDangerZones = intersectingSingleZones,
+                VehicleFlowDangerZones = intersectingVehicleFlowZones,
+                VehicleQueueDangerZones = intersectingTrafficLightQueueZones
             });
-            i++;
         }
 
         return tiles;
