@@ -20,13 +20,9 @@ public class GridService : IGridService
         var envelope = mainPolygon.EnvelopeInternal;
         var tiles = new List<TileModel>();
 
-        for (var lon = Math.Floor(envelope.MinX / lonStep) * lonStep;
-             lon < envelope.MaxX;
-             lon += lonStep)
+        for (var lon = Math.Floor(envelope.MinX / lonStep) * lonStep; lon < envelope.MaxX; lon += lonStep)
         {
-            for (var lat = Math.Floor(envelope.MinY / latStep) * latStep;
-                 lat < envelope.MaxY;
-                 lat += latStep)
+            for (var lat = Math.Floor(envelope.MinY / latStep) * latStep; lat < envelope.MaxY; lat += latStep)
             {
                 var tilePolygon = CreateTilePolygon(lon, lat, lonStep, latStep);
 
@@ -35,12 +31,11 @@ public class GridService : IGridService
                     var concentrations = GetConcentrations(model.SingleDangerZones, model.VehicleFlowDangerZones, model.TrafficLightQueueDangerZones, tilePolygon);
 
                     var color = DangerZoneUtils.GetColorByIndex(0);
-
                     if (concentrations.Count > 0)
                     {
                         color = DangerZoneUtils.GetColorByConcentration(concentrations.Average());
                     }
-
+                    
                     tiles.Add(new TileModel
                     {
                         Tile = tilePolygon,
@@ -51,6 +46,12 @@ public class GridService : IGridService
             }
         }
 
+        var avgConcentration = tiles.Where(x => x.AverageConcentration > 0).Select(x => x.AverageConcentration).ToList().Average();
+        foreach (var tile in tiles.Where(x => x.AverageConcentration == -1))
+        {
+            tile.Color = DangerZoneUtils.GetColorByConcentration(avgConcentration);
+        }
+
         return MergeTilesByColor(tiles);
     }
     
@@ -58,10 +59,10 @@ public class GridService : IGridService
     {
         var tiles = new List<TileModel>();
 
-        foreach (var polygon in mainPolygon)
+        foreach (var area in mainPolygon)
         {
             var concentrations = GetConcentrations(model.SingleDangerZones, model.VehicleFlowDangerZones,
-                model.TrafficLightQueueDangerZones, (polygon as Polygon)!);
+                model.TrafficLightQueueDangerZones, (area as Polygon)!);
             
             var color = DangerZoneUtils.GetColorByIndex(0);
 
@@ -72,7 +73,7 @@ public class GridService : IGridService
 
             tiles.Add(new TileModel
             {
-                Tile = (polygon as Polygon)!,
+                Tile = (area as Polygon)!,
                 Color = color,
                 AverageConcentration = concentrations.Count != 0 ? concentrations.Average() : -1
             });
@@ -81,11 +82,11 @@ public class GridService : IGridService
         return tiles;
     }
 
-    private List<float> GetConcentrations(List<SingleDangerZone> singleZones, List<VehicleFlowDangerZone> flowZones, List<TrafficLightQueueDangerZone> queueZones, Polygon multiPolygon)
+    private List<float> GetConcentrations(List<SingleDangerZone> singleZones, List<VehicleFlowDangerZone> flowZones, List<TrafficLightQueueDangerZone> queueZones, Polygon polygon)
     {
-        var intersectingSingleZones = singleZones.Where(x => x.Polygon.Intersects(multiPolygon)).ToList();
-        var intersectingVehicleFlowZones = flowZones.Where(x => x.Points.Intersects(multiPolygon)).ToList();
-        var intersectingTrafficLightQueueZones = queueZones.Where(x => x.Location.Intersects(multiPolygon)).ToList();
+        var intersectingSingleZones = singleZones.Where(x => x.Polygon.Intersects(polygon)).ToList();
+        var intersectingVehicleFlowZones = flowZones.Where(x => x.Points.Intersects(polygon)).ToList();
+        var intersectingTrafficLightQueueZones = queueZones.Where(x => x.Location.Intersects(polygon)).ToList();
 
         return intersectingSingleZones
             .Select(s => s.AverageConcentration)

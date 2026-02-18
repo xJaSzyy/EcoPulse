@@ -904,8 +904,6 @@ onMounted(async () => {
     windDirection: currentWeather.windDirection,
   }
 
-  await updateLayers();
-
   const singleDangerZones = await calculateSingleDangerZones({
     pollutant: 2, // solid particles
     airTemp: currentWeather.temperature,
