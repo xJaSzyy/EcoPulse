@@ -1,4 +1,5 @@
-﻿using EcoPulseBackend.Contexts;
+﻿using System.Globalization;
+using EcoPulseBackend.Contexts;
 using EcoPulseBackend.Enums;
 using EcoPulseBackend.Extensions;
 using EcoPulseBackend.Interfaces;
@@ -13,6 +14,8 @@ public class VehicleFlowService : IVehicleFlowService
 {
     private readonly ApplicationDbContext _dbContext;
 
+    private const int CacheInMinutes = 15;
+    
     public VehicleFlowService(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
@@ -29,7 +32,7 @@ public class VehicleFlowService : IVehicleFlowService
         return pollutants.OrderBy(p => (int)p).Select(pollutant => CalculateVehicleFlowEmissions(pollutant, model)).OfType<EmissionsResult>().ToList();
     }
     
-    public List<VehicleFlowDangerZone> CalculateDangerZones(List<VehicleFlowEmissionSource> emissionSources)
+    public async Task<List<VehicleFlowDangerZone>> CalculateDangerZones(List<VehicleFlowEmissionSource> emissionSources)
     {
         var result = new List<VehicleFlowDangerZone>();
         
@@ -38,6 +41,17 @@ public class VehicleFlowService : IVehicleFlowService
             var points = source.Points;
             
             var length = (float)GeoUtils.CalculateHaversineLength(points.Coordinates);
+
+            var currentDate = DateTime.UtcNow;
+            if (source.UpdatedAt < currentDate.AddMinutes(-CacheInMinutes))
+            {
+                var rnd = new Random();
+                source.MaxTrafficIntensity = rnd.Next(25, 41) * (length / 1000f);
+                source.AverageSpeed = rnd.Next(50, 71);
+                source.UpdatedAt = currentDate;
+                _dbContext.VehicleFlowEmissionSources.Update(source);
+                await _dbContext.SaveChangesAsync();
+            }
             
             var calculateModel = new VehicleFlowEmissionsCalculateModel
             {
@@ -46,7 +60,7 @@ public class VehicleFlowService : IVehicleFlowService
                     new VehicleGroup
                     {
                         VehicleType = source.VehicleType,
-                        MaxTrafficIntensity = source.MaxTrafficIntensity * (length / 1000f),
+                        MaxTrafficIntensity = source.MaxTrafficIntensity,
                         AverageSpeed = source.AverageSpeed
                     }
                 ],

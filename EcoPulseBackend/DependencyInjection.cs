@@ -18,7 +18,7 @@ public static class DependencyInjection
         services.AddScoped<ITrafficLightQueueService, TrafficLightQueueService>();
         services.AddScoped<IOpenCoalWarehouseService, OpenCoalWarehouseService>();
         services.AddScoped<IEmissionService, EmissionService>();
-        services.AddScoped<ITileGridService, TileGridService>();
+        services.AddScoped<IGridService, GridService>();
     }
 
     public static void AddDatabase(this IServiceCollection services, ConfigurationManager configuration)

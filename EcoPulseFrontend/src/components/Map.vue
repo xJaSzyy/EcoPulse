@@ -46,6 +46,28 @@
       </label>
     </div>
 
+    <div class="tileLayer-panel" v-if="layersState.tileGrid.visible">
+      <label>
+        <input
+            type="radio"
+            v-model="selectedGridLayer"
+            value="tile"
+            @change="toggleLayer('tile')"
+        />
+        Ячейки
+      </label>
+      <label>
+        <input
+            type="radio"
+            v-model="selectedGridLayer"
+            value="area"
+            @change="toggleLayer('area')"
+        />
+        Районы
+      </label>
+    </div>
+
+
     <!--<div class="edit-tool-panel">
       <span class="edit-tool__label" @click="toggleEditPanel">
         Изменить
@@ -161,7 +183,7 @@ import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
   calculateTrafficLightQueueDangerZones
 } from '../api/dangerZone.js';
-import { calculateTileGrid } from '../api/tileGrid.js';
+import { calculateTileGrid, calculateTileArea } from '../api/grid.js';
 import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
 import { getRecommendations } from '../api/recommendation.js';
 import {getCurrentWeather} from '../api/weather.js';
@@ -178,7 +200,7 @@ import {altKeyOnly, singleClick} from 'ol/events/condition';
 import Text from 'ol/style/Text.js';
 import {getCityById} from "../api/city.js";
 import Overlay from 'ol/Overlay'
-
+import XYZ from 'ol/source/XYZ.js';
 
 const mapRoot = ref(null)
 const map = ref(null)
@@ -199,20 +221,26 @@ const currentSingle = ref(null)
 const userPosition = ref(null);
 const currentRecommendation = ref(null)
 
+const selectedGridLayer = ref('tile')
+
 const olLayers = reactive({
   single: null,
   vehicleFlow: null,
   vehicleQueue: null,
-  tileGrid: null,
   sanitaryArea: null,
+  tileGrid: null,
+  tile: null,
+  area: null,
 })
 
 const layersState = reactive({
-  single: {visible: true},
+  single: {visible: false},
   vehicleFlow: {visible: false},
   vehicleQueue: {visible: false},
-  tileGrid: {visible: false},
   sanitaryArea: {visible: false},
+  tileGrid: {visible: false},
+  tile: {visible: false},
+  area: {visible: false}
 })
 
 const levels = [
@@ -260,6 +288,11 @@ const getUserPosition = () => {
   };
 
 const toggleCityDropdown = async () => {
+  if (!cityDropdownOpen.value) {
+    cityDropdownOpen.value = true
+    return
+  }
+  
   if (cityDropdownOpen.value) {  
     const lastCities = JSON.parse(localStorage.getItem("selectedCities") || '[]')
     localStorage.setItem("selectedCities", JSON.stringify(selectedCities.value))
@@ -277,11 +310,11 @@ const toggleCityDropdown = async () => {
       }
     }
     
+    cityDropdownOpen.value = false
     await updateLayers()
   }
-  
-  cityDropdownOpen.value = !cityDropdownOpen.value
 }
+
 
 const toggleEditPanel = () => {
   editPanelOpen.value = !editPanelOpen.value
@@ -798,7 +831,7 @@ function createTileGridLayer(tileGridResult) {
         }),
         stroke: new Stroke({
           color: 'black', 
-          width: 0.5
+          width: 0.1
         })
       });
     }
@@ -840,20 +873,22 @@ function createSanitaryAreaLayer(sanitaryAreas) {
   });
 }
 
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas, recommendationResult) {
+function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, sanitaryAreas, tileGridResult, areaGridResult) {
   const singleLayer = createSingleLayer(singleDangerZones);
   const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
   const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
-  const tileGridLayer = createTileGridLayer(tileGridResult);
   const sanitaryAreaLayer = createSanitaryAreaLayer(sanitaryAreas);
+  const tileGridLayer = createTileGridLayer(tileGridResult);
+  const areaGridLayer = createTileGridLayer(areaGridResult);
 
   olLayers.single = singleLayer;
   olLayers.vehicleFlow = vehicleFlowLayer;
   olLayers.vehicleQueue = vehicleQueueLayer;
-  olLayers.tileGrid = tileGridLayer;
   olLayers.sanitaryArea = sanitaryAreaLayer;
+  olLayers.tile = tileGridLayer;
+  olLayers.area = areaGridLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer, sanitaryAreaLayer};
+  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, sanitaryAreaLayer, tileGridLayer, areaGridLayer};
 }
 
 onMounted(async () => {
@@ -868,8 +903,6 @@ onMounted(async () => {
     windSpeed: currentWeather.windSpeed,
     windDirection: currentWeather.windDirection,
   }
-
-  await updateLayers();
 
   const singleDangerZones = await calculateSingleDangerZones({
     pollutant: 2, // solid particles
@@ -895,6 +928,14 @@ onMounted(async () => {
     trafficLightQueueDangerZones: vehicleQueueDangerZones
   });
 
+  const areaGridResult = await calculateTileArea({
+    cityIds: selectedCities.value.map(c => c.id),
+    tileSize: 750,
+    singleDangerZones: singleDangerZones,
+    vehicleFlowDangerZones: vehicleFlowDangerZones,
+    trafficLightQueueDangerZones: vehicleQueueDangerZones
+  });
+
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
 
   const userPos = await getUserPosition();
@@ -913,9 +954,10 @@ onMounted(async () => {
     singleLayer,
     vehicleFlowLayer,
     vehicleQueueLayer,
+    sanitaryAreaLayer,
     tileGridLayer,
-    sanitaryAreaLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, tileGridResult, sanitaryAreas);
+    areaGridLayer
+  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, sanitaryAreas, tileGridResult, areaGridResult);
 
   let coords = [86.0833, 55.3333]
   if (selectedCities.value.length > 0) {
@@ -925,7 +967,7 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, tileGridLayer,  sanitaryAreaLayer],
+    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, sanitaryAreaLayer, tileGridLayer, areaGridLayer],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
@@ -1064,7 +1106,7 @@ async function updateModifyFlow() {
     map.value.removeInteraction(modifyFlow.value);
   }
 
-  const mf = new Modify({
+  /*const mf = new Modify({
     source: olLayers.vehicleFlow.getSource(),
     filter: feature => feature.getGeometry().getType() === 'LineString',
     deleteCondition: event => altKeyOnly(event) && singleClick(event),
@@ -1093,9 +1135,9 @@ async function updateModifyFlow() {
   });
 
   map.value.addInteraction(mf);
-  modifyFlow.value = mf;
+  modifyFlow.value = mf;*/
 
-  modifyFlow.value.setActive(layersState.vehicleFlow.visible);
+  //modifyFlow.value.setActive(layersState.vehicleFlow.visible);
 }
 
 function randomInt(min, max) {
@@ -1118,13 +1160,33 @@ const initLayersState = () => {
       olLayers[key].setVisible(layersState[key].visible);
     }
   });
+
+  selectedGridLayer.value = localStorage.getItem('selectedGridLayer');
 };
 
 const toggleLayer = key => {
-  if (!olLayers[key]) return;
+  if (key === 'tile' || key === 'area') {
+    const oppositeKey = key === 'tile' ? 'area' : 'tile';
+    layersState[oppositeKey].visible = false;
+    olLayers[oppositeKey].setVisible(false);
 
-  const visible = layersState[key].visible;
-  olLayers[key].setVisible(visible);
+    layersState[key].visible = true;
+    olLayers[key].setVisible(true);
+  } else if (key === 'tileGrid') {
+      const visible = layersState[key].visible;
+
+      const oppositeKey = selectedGridLayer.value === 'tile' ? 'area' : 'tile';
+
+      layersState[selectedGridLayer.value].visible = visible;
+      olLayers[selectedGridLayer.value].setVisible(visible);
+
+      layersState[oppositeKey].visible = false;
+      olLayers[oppositeKey].setVisible(false);
+    }
+    else {
+      const visible = layersState[key].visible;
+      olLayers[key].setVisible(visible);
+    }
 
   saveLayersState();
 
@@ -1139,6 +1201,8 @@ const saveLayersState = () => {
     stateToSave[key] = { visible: layersState[key].visible };
   });
   localStorage.setItem('layersState', JSON.stringify(stateToSave));
+
+  localStorage.setItem('selectedGridLayer', selectedGridLayer.value)
 };
 
 function getHatchPattern(size) {
@@ -1182,16 +1246,27 @@ function getHatchPattern(size) {
   font-size: 14px;
 }
 
-.layer-panel h3 {
+.tileLayer-panel {
+  position: absolute;
+  top: 144px;
+  left: 24px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+}
+
+.layer-panel h3, .tileLayer-panel h3 {
   margin: 0 0 4px;
   font-size: 14px;
 }
 
-.layer-panel label {
+.layer-panel label, .tileLayer-panel label {
   display: block;
 }
 
-.layer-panel .create-btn {
+.layer-panel .create-btn, .tileLayer-panel .create-btn {
   margin-top: 8px;
   width: 100%;
   padding: 6px 8px;
