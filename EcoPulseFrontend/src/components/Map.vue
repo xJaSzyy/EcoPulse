@@ -831,7 +831,7 @@ function createTileGridLayer(tileGridResult) {
         }),
         stroke: new Stroke({
           color: 'black', 
-          width: 0.5
+          width: 0.1
         })
       });
     }
