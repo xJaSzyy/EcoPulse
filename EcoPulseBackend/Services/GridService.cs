@@ -2,6 +2,7 @@ using EcoPulseBackend.Extensions;
 using EcoPulseBackend.Interfaces;
 using EcoPulseBackend.Models.TileGrid;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Operation.Union;
 
 namespace EcoPulseBackend.Services;
 
@@ -60,9 +61,84 @@ public class GridService : IGridService
             }
         }
     
-        return tiles;
+        return MergeTilesByColor(tiles);
     }
 
+    private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)
+    {
+        var coords = new[]
+        {
+            new Coordinate(minLon, minLat),
+            new Coordinate(minLon + lonSize, minLat),
+            new Coordinate(minLon + lonSize, minLat + latSize),
+            new Coordinate(minLon, minLat + latSize),
+            new Coordinate(minLon, minLat) 
+        };
+        
+        var linearRing = _geometryFactory.CreateLinearRing(coords);
+        return _geometryFactory.CreatePolygon(linearRing);
+    }
+    
+    private static string BlendColors(List<float> concentrations)
+    {
+        return concentrations.Count == 0 ? DangerZoneUtils.GetColorByIndex(0) : DangerZoneUtils.GetColorByConcentration(concentrations.Average());
+    }
+    
+    private List<TileModel> MergeTilesByColor(List<TileModel> tiles)
+    {
+        var result = new List<TileModel>();
+
+        var groupedByColor = tiles.GroupBy(t => t.Color);
+
+        foreach (var group in groupedByColor)
+        {
+            var geometries = group
+                .Select(t => t.Tile)
+                .Cast<Geometry>()
+                .ToList();
+
+            var unionedGeometry = UnaryUnionOp.Union(geometries);
+
+            if (unionedGeometry is Polygon polygon)
+            {
+                result.Add(CreateMergedTileModel(group, polygon));
+            }
+            else if (unionedGeometry is MultiPolygon multiPolygon)
+            {
+                for (int i = 0; i < multiPolygon.NumGeometries; i++)
+                {
+                    var poly = (Polygon)multiPolygon.GetGeometryN(i);
+                    result.Add(CreateMergedTileModel(group, poly));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private TileModel CreateMergedTileModel(
+        IGrouping<string, TileModel> group,
+        Polygon polygon)
+    {
+        var allConcentrations = group
+            .Where(t => t.AverageConcentration >= 0)
+            .Select(t => t.AverageConcentration)
+            .ToList();
+
+        return new TileModel
+        {
+            Tile = polygon,
+            Color = group.Key,
+            AverageConcentration = allConcentrations.Count != 0 
+                ? (float)Math.Round(allConcentrations.Average(), 1) 
+                : -1,
+            SingleDangerZones = group.SelectMany(t => t.SingleDangerZones).ToList(),
+            VehicleFlowDangerZones = group.SelectMany(t => t.VehicleFlowDangerZones).ToList(),
+            VehicleQueueDangerZones = group.SelectMany(t => t.VehicleQueueDangerZones).ToList()
+        };
+    }
+
+    
     public List<TileModel> GenerateTileArea(MultiPolygon mainPolygon, TileGridCalculateModel model)
     {
         var tiles = new List<TileModel>();
@@ -93,25 +169,5 @@ public class GridService : IGridService
         }
 
         return tiles;
-    }
-
-    private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)
-    {
-        var coords = new[]
-        {
-            new Coordinate(minLon, minLat),
-            new Coordinate(minLon + lonSize, minLat),
-            new Coordinate(minLon + lonSize, minLat + latSize),
-            new Coordinate(minLon, minLat + latSize),
-            new Coordinate(minLon, minLat) 
-        };
-        
-        var linearRing = _geometryFactory.CreateLinearRing(coords);
-        return _geometryFactory.CreatePolygon(linearRing);
-    }
-    
-    private static string BlendColors(List<float> concentrations)
-    {
-        return concentrations.Count == 0 ? DangerZoneUtils.GetColorByIndex(0) : DangerZoneUtils.GetColorByConcentration(concentrations.Average());
     }
 }
