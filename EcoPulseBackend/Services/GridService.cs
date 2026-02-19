@@ -191,9 +191,9 @@ public class GridService : IGridService
     {
         var result = new List<TileModel>();
 
-        var groupedByColor = tiles.GroupBy(t => t.Color);
+        var grouped = tiles.GroupBy(t => t.AverageConcentration);
 
-        foreach (var group in groupedByColor)
+        foreach (var group in grouped)
         {
             var geometries = group
                 .Select(t => t.Tile)
@@ -219,12 +219,12 @@ public class GridService : IGridService
                 }
             }
         }
-
+        
         return result;
     }
 
     private TileModel CreateMergedTileModel(
-        IGrouping<string, TileModel> group,
+        IGrouping<float, TileModel> group,
         Polygon polygon)
     {
         var allConcentrations = group
@@ -235,8 +235,8 @@ public class GridService : IGridService
         return new TileModel
         {
             Tile = polygon,
-            Color = group.Key,
-            AverageConcentration = allConcentrations.Count != 0 ? allConcentrations.Average() : -1
+            Color = DangerZoneUtils.GetColorByConcentration(group.Key),
+            AverageConcentration = group.Key
         };
     }
 }
