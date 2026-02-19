@@ -20,79 +20,156 @@ public class GridService : IGridService
         var envelope = mainPolygon.EnvelopeInternal;
         var tiles = new List<TileModel>();
 
+        var preparedMainPolygon =
+            NetTopologySuite.Geometries.Prepared.PreparedGeometryFactory
+                .Prepare(mainPolygon);
+
+        var singleIndex = new NetTopologySuite.Index.Strtree.STRtree<SingleDangerZone>();
+        foreach (var zone in model.SingleDangerZones)
+            singleIndex.Insert(zone.Polygon.EnvelopeInternal, zone);
+
+        var flowIndex = new NetTopologySuite.Index.Strtree.STRtree<VehicleFlowDangerZone>();
+        foreach (var zone in model.VehicleFlowDangerZones)
+            flowIndex.Insert(zone.Points.EnvelopeInternal, zone);
+
+        var queueIndex = new NetTopologySuite.Index.Strtree.STRtree<TrafficLightQueueDangerZone>();
+        foreach (var zone in model.TrafficLightQueueDangerZones)
+            queueIndex.Insert(zone.Location.EnvelopeInternal, zone);
+
+        var preparedDistricts =
+            new List<(Polygon polygon, NetTopologySuite.Geometries.Prepared.IPreparedGeometry prepared, float avg)>();
+
+        for (var i = 0; i < mainPolygon.NumGeometries; i++)
+        {
+            var district = (Polygon)mainPolygon.GetGeometryN(i);
+
+            var prepared = NetTopologySuite.Geometries.Prepared.PreparedGeometryFactory
+                .Prepare(district);
+
+            var avgDistrict = GetAverageConcentration(
+                singleIndex,
+                flowIndex,
+                queueIndex,
+                district);
+
+            preparedDistricts.Add((district, prepared, avgDistrict));
+        }
+
         for (var lon = Math.Floor(envelope.MinX / lonStep) * lonStep; lon < envelope.MaxX; lon += lonStep)
         {
             for (var lat = Math.Floor(envelope.MinY / latStep) * latStep; lat < envelope.MaxY; lat += latStep)
             {
                 var tilePolygon = CreateTilePolygon(lon, lat, lonStep, latStep);
 
-                if (mainPolygon.Intersects(tilePolygon))
+                if (!preparedMainPolygon.Intersects(tilePolygon))
+                    continue;
+
+                var avg = GetAverageConcentration(
+                    singleIndex,
+                    flowIndex,
+                    queueIndex,
+                    tilePolygon);
+
+                if (avg < 0)
                 {
-                    var concentrations = GetConcentrations(model.SingleDangerZones, model.VehicleFlowDangerZones, model.TrafficLightQueueDangerZones, tilePolygon);
-
-                    var color = DangerZoneUtils.GetColorByIndex(0);
-                    if (concentrations.Count > 0)
+                    foreach (var district in preparedDistricts)
                     {
-                        color = DangerZoneUtils.GetColorByConcentration(concentrations.Average());
+                        if (district.prepared.Intersects(tilePolygon))
+                        {
+                            avg = district.avg;
+                            break;
+                        }
                     }
-                    
-                    tiles.Add(new TileModel
-                    {
-                        Tile = tilePolygon,
-                        Color = color,
-                        AverageConcentration = concentrations.Count != 0 ? concentrations.Average() : -1
-                    });
                 }
-            }
-        }
 
-        var avgConcentration = tiles.Where(x => x.AverageConcentration > 0).Select(x => x.AverageConcentration).ToList().Average();
-        foreach (var tile in tiles.Where(x => x.AverageConcentration == -1))
-        {
-            tile.Color = DangerZoneUtils.GetColorByConcentration(avgConcentration);
+                var color = avg >= 0
+                    ? DangerZoneUtils.GetColorByConcentration(avg)
+                    : DangerZoneUtils.GetColorByIndex(0);
+
+                tiles.Add(new TileModel
+                {
+                    Tile = tilePolygon,
+                    Color = color,
+                    AverageConcentration = avg
+                });
+            }
         }
 
         return MergeTilesByColor(tiles);
     }
-    
+
     public List<TileModel> GenerateTileArea(MultiPolygon mainPolygon, TileGridCalculateModel model)
     {
         var tiles = new List<TileModel>();
 
+        var singleIndex = new NetTopologySuite.Index.Strtree.STRtree<SingleDangerZone>();
+        foreach (var zone in model.SingleDangerZones)
+            singleIndex.Insert(zone.Polygon.EnvelopeInternal, zone);
+
+        var flowIndex = new NetTopologySuite.Index.Strtree.STRtree<VehicleFlowDangerZone>();
+        foreach (var zone in model.VehicleFlowDangerZones)
+            flowIndex.Insert(zone.Points.EnvelopeInternal, zone);
+
+        var queueIndex = new NetTopologySuite.Index.Strtree.STRtree<TrafficLightQueueDangerZone>();
+        foreach (var zone in model.TrafficLightQueueDangerZones)
+            queueIndex.Insert(zone.Location.EnvelopeInternal, zone);
+        
         foreach (var area in mainPolygon)
         {
-            var concentrations = GetConcentrations(model.SingleDangerZones, model.VehicleFlowDangerZones,
-                model.TrafficLightQueueDangerZones, (area as Polygon)!);
-            
-            var color = DangerZoneUtils.GetColorByIndex(0);
-
-            if (concentrations.Count > 0)
-            {
-                color = DangerZoneUtils.GetColorByConcentration(concentrations.Average());
-            }
+            var avgConcentration = GetAverageConcentration(singleIndex, flowIndex, queueIndex, (area as Polygon)!);
+            var color = DangerZoneUtils.GetColorByConcentration(avgConcentration);
 
             tiles.Add(new TileModel
             {
                 Tile = (area as Polygon)!,
                 Color = color,
-                AverageConcentration = concentrations.Count != 0 ? concentrations.Average() : -1
+                AverageConcentration = avgConcentration
             });
         }
 
         return tiles;
     }
 
-    private List<float> GetConcentrations(List<SingleDangerZone> singleZones, List<VehicleFlowDangerZone> flowZones, List<TrafficLightQueueDangerZone> queueZones, Polygon polygon)
+    private float GetAverageConcentration(
+        NetTopologySuite.Index.Strtree.STRtree<SingleDangerZone> singleIndex,
+        NetTopologySuite.Index.Strtree.STRtree<VehicleFlowDangerZone> flowIndex,
+        NetTopologySuite.Index.Strtree.STRtree<TrafficLightQueueDangerZone> queueIndex,
+        Polygon polygon)
     {
-        var intersectingSingleZones = singleZones.Where(x => x.Polygon.Intersects(polygon)).ToList();
-        var intersectingVehicleFlowZones = flowZones.Where(x => x.Points.Intersects(polygon)).ToList();
-        var intersectingTrafficLightQueueZones = queueZones.Where(x => x.Location.Intersects(polygon)).ToList();
+        float sum = 0;
+        var count = 0;
 
-        return intersectingSingleZones
-            .Select(s => s.AverageConcentration)
-            .Concat(intersectingVehicleFlowZones.Select(f => f.AverageConcentration))
-            .Concat(intersectingTrafficLightQueueZones.Select(q => q.AverageConcentration))
-            .ToList();
+        var singleCandidates = singleIndex.Query(polygon.EnvelopeInternal);
+        foreach (var zone in singleCandidates)
+        {
+            if (zone.Polygon.Intersects(polygon))
+            {
+                sum += zone.AverageConcentration;
+                count++;
+            }
+        }
+
+        var flowCandidates = flowIndex.Query(polygon.EnvelopeInternal);
+        foreach (var zone in flowCandidates)
+        {
+            if (zone.Points.Intersects(polygon))
+            {
+                sum += zone.AverageConcentration;
+                count++;
+            }
+        }
+
+        var queueCandidates = queueIndex.Query(polygon.EnvelopeInternal);
+        foreach (var zone in queueCandidates)
+        {
+            if (zone.Location.Intersects(polygon))
+            {
+                sum += zone.AverageConcentration;
+                count++;
+            }
+        }
+
+        return count == 0 ? -1 : sum / count;
     }
 
     private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)
