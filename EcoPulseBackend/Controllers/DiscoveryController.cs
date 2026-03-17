@@ -44,10 +44,15 @@ public class DiscoveryController : ControllerBase
     }
 
     [HttpGet("services")]
-    public async Task<IActionResult> GetServices()
+    public async Task<IActionResult> GetServices(string? tag)
     {
         var client = _httpClientFactory.CreateClient();
-        var url = $"http://consul:8500/v1/catalog/services";
+        var url = "http://consul:8500/v1/catalog/services";
+
+        if (tag != null)
+        {
+            url += $"?filter=ServiceTags contains {tag}";
+        }
 
         var response = await client.GetAsync(url);
         var content = await response.Content.ReadAsStringAsync();
