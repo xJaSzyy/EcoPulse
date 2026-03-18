@@ -6,10 +6,9 @@
     </div>
 
     <div class="main-content">
-      <!-- Левая панель - форма ввода -->
       <div class="form-panel">
         <div class="panel-header">
-          <h2>Параметры разгрузки угля</h2>
+          <h2>Параметры расчета</h2>
         </div>
 
         <form @submit.prevent="calculate" class="input-form">
@@ -39,7 +38,7 @@
               type="number"
               v-model.number="formData.unloadMaterialCountPerHour"
               step="any"
-              placeholder="285.388"
+              placeholder="285"
             >
           </div>
 
@@ -56,12 +55,11 @@
           </div>
 
           <button type="submit" class="calculate-button">
-            Рассчитать выбросы
+            Рассчитать
           </button>
         </form>
       </div>
 
-      <!-- Правая панель - результаты -->
       <div class="results-panel">
         <ResultsTable v-if="result && result.length > 0" :data="result" />
 
@@ -70,9 +68,8 @@
         </div>
 
         <div v-else class="empty-state">
-          <div class="empty-icon">🏆</div>
-          <h3>Введите параметры разгрузки угля</h3>
-          <p>Укажите удельное выделение, объемы материала и эффективность пылеподавления</p>
+          <div class="empty-icon loading-spinner">🏭</div>
+          <p>ожидание расчета</p>
         </div>
       </div>
     </div>
@@ -95,7 +92,6 @@ const formData = ref({
   dustSuppressionEfficiency: 0,
 })
 
-// Суммарные валовые/максимумы (для отображения вне таблицы, если нужно)
 const totalGrossEmission = computed(() => {
   if (!result.value) return 0
   return result.value.reduce((sum, item) => sum + (item.grossEmission || 0), 0)
@@ -150,7 +146,6 @@ const calculate = async () => {
   background: #f5f5f5;
 }
 
-/* Основная сетка: форма слева, результаты справа */
 .main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -158,7 +153,6 @@ const calculate = async () => {
   min-height: 500px;
 }
 
-/* Панель формы ввода */
 .form-panel {
   background: white;
   border-radius: 12px;
@@ -167,7 +161,7 @@ const calculate = async () => {
 }
 
 .panel-header {
-  background: linear-gradient(135deg, #8b4513, #654321);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 20px;
   text-align: center;
@@ -214,7 +208,7 @@ input::placeholder {
 
 .calculate-button {
   width: 100%;
-  background: linear-gradient(135deg, #8b4513, #654321);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 14px;
   border: none;
@@ -229,7 +223,6 @@ input::placeholder {
   transform: translateY(-1px);
 }
 
-/* Панель результатов */
 .results-panel {
   display: flex;
   flex-direction: column;
@@ -275,7 +268,19 @@ input::placeholder {
   font-style: italic;
 }
 
-/* Адаптивность */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spin 2s linear infinite;
+}
+
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
@@ -283,7 +288,7 @@ input::placeholder {
   }
 
   .results-panel {
-    order: -1; /* на мобильных: форма сверху, таблица ниже */
+    order: -1; 
   }
 }
 

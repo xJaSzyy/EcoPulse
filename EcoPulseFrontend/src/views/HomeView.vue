@@ -1,8 +1,6 @@
 <template>
   <div class="home">
-    <h1>Выбор методики расчета выбросов</h1>
     <div class="methods-grid">
-      <!-- Первые 4 карточки -->
       <MethodCard
           v-for="method in leftMethods"
           :key="method.id"
@@ -15,14 +13,13 @@
       <div class="method-card earth-card" @click="$router.push('/map')">
         <div class="method-icon">
           <div class="earth-wrapper">
-            <img src="../icons/earth.png" alt="Земля" class="earth" />
+            <img src="../icons/earth.png" alt="Земля" class="earth loading-spinner" />
             <div class="earth-glow"></div>
           </div>
         </div>
         <div class="earth-arrow">→</div>
       </div>
 
-      <!-- Последние 4 карточки -->
       <MethodCard
           v-for="method in rightMethods"
           :key="method.id"
@@ -49,7 +46,7 @@ const allMethods = ref([
     title: 'Бензогенератор',
     description: 'Расчет выбросов от бензогенератора',
     route: '/gasoline-generator',
-    icon: '⚡'
+    icon: '⛽'
   },
   {
     id: 2,
@@ -150,11 +147,23 @@ h1 {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  animation: rotate 16s linear infinite;
   box-shadow:
       0 0 16px rgba(47, 84, 213, 0.5),
       inset -10px 10px 10px 10px rgba(47, 84, 213, 0.3);
   display: block;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spin 10s linear infinite;
 }
 
 .earth-glow {
@@ -166,11 +175,6 @@ h1 {
   border-radius: 50%;
   animation: glow 3s ease-in-out infinite alternate;
   z-index: -1;
-}
-
-@keyframes rotate {
-  from { transform: rotateY(0deg); }
-  to { transform: rotateY(360deg); }
 }
 
 @keyframes glow {

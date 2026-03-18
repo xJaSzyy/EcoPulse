@@ -6,10 +6,9 @@
     </div>
     
     <div class="main-content">
-      <!-- Левая панель - форма ввода -->
       <div class="form-panel">
         <div class="panel-header">
-          <h2>Параметры сварки</h2>
+          <h2>Параметры расчета</h2>
         </div>
         
         <form @submit.prevent="calculate" class="input-form">
@@ -34,21 +33,19 @@
           </div>
           
           <button type="submit" class="calculate-button">
-            Рассчитать выбросы
+            Рассчитать
           </button>
         </form>
       </div>
 
-      <!-- Правая панель - результаты -->
       <div class="results-panel">
         <ResultsTable v-if="result && result.length > 0" :data="result" />
         <div v-else-if="result" class="no-data">
           Нет данных для отображения
         </div>
         <div v-else class="empty-state">
-          <div class="empty-icon">🔌</div>
-          <h3>Укажите параметры сварки</h3>
-          <p>Введите расход электродов и время работы оборудования</p>
+          <div class="empty-icon loading-spinner">🔧</div>
+          <p>ожидание расчета</p>
         </div>
       </div>
     </div>
@@ -113,7 +110,6 @@ const calculate = async () => {
   background: #f5f5f5;
 }
 
-/* Основная сетка */
 .main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -121,7 +117,6 @@ const calculate = async () => {
   min-height: 500px;
 }
 
-/* Панель формы */
 .form-panel {
   background: white;
   border-radius: 12px;
@@ -130,7 +125,7 @@ const calculate = async () => {
 }
 
 .panel-header {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 20px;
   text-align: center;
@@ -177,7 +172,7 @@ input::placeholder {
 
 .calculate-button {
   width: 100%;
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 14px;
   border: none;
@@ -192,7 +187,6 @@ input::placeholder {
   transform: translateY(-1px);
 }
 
-/* Панель результатов */
 .results-panel {
   display: flex;
   flex-direction: column;
@@ -233,7 +227,19 @@ input::placeholder {
   font-style: italic;
 }
 
-/* Адаптивность */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spin 2s linear infinite;
+}
+
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
@@ -241,7 +247,7 @@ input::placeholder {
   }
   
   .results-panel {
-    order: -1; /* Форма идет первой на мобильных */
+    order: -1;
   }
 }
 

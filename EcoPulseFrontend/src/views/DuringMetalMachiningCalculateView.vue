@@ -6,7 +6,6 @@
     </div>
     
     <div class="main-content">
-      <!-- Левая панель - форма ввода -->
       <div class="form-panel">
         <div class="panel-header">
           <h2>Параметры расчета</h2>
@@ -33,16 +32,14 @@
         </form>
       </div>
 
-      <!-- Правая панель - результаты -->
       <div class="results-panel">
         <ResultsTable v-if="result && result.length > 0" :data="result" />
         <div v-else-if="result" class="no-data">
           Нет данных для отображения
         </div>
         <div v-else class="empty-state">
-          <div class="empty-icon">⚙️</div>
-          <h3>Введите параметры обработки</h3>
-          <p>Выберите тип станка и укажите время работы для расчета выбросов</p>
+          <div class="empty-icon loading-spinner">⚒️</div>
+          <p>ожидание расчета</p>
         </div>
       </div>
     </div>
@@ -107,7 +104,6 @@ const calculate = async () => {
   background: #f5f5f5;
 }
 
-/* Основная сетка */
 .main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -115,7 +111,6 @@ const calculate = async () => {
   min-height: 500px;
 }
 
-/* Панель формы */
 .form-panel {
   background: white;
   border-radius: 12px;
@@ -124,7 +119,7 @@ const calculate = async () => {
 }
 
 .panel-header {
-  background: linear-gradient(135deg, #f39c12, #e67e22);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 20px;
   text-align: center;
@@ -177,7 +172,7 @@ input:focus, .form-select:focus {
 
 .calculate-button {
   width: 100%;
-  background: linear-gradient(135deg, #f39c12, #e67e22);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 14px;
   border: none;
@@ -192,7 +187,6 @@ input:focus, .form-select:focus {
   transform: translateY(-1px);
 }
 
-/* Панель результатов */
 .results-panel {
   display: flex;
   flex-direction: column;
@@ -233,7 +227,19 @@ input:focus, .form-select:focus {
   font-style: italic;
 }
 
-/* Адаптивность */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spin 2s linear infinite;
+}
+
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
@@ -241,7 +247,7 @@ input:focus, .form-select:focus {
   }
   
   .results-panel {
-    order: -1; /* Форма идет первой на мобильных */
+    order: -1; 
   }
 }
 

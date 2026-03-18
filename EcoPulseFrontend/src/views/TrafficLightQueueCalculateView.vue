@@ -6,10 +6,9 @@
     </div>
 
     <div class="main-content">
-      <!-- Левая панель - форма ввода -->
       <div class="form-panel">
         <div class="panel-header">
-          <h2>Параметры светофора и транспорта</h2>
+          <h2>Параметры расчета</h2>
         </div>
 
         <form @submit.prevent="calculate" class="input-form">
@@ -33,7 +32,6 @@
             >
           </div>
 
-          <!-- Группы транспортных средств -->
           <div class="vehicle-groups">
             <h3>Группы транспортных средств</h3>
 
@@ -85,12 +83,11 @@
           </div>
 
           <button type="submit" class="calculate-button">
-            Рассчитать выбросы
+            Рассчитать
           </button>
         </form>
       </div>
 
-      <!-- Правая панель - результаты -->
       <div class="results-panel">
         <ResultsTable v-if="result && result.length > 0" :data="result" />
 
@@ -99,9 +96,8 @@
         </div>
 
         <div v-else class="empty-state">
-          <div class="empty-icon">🚗</div>
-          <h3>Настройте группы транспорта</h3>
-          <p>Укажите параметры светофора и состав очереди авто у перекрёстка</p>
+          <div class="empty-icon loading-spinner">🚦</div>
+          <p>ожидание расчета</p>
         </div>
       </div>
     </div>
@@ -184,7 +180,6 @@ const removeVehicleGroup = (index) => {
   background: #f5f5f5;
 }
 
-/* Основная сетка: форма слева, таблица справа */
 .main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -192,7 +187,6 @@ const removeVehicleGroup = (index) => {
   min-height: 500px;
 }
 
-/* Панель формы ввода */
 .form-panel {
   background: white;
   border-radius: 12px;
@@ -201,7 +195,7 @@ const removeVehicleGroup = (index) => {
 }
 
 .panel-header {
-  background: linear-gradient(135deg, #34495e, #2c3e50);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 20px;
   text-align: center;
@@ -261,7 +255,7 @@ input::placeholder {
 
 .calculate-button {
   width: 100%;
-  background: linear-gradient(135deg, #34495e, #2c3e50);
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
   padding: 14px;
   border: none;
@@ -277,7 +271,6 @@ input::placeholder {
   transform: translateY(-1px);
 }
 
-/* Панель результатов */
 .results-panel {
   display: flex;
   flex-direction: column;
@@ -323,7 +316,6 @@ input::placeholder {
   font-style: italic;
 }
 
-/* Стили для групп транспортных средств */
 .vehicle-groups {
   margin-top: 30px;
   border-top: 1px solid #eee;
@@ -386,7 +378,19 @@ input::placeholder {
   opacity: 0.6;
 }
 
-/* Адаптивность */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spin 2s linear infinite;
+}
+
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
@@ -394,7 +398,7 @@ input::placeholder {
   }
 
   .results-panel {
-    order: -1; /* форма сверху на мобильных */
+    order: -1; 
   }
 }
 
