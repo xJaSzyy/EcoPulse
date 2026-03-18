@@ -80,7 +80,7 @@ const totalMaximumEmission = computed(() => {
 })
 
 const getConcentrationClass = (item) => {
-  if (item.maximumEmission * 1000 > item.pollutantInfo.maxPermissibleConcentration) {
+  if (item.maximumEmission > item.pollutantInfo.maxPermissibleConcentration) {
     return 'exceeded';
   }
 
