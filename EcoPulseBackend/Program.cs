@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using EcoPulseBackend;
 using EcoPulseBackend.Contexts;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,8 +46,9 @@ builder.Configuration
     .AddJsonFile("appsettings.json")
     .AddEnvironmentVariables();
 
-builder.Services. AddDatabase(builder.Configuration);
+builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddHttpClient();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -68,4 +70,22 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        var db = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+        try 
+        {
+            await db.Database.CanConnectAsync();
+            context.Response.StatusCode = 200;
+            await context.Response.WriteAsync("OK");
+        }
+        catch (Exception ex)
+        {
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsync($"DB Error: {ex.Message}");
+        }
+    }
+}).DisableRateLimiting(); 
 app.Run();

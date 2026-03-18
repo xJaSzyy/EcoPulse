@@ -66,13 +66,6 @@ const calculate = async () => {
     console.error('Ошибка расчета:', error);
   }
 }
-
-const getConcentrationClass = (item) => {
-  if (item.maximumEmission * 1000 > item.pollutantInfo.maxPermissibleConcentration) {
-    return 'exceeded';
-  }
-  return 'normal';
-}
 </script>
 
 <style scoped>

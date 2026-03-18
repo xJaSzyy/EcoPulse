@@ -51,13 +51,15 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             
             var maximumEmission = emissionsResult.MaximumEmission;
             var color = DangerZoneUtils.GetColorByConcentration(maximumEmission);
+            var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(maximumEmission);
             
             result.Add(new TrafficLightQueueDangerZone
             {
                 EmissionSourceId = source.Id,
                 Location = source.Location,
                 Color = color,
-                AverageConcentration = emissionsResult.MaximumEmission
+                AverageConcentration = emissionsResult.MaximumEmission,
+                PollutionLevel = pollutionLevel
             });
         }
 

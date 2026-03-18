@@ -85,12 +85,17 @@ public class GridService : IGridService
                 var color = avg >= 0
                     ? DangerZoneUtils.GetColorByConcentration(avg)
                     : DangerZoneUtils.GetColorByIndex(0);
+                
+                var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(avg);
+                
+                Console.WriteLine($"avg: {avg}, lvl: {pollutionLevel}");
 
                 tiles.Add(new TileModel
                 {
                     Tile = tilePolygon,
                     Color = color,
-                    AverageConcentration = avg
+                    AverageConcentration = avg,
+                    PollutionLevel = pollutionLevel
                 });
             }
         }
@@ -118,12 +123,14 @@ public class GridService : IGridService
         {
             var avgConcentration = GetAverageConcentration(singleIndex, flowIndex, queueIndex, (area as Polygon)!);
             var color = DangerZoneUtils.GetColorByConcentration(avgConcentration);
+            var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(avgConcentration);
 
             tiles.Add(new TileModel
             {
                 Tile = (area as Polygon)!,
                 Color = color,
-                AverageConcentration = avgConcentration
+                AverageConcentration = avgConcentration,
+                PollutionLevel = pollutionLevel
             });
         }
 
@@ -236,7 +243,8 @@ public class GridService : IGridService
         {
             Tile = polygon,
             Color = DangerZoneUtils.GetColorByConcentration(group.Key),
-            AverageConcentration = group.Key
+            AverageConcentration = group.Key,
+            PollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(group.Key),
         };
     }
 }

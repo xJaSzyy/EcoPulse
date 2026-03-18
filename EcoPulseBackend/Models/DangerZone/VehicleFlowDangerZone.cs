@@ -25,4 +25,9 @@ public class VehicleFlowDangerZone
     /// Среднее значение концентрации
     /// </summary>
     public float AverageConcentration { get; set; }
+    
+    /// <summary>
+    /// Уровень загрязнения
+    /// </summary>
+    public string PollutionLevel { get; set; } = null!;
 }
