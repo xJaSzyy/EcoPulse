@@ -140,9 +140,9 @@
       </div>
     </div>
 
-    <div v-if="currentRecommendation?.recommendationLevel" class="recommendation-title">
+    <!--<div v-if="currentRecommendation?.recommendationLevel" class="recommendation-title">
       {{ currentRecommendation.recommendationLevel }}: {{ currentRecommendation.recommendationText }}
-    </div>
+    </div>-->
   </div>
 
   <WeatherInfo

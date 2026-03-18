@@ -5,94 +5,147 @@
       <h1>Расчет выбросов от одиночного точечного источника</h1>
     </div>
 
-    <div class="form-container">
-      <form @submit.prevent="calculate">
-        <div class="form-group">
-          <label>Загрязняющее вещество:</label>
-          <select v-model.number="formData.pollutant">
-            <option value=2>Твердые частицы (PM2.5)</option>
-            <option value=380>Углерод диоксид (CO2)</option>
-            <option value=301>Азота диоксид (NO2)</option>
-            <option value=304>Азота оксид (NO)</option>
-            <option value=330>Серы диоксид (SO2)</option>
-          </select>
+    <div class="main-content">
+      <!-- Левая панель - форма ввода -->
+      <div class="form-panel">
+        <div class="panel-header">
+          <h2>Параметры точечного источника</h2>
         </div>
 
-        <div class="form-group">
-          <label>Температура выбрасываемой ГВС:</label>
-          <input type="number" v-model="formData.ejectedTemp" step="0.1" />
+        <form @submit.prevent="calculate" class="input-form">
+          <div class="form-group">
+            <label>Загрязняющее вещество:</label>
+            <select v-model.number="formData.pollutant" class="form-select">
+              <option value="2">Твердые частицы (PM2.5)</option>
+              <option value="380">Углерод диоксид (CO₂)</option>
+              <option value="301">Азота диоксид (NO₂)</option>
+              <option value="304">Азота оксид (NO)</option>
+              <option value="330">Серы диоксид (SO₂)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Температура выбрасываемой ГВС, °C:</label>
+            <input
+              type="number"
+              v-model.number="formData.ejectedTemp"
+              step="0.1"
+              placeholder="265"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Температура атмосферного воздуха, °C:</label>
+            <input
+              type="number"
+              v-model.number="formData.airTemp"
+              step="0.1"
+              placeholder="40"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Средняя скорость выхода ГВС, м/с:</label>
+            <input
+              type="number"
+              v-model.number="formData.avgExitSpeed"
+              step="0.1"
+              placeholder="25"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Высота источника, м:</label>
+            <input
+              type="number"
+              v-model.number="formData.heightSource"
+              step="0.1"
+              placeholder="65"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Диаметр устья источника, м:</label>
+            <input
+              type="number"
+              v-model.number="formData.diameterSource"
+              step="0.1"
+              placeholder="7"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Коэффициент региона:</label>
+            <select v-model.number="formData.tempStratificationRatio" class="form-select">
+              <option value="140">Владимирская, Ивановская, Калужская, Московская, Рязанская и Тульская области</option>
+              <option value="160">Европейская территория РФ и Урала севернее 52° с.ш.</option>
+              <option value="180">Европейская территория РФ и Урала от 50° с.ш. до 52° с.ш.</option>
+              <option value="200">Районы европейской территории РФ южнее 50° с.ш., азиатская территория РФ</option>
+              <option value="250">Республика Бурятия и Забайкальский край</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Коэффициент степени очистки:</label>
+            <select v-model.number="formData.sedimentationRateRatio" class="form-select">
+              <option value="1">Коэффициент очистки > 90%</option>
+              <option value="2">75% ≤ очистка ≤ 90%</option>
+              <option value="3">Очистка < 75% или отсутствует</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Расстояние от источника, м:</label>
+            <input
+              type="number"
+              v-model.number="formData.distance"
+              step="0.1"
+              placeholder="10000"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Количество макс точек:</label>
+            <input
+              type="number"
+              v-model.number="formData.maxCount"
+              step="1"
+              placeholder="5"
+            >
+          </div>
+
+          <button type="submit" class="calculate-button">
+            Рассчитать максимальные выбросы
+          </button>
+        </form>
+      </div>
+
+      <!-- Правая панель - результаты -->
+      <div class="results-panel">
+        <DistanceResultsTable v-if="result" :data="result" />
+
+        <div v-else-if="result === null" class="no-data">
+          Нет данных для отображения
         </div>
 
-        <div class="form-group">
-          <label>Температура атмосферного воздуха:</label>
-          <input type="number" v-model="formData.airTemp" step="0.1" />
+        <div v-else class="empty-state">
+          <div class="empty-icon">📍</div>
+          <h3>Введите параметры точечного источника</h3>
+          <p>Выберите загрязняющее вещество, параметры источника и расстояние</p>
         </div>
-
-        <div class="form-group">
-          <label>Средняя скорость выхода ГВС из устья источника выброса, м/с:</label>
-          <input type="number" v-model="formData.avgExitSpeed" step="0.1" />
-        </div>
-
-        <div class="form-group">
-          <label>Высота источника выброса, м.:</label>
-          <input type="number" v-model="formData.heightSource" step="0.1" />
-        </div>
-
-        <div class="form-group">
-          <label>Диаметр устья источника, м.:</label>
-          <input type="number" v-model="formData.diameterSource" step="0.1" />
-        </div>
-
-        <div class="form-group">
-          <label>Коэффициент региона:</label>
-          <select v-model.number="formData.tempStratificationRatio">
-            <option value=140>Владимирская, Ивановская, Калужская, Московская, Рязанская и Тульская области</option>
-            <option value=160>Европейская территория РФ и Урала севернее 52° с.ш. (за исключением центра европейской территории РФ)</option>
-            <option value=180>Европейская территория РФ и Урала от 50° с.ш. до 52° с.ш. включительно</option>
-            <option value=200>Районы европейской территории РФ южнее 50° с.ш., остальные районы Нижнего Поволжья, азиатская территория РФ</option>
-            <option value=250>Республика Бурятия и Забайкальский край</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Коэффициент степени очистки:</label>
-          <select v-model.number="formData.sedimentationRateRatio">
-            <option value=1>При среднем эксплуатационном коэффициенте очистки выбросов свыше 90%</option>
-            <option value=2>При среднем эксплуатационном коэффициенте очистки выбросов от 75% до 90% включительно</option>
-            <option value=3>При среднем эксплуатационном коэффициенте очистки выбросов менее 75% или отсутствии очистки выбросов</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Расстояние от источника выброса:</label>
-          <input type="number" v-model="formData.distance" step="0.1" />
-        </div>
-
-        <div class="form-group">
-          <label>Количество максимальных точек:</label>
-          <input type="number" v-model="formData.maxCount" step="1" />
-        </div>
-
-        <button type="submit" class="calculate-button">Рассчитать</button>
-      </form>
-
-      <ResultsTable v-if="result && result.emissions.length > 0" :data="result" />
-
-      <div v-else-if="result" class="no-data">
-        Нет данных для отображения
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import ResultsTable from '../components/DistanceResultsTable.vue'
-import {calculateMaximumSingleEmission} from "../api/emission.js";
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import DistanceResultsTable from '../components/DistanceResultsTable.vue'
+import { calculateMaximumSingleEmission } from '../api/emission.js'
 
-const router = useRouter();
-const result = ref(null);
+const router = useRouter()
+const result = ref(null)
 
 const formData = ref({
   pollutant: 2,
@@ -104,18 +157,18 @@ const formData = ref({
   tempStratificationRatio: 140,
   sedimentationRateRatio: 1,
   distance: 10000,
-  maxCount: 5
-});
+  maxCount: 5,
+})
 
 const goBack = () => {
-  router.back();
-};
+  router.back()
+}
 
 const calculate = async () => {
   try {
-    result.value = await calculateMaximumSingleEmission(formData.value);
+    result.value = await calculateMaximumSingleEmission(formData.value)
   } catch (error) {
-    console.error('Ошибка расчета:', error);
+    console.error('Ошибка расчета:', error)
   }
 }
 </script>
@@ -123,7 +176,7 @@ const calculate = async () => {
 <style scoped>
 .method-page {
   padding: 20px;
-  max-width: 800px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -135,6 +188,7 @@ const calculate = async () => {
 
 .page-header h1 {
   font-size: 24px;
+  margin: 0;
 }
 
 .back-button {
@@ -150,11 +204,36 @@ const calculate = async () => {
   background: #f5f5f5;
 }
 
-.form-container {
+/* Основная сетка: форма слева, таблица справа */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  min-height: 500px;
+}
+
+/* Панель формы ввода */
+.form-panel {
   background: white;
-  padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.panel-header {
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.input-form {
+  padding: 30px;
 }
 
 .form-group {
@@ -163,37 +242,124 @@ const calculate = async () => {
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: 500;
+  color: #2c3e50;
 }
 
 input,
-select {
+.form-select {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
   font-size: 16px;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #2c3e50;
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+}
+
+input::placeholder {
+  color: #adb5bd;
 }
 
 .calculate-button {
-  background: #3498db;
+  width: 100%;
+  background: linear-gradient(135deg, #2c3e50, #1a2530);
   color: white;
-  padding: 12px 30px;
+  padding: 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s;
 }
 
 .calculate-button:hover {
-  background: #2980b9;
+  transform: translateY(-1px);
 }
 
-.result {
-  margin-top: 20px;
-  padding: 15px;
+/* Панель результатов */
+.results-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: #f8f9fa;
-  border-radius: 6px;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  color: #7f8c8d;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.no-data {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 40px;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+/* Адаптивность */
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .results-panel {
+    order: -1; /* на мобильных: форма сверху */
+  }
+}
+
+@media (max-width: 768px) {
+  .method-page {
+    padding: 15px;
+  }
+
+  .input-form {
+    padding: 20px;
+  }
 }
 </style>

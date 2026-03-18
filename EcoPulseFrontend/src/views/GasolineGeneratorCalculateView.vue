@@ -5,42 +5,58 @@
       <h1>Расчет выбросов от бензогенератора</h1>
     </div>
 
-    <div class="form-container">
-      <form @submit.prevent="calculate">
-        <div class="form-group">
-          <label>Время работы в день, ч:</label>
-          <input type="number" v-model="formData.workHoursPerDay" step="0.1">
+    <div class="main-content">
+      <!-- Левая панель - форма ввода -->
+      <div class="form-panel">
+        <div class="panel-header">
+          <h2>Параметры расчета</h2>
         </div>
+        
+        <form @submit.prevent="calculate" class="input-form">
+          <div class="form-group">
+            <label>Время работы в день, ч:</label>
+            <input type="number" v-model="formData.workHoursPerDay" step="0.1">
+          </div>
 
-        <div class="form-group">
-          <label>Кол-во рабочих дней в году:</label>
-          <input type="number" v-model="formData.workDaysPerYear" step="0.1">
+          <div class="form-group">
+            <label>Кол-во рабочих дней в году:</label>
+            <input type="number" v-model="formData.workDaysPerYear" step="0.1">
+          </div>
+
+          <div class="form-group">
+            <label>Кол-во генераторов, шт:</label>
+            <input type="number" v-model="formData.generatorCount" step="0.1">
+          </div>
+
+          <div class="form-group">
+            <label>Кол-во одновременно работающих генераторов, шт:</label>
+            <input type="number" v-model="formData.sameGeneratorCount" step="0.1">
+          </div>
+
+          <button type="submit" class="calculate-button">
+            Рассчитать
+          </button>
+        </form>
+      </div>
+
+      <!-- Правая панель - результаты -->
+      <div class="results-panel">
+        <ResultsTable v-if="result && result.length > 0" :data="result" />
+        <div v-else-if="result" class="no-data">
+          Нет данных для отображения
         </div>
-
-        <div class="form-group">
-          <label>Кол-во генераторов, шт:</label>
-          <input type="number" v-model="formData.generatorCount" step="0.1">
+        <div v-else class="empty-state">
+          <div class="empty-icon">📊</div>
+          <h3>Введите параметры для расчета</h3>
+          <p>Заполните форму слева, чтобы увидеть результаты выбросов</p>
         </div>
-
-        <div class="form-group">
-          <label>Кол-во одновременно работающих генераторов, шт:</label>
-          <input type="number" v-model="formData.sameGeneratorCount" step="0.1">
-        </div>
-
-        <button type="submit" class="calculate-button">Рассчитать</button>
-      </form>
-
-      <ResultsTable v-if="result && result.length > 0" :data="result" />
-
-      <div v-else-if="result" class="no-data">
-        Нет данных для отображения
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ResultsTable from '../components/ResultsTable.vue'
 import {calculateGasolineGeneratorEmission} from "../api/emission.js";
@@ -69,19 +85,9 @@ const calculate = async () => {
 </script>
 
 <style scoped>
-.exceeded {
-  color: #e74c3c;
-  font-weight: bold;
-}
-
-.normal {
-  color: #27ae60;
-  font-weight: bold;
-}
-
 .method-page {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -93,6 +99,7 @@ const calculate = async () => {
 
 .page-header h1 {
   font-size: 24px;
+  margin: 0;
 }
 
 .back-button {
@@ -108,11 +115,36 @@ const calculate = async () => {
   background: #f5f5f5;
 }
 
-.form-container {
+/* Основная сетка */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  min-height: 500px;
+}
+
+/* Панель формы */
+.form-panel {
   background: white;
-  padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.panel-header {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.input-form {
+  padding: 30px;
 }
 
 .form-group {
@@ -121,169 +153,102 @@ const calculate = async () => {
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: 500;
+  color: #2c3e50;
 }
 
-input, select {
+input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
   font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #3498db;
 }
 
 .calculate-button {
-  background: #3498db;
+  width: 100%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
   color: white;
-  padding: 12px 30px;
+  padding: 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s;
 }
 
 .calculate-button:hover {
-  background: #2980b9;
+  transform: translateY(-1px);
 }
 
-/* Стили для секции результатов */
-.result-section {
-  margin-top: 30px;
-  padding: 20px;
+/* Панель результатов */
+.results-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  color: #7f8c8d;
 }
 
-.result-section h3 {
+.empty-icon {
+  font-size: 48px;
   margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  margin: 0 0 10px 0;
   color: #2c3e50;
-  text-align: center;
-}
-
-/* Суммарные показатели */
-.emissions-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.summary-card {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.summary-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #e74c3c;
-  margin-bottom: 8px;
-}
-
-.summary-label {
-  font-size: 14px;
-  color: #7f8c8d;
-}
-
-/* Таблица загрязняющих веществ */
-.pollutants-table {
-  overflow-x: auto;
-}
-
-.pollutants-table th,
-.pollutants-table td {
-  text-align: center;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-th {
-  background: #34495e;
-  color: white;
-  padding: 12px 8px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-td {
-  padding: 12px 8px;
-  border-bottom: 1px solid #ecf0f1;
-  font-size: 14px;
-}
-
-tbody tr:hover {
-  background: #f8f9fa;
-}
-
-.pollutant-name {
-  min-width: 200px;
-}
-
-.name-main {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.name-short {
-  font-size: 12px;
-  color: #7f8c8d;
-  margin-top: 4px;
-}
-
-.code-cell {
-  text-align: center;
-  font-family: 'Courier New', monospace;
-  color: #7f8c8d;
-}
-
-.emission-value {
-  text-align: right;
-  font-family: 'Courier New', monospace;
-  font-weight: 500;
-}
-
-.concentration-value {
-  text-align: center;
-}
-
-.concentration-daily {
-  font-size: 11px;
-  color: #7f8c8d;
-  margin-top: 2px;
 }
 
 .no-data {
-  text-align: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
   padding: 40px;
   color: #7f8c8d;
   font-style: italic;
 }
 
 /* Адаптивность */
-@media (max-width: 768px) {
-  .emissions-summary {
+@media (max-width: 1024px) {
+  .main-content {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
-
-  th, td {
-    padding: 8px 4px;
-    font-size: 12px;
+  
+  .results-panel {
+    order: -1; /* Форма идет первой на мобильных */
   }
+}
 
-  .pollutant-name {
-    min-width: 150px;
+@media (max-width: 768px) {
+  .method-page {
+    padding: 15px;
+  }
+  
+  .input-form {
+    padding: 20px;
   }
 }
 </style>

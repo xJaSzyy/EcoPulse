@@ -5,45 +5,85 @@
       <h1>Расчет выбросов от открытых складов угля</h1>
     </div>
 
-    <div class="form-container">
-      <form @submit.prevent="calculate">
-        <div class="form-group">
-          <label>Удельное выделение твердых частиц при разгрузке материала, г/т:</label>
-          <input type="number" v-model="formData.specificEmission" step="any">
+    <div class="main-content">
+      <!-- Левая панель - форма ввода -->
+      <div class="form-panel">
+        <div class="panel-header">
+          <h2>Параметры разгрузки угля</h2>
         </div>
 
-        <div class="form-group">
-          <label>Количество разгружаемого материала, т/г:</label>
-          <input type="number" v-model="formData.unloadMaterialCountPerYear" step="any">
+        <form @submit.prevent="calculate" class="input-form">
+          <div class="form-group">
+            <label>Удельное выделение твердых частиц при разгрузке, г/т:</label>
+            <input
+              type="number"
+              v-model.number="formData.specificEmission"
+              step="any"
+              placeholder="0.32"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Количество разгружаемого материала, т/г:</label>
+            <input
+              type="number"
+              v-model.number="formData.unloadMaterialCountPerYear"
+              step="any"
+              placeholder="2 700 000"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Количество разгружаемого материала, т/ч:</label>
+            <input
+              type="number"
+              v-model.number="formData.unloadMaterialCountPerHour"
+              step="any"
+              placeholder="285.388"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Эффективность пылеподавления, дол. ед.:</label>
+            <input
+              type="number"
+              v-model.number="formData.dustSuppressionEfficiency"
+              step="any"
+              min="0"
+              max="1"
+              placeholder="0"
+            >
+          </div>
+
+          <button type="submit" class="calculate-button">
+            Рассчитать выбросы
+          </button>
+        </form>
+      </div>
+
+      <!-- Правая панель - результаты -->
+      <div class="results-panel">
+        <ResultsTable v-if="result && result.length > 0" :data="result" />
+
+        <div v-else-if="result" class="no-data">
+          Нет данных для отображения
         </div>
 
-        <div class="form-group">
-          <label>Количество разгружаемого материала, т/ч:</label>
-          <input type="number" v-model="formData.unloadMaterialCountPerHour" step="any">
+        <div v-else class="empty-state">
+          <div class="empty-icon">🏆</div>
+          <h3>Введите параметры разгрузки угля</h3>
+          <p>Укажите удельное выделение, объемы материала и эффективность пылеподавления</p>
         </div>
-
-        <div class="form-group">
-          <label>Эффективность применяемого средства пылеподавления, дол. ед.:</label>
-          <input type="number" v-model="formData.dustSuppressionEfficiency" step="any">
-        </div>
-
-        <button type="submit" class="calculate-button">Рассчитать</button>
-      </form>
-
-      <ResultsTable v-if="result && result.length > 0" :data="result" />
-
-      <div v-else-if="result" class="no-data">
-        Нет данных для отображения
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import {computed, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import ResultsTable from '../components/ResultsTable.vue'
-import {calculateOpenCoalWarehouseEmission} from "../api/emission.js";
+import { calculateOpenCoalWarehouseEmission } from '../api/emission.js'
 
 const router = useRouter()
 const result = ref(null)
@@ -55,6 +95,7 @@ const formData = ref({
   dustSuppressionEfficiency: 0,
 })
 
+// Суммарные валовые/максимумы (для отображения вне таблицы, если нужно)
 const totalGrossEmission = computed(() => {
   if (!result.value) return 0
   return result.value.reduce((sum, item) => sum + (item.grossEmission || 0), 0)
@@ -71,27 +112,17 @@ const goBack = () => {
 
 const calculate = async () => {
   try {
-    result.value = await calculateOpenCoalWarehouseEmission(formData.value);
+    result.value = await calculateOpenCoalWarehouseEmission(formData.value)
   } catch (error) {
-    console.error('Ошибка расчета:', error);
+    console.error('Ошибка расчета:', error)
   }
 }
 </script>
 
 <style scoped>
-.exceeded {
-  color: #e74c3c;
-  font-weight: bold;
-}
-
-.normal {
-  color: #27ae60;
-  font-weight: bold;
-}
-
 .method-page {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -103,6 +134,7 @@ const calculate = async () => {
 
 .page-header h1 {
   font-size: 24px;
+  margin: 0;
 }
 
 .back-button {
@@ -118,11 +150,36 @@ const calculate = async () => {
   background: #f5f5f5;
 }
 
-.form-container {
+/* Основная сетка: форма слева, результаты справа */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  min-height: 500px;
+}
+
+/* Панель формы ввода */
+.form-panel {
   background: white;
-  padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.panel-header {
+  background: linear-gradient(135deg, #8b4513, #654321);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.input-form {
+  padding: 30px;
 }
 
 .form-group {
@@ -131,169 +188,112 @@ const calculate = async () => {
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: 500;
+  color: #2c3e50;
 }
 
-input, select {
+input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
   font-size: 16px;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #8b4513;
+}
+
+input::placeholder {
+  color: #adb5bd;
 }
 
 .calculate-button {
-  background: #3498db;
+  width: 100%;
+  background: linear-gradient(135deg, #8b4513, #654321);
   color: white;
-  padding: 12px 30px;
+  padding: 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s;
 }
 
 .calculate-button:hover {
-  background: #2980b9;
+  transform: translateY(-1px);
 }
 
-/* Стили для секции результатов */
-.result-section {
-  margin-top: 30px;
-  padding: 20px;
+/* Панель результатов */
+.results-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  color: #7f8c8d;
 }
 
-.result-section h3 {
+.empty-icon {
+  font-size: 48px;
   margin-bottom: 20px;
-  color: #2c3e50;
-  text-align: center;
 }
 
-/* Суммарные показатели */
-.emissions-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.summary-card {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.summary-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #e74c3c;
-  margin-bottom: 8px;
-}
-
-.summary-label {
-  font-size: 14px;
-  color: #7f8c8d;
-}
-
-/* Таблица загрязняющих веществ */
-.pollutants-table {
-  overflow-x: auto;
-}
-
-.pollutants-table th,
-.pollutants-table td {
-  text-align: center;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-th {
-  background: #34495e;
-  color: white;
-  padding: 12px 8px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-td {
-  padding: 12px 8px;
-  border-bottom: 1px solid #ecf0f1;
-  font-size: 14px;
-}
-
-tbody tr:hover {
-  background: #f8f9fa;
-}
-
-.pollutant-name {
-  min-width: 200px;
-}
-
-.name-main {
-  font-weight: 500;
+.empty-state h3 {
+  margin: 0 0 10px 0;
   color: #2c3e50;
 }
 
-.name-short {
-  font-size: 12px;
-  color: #7f8c8d;
-  margin-top: 4px;
-}
-
-.code-cell {
-  text-align: center;
-  font-family: 'Courier New', monospace;
-  color: #7f8c8d;
-}
-
-.emission-value {
-  text-align: right;
-  font-family: 'Courier New', monospace;
-  font-weight: 500;
-}
-
-.concentration-value {
-  text-align: center;
-}
-
-.concentration-daily {
-  font-size: 11px;
-  color: #7f8c8d;
-  margin-top: 2px;
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .no-data {
-  text-align: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
   padding: 40px;
   color: #7f8c8d;
   font-style: italic;
 }
 
 /* Адаптивность */
-@media (max-width: 768px) {
-  .emissions-summary {
+@media (max-width: 1024px) {
+  .main-content {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 
-  th, td {
-    padding: 8px 4px;
-    font-size: 12px;
+  .results-panel {
+    order: -1; /* на мобильных: форма сверху, таблица ниже */
+  }
+}
+
+@media (max-width: 768px) {
+  .method-page {
+    padding: 15px;
   }
 
-  .pollutant-name {
-    min-width: 150px;
+  .input-form {
+    padding: 20px;
   }
 }
 </style>

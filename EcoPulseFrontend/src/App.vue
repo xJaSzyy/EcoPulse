@@ -3,7 +3,6 @@
     <header class="app-header" v-if="!['home', 'map'].includes($route.name)">
       <div class="header-content">
         <h1 class="app-title">EcoPulse</h1>
-        <p class="app-subtitle">Система расчета выбросов загрязняющих веществ</p>
       </div>
     </header>
     

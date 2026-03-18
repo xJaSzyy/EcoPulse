@@ -28,7 +28,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddRateLimiter(options =>
+/*builder.Services.AddRateLimiter(options =>
 {
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
@@ -39,7 +39,7 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 100,
                 Window = TimeSpan.FromMinutes(1)
             }));
-});
+});*/
 
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -59,7 +59,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("Development");
-app.UseRateLimiter();
+//app.UseRateLimiter();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

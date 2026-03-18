@@ -4,62 +4,104 @@
       <button class="back-button" @click="goBack">← Назад</button>
       <h1>Расчет выбросов от резервуаров</h1>
     </div>
-    
-    <div class="form-container">
-      <form @submit.prevent="calculate">
-        <div class="form-group">
-          <label>Конструкция резервуара:</label>
-          <select v-model.number="formData.reservoirType">
-            <option value=1>Наземный</option>
-            <option value=2>Заглубленный</option>
-          </select>
+
+    <div class="main-content">
+      <!-- Левая панель - форма ввода -->
+      <div class="form-panel">
+        <div class="panel-header">
+          <h2>Параметры резервуара</h2>
         </div>
 
-        <div class="form-group">
-          <label>Нефтепродукт:</label>
-          <select v-model.number="formData.oilProduct">
-            <option value=1>Бензин автомобильный</option>
-            <option value=2>Дизельное топливо</option>
-            <option value=3>Масла</option>
-          </select>
+        <form @submit.prevent="calculate" class="input-form">
+          <div class="form-group">
+            <label>Конструкция резервуара:</label>
+            <select v-model.number="formData.reservoirType" class="form-select">
+              <option value="1">Наземный</option>
+              <option value="2">Заглубленный</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Нефтепродукт:</label>
+            <select v-model.number="formData.oilProduct" class="form-select">
+              <option value="1">Бензин автомобильный</option>
+              <option value="2">Дизельное топливо</option>
+              <option value="3">Масла</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Климатическая зона:</label>
+            <select v-model.number="formData.climateZone" class="form-select">
+              <option value="1">1-я климатическая зона</option>
+              <option value="2">2-я климатическая зона</option>
+              <option value="3">3-я климатическая зона</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>
+              Закачиваемый объем, осенне‑зимний период, м³:
+            </label>
+            <input
+              type="number"
+              v-model.number="formData.autumnWinterOilAmount"
+              step="0.1"
+              placeholder="0"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>
+              Закачиваемый объем, весенне‑летний период, м³:
+            </label>
+            <input
+              type="number"
+              v-model.number="formData.springSummerOilAmount"
+              step="0.1"
+              placeholder="0"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Объем слитого нефтепродукта, м³:</label>
+            <input
+              type="number"
+              v-model.number="formData.drainedVolume"
+              step="1"
+              placeholder="0"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Среднее время слива, с:</label>
+            <input
+              type="number"
+              v-model.number="formData.averageDrainTime"
+              step="1"
+              placeholder="0"
+            >
+          </div>
+
+          <button type="submit" class="calculate-button">
+            Рассчитать выбросы
+          </button>
+        </form>
+      </div>
+
+      <!-- Правая панель - результаты -->
+      <div class="results-panel">
+        <ResultsTable v-if="result && result.length > 0" :data="result" />
+
+        <div v-else-if="result" class="no-data">
+          Нет данных для отображения
         </div>
 
-        <div class="form-group">
-          <label>Климатическая зона:</label>
-          <select v-model.number="formData.climateZone">
-            <option value=1>1-я климатическая зона</option>
-            <option value=2>2-я климатическая зона</option>
-            <option value=3>3-я климатическая зона</option>
-          </select>
+        <div v-else class="empty-state">
+          <div class="empty-icon">🛢</div>
+          <h3>Введите параметры резервуара</h3>
+          <p>Укажите конструкцию, тип нефтепродукта, климатическую зону и объемы</p>
         </div>
-
-        <div class="form-group">
-          <label>Кол-во закачиваемого в резервуар нефтепродукта в осенне-зимний период, м3:</label>
-          <input type="number" v-model="formData.autumnWinterOilAmount" step="0.1">
-        </div>
-
-        <div class="form-group">
-          <label>Кол-во закачиваемого в резервуар нефтепродукта в весенне-летний период, м3:</label>
-          <input type="number" v-model="formData.springSummerOilAmount" step="0.1">
-        </div>
-
-        <div class="form-group">
-          <label>Объем слитого нефтепродукта в резервуар, м3:</label>
-          <input type="number" v-model="formData.drainedVolume" step="1">
-        </div>
-
-        <div class="form-group">
-          <label>Среднее время слива, с:</label>
-          <input type="number" v-model="formData.averageDrainTime" step="1">
-        </div>
-        
-        <button type="submit" class="calculate-button">Рассчитать</button>
-      </form>
-
-      <ResultsTable v-if="result && result.length > 0" :data="result" />
-
-      <div v-else-if="result" class="no-data">
-        Нет данных для отображения
       </div>
     </div>
   </div>
@@ -69,7 +111,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ResultsTable from '../components/ResultsTable.vue'
-import {calculateReservoirsEmission} from "../api/emission.js";
+import { calculateReservoirsEmission } from '../api/emission.js'
 
 const router = useRouter()
 const result = ref(null)
@@ -81,7 +123,7 @@ const formData = ref({
   autumnWinterOilAmount: 0,
   springSummerOilAmount: 0,
   drainedVolume: 0,
-  averageDrainTime: 0
+  averageDrainTime: 0,
 })
 
 const goBack = () => {
@@ -90,9 +132,9 @@ const goBack = () => {
 
 const calculate = async () => {
   try {
-    result.value = await calculateReservoirsEmission(formData.value);
+    result.value = await calculateReservoirsEmission(formData.value)
   } catch (error) {
-    console.error('Ошибка расчета:', error);
+    console.error('Ошибка расчета:', error)
   }
 }
 </script>
@@ -100,7 +142,7 @@ const calculate = async () => {
 <style scoped>
 .method-page {
   padding: 20px;
-  max-width: 800px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -112,6 +154,7 @@ const calculate = async () => {
 
 .page-header h1 {
   font-size: 24px;
+  margin: 0;
 }
 
 .back-button {
@@ -127,11 +170,36 @@ const calculate = async () => {
   background: #f5f5f5;
 }
 
-.form-container {
+/* Основная сетка: форма слева, таблица справа */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  min-height: 500px;
+}
+
+/* Панель формы ввода */
+.form-panel {
   background: white;
-  padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.panel-header {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.input-form {
+  padding: 30px;
 }
 
 .form-group {
@@ -140,175 +208,124 @@ const calculate = async () => {
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: 500;
+  color: #2c3e50;
 }
 
-input, select {
+input,
+.form-select {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
   font-size: 16px;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #e74c3c;
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+}
+
+input::placeholder {
+  color: #adb5bd;
 }
 
 .calculate-button {
-  background: #3498db;
+  width: 100%;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
   color: white;
-  padding: 12px 30px;
+  padding: 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s;
 }
 
 .calculate-button:hover {
-  background: #2980b9;
+  transform: translateY(-1px);
 }
 
-.result {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-/* Стили для секции результатов */
-.result-section {
-  margin-top: 30px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
+/* Панель результатов */
+.results-panel {
+  display: flex;
+  flex-direction: column;
 }
 
-.result-section h3 {
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  color: #7f8c8d;
+}
+
+.empty-icon {
+  font-size: 48px;
   margin-bottom: 20px;
-  color: #2c3e50;
-  text-align: center;
 }
 
-/* Суммарные показатели */
-.emissions-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.summary-card {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.summary-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #e74c3c;
-  margin-bottom: 8px;
-}
-
-.summary-label {
-  font-size: 14px;
-  color: #7f8c8d;
-}
-
-/* Таблица загрязняющих веществ */
-.pollutants-table {
-  overflow-x: auto;
-}
-
-.pollutants-table th,
-.pollutants-table td {
-  text-align: center;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-th {
-  background: #34495e;
-  color: white;
-  padding: 12px 8px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-td {
-  padding: 12px 8px;
-  border-bottom: 1px solid #ecf0f1;
-  font-size: 14px;
-}
-
-tbody tr:hover {
-  background: #f8f9fa;
-}
-
-.pollutant-name {
-  min-width: 200px;
-}
-
-.name-main {
-  font-weight: 500;
+.empty-state h3 {
+  margin: 0 0 10px 0;
   color: #2c3e50;
 }
 
-.name-short {
-  font-size: 12px;
-  color: #7f8c8d;
-  margin-top: 4px;
-}
-
-.code-cell {
-  text-align: center;
-  font-family: 'Courier New', monospace;
-  color: #7f8c8d;
-}
-
-.emission-value {
-  text-align: right;
-  font-family: 'Courier New', monospace;
-  font-weight: 500;
-}
-
-.concentration-value {
-  text-align: center;
-}
-
-.concentration-daily {
-  font-size: 11px;
-  color: #7f8c8d;
-  margin-top: 2px;
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .no-data {
-  text-align: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
   padding: 40px;
   color: #7f8c8d;
   font-style: italic;
 }
 
 /* Адаптивность */
-@media (max-width: 768px) {
-  .emissions-summary {
+@media (max-width: 1024px) {
+  .main-content {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 
-  th, td {
-    padding: 8px 4px;
-    font-size: 12px;
+  .results-panel {
+    order: -1; /* на мобильных: форма сверху */
+  }
+}
+
+@media (max-width: 768px) {
+  .method-page {
+    padding: 15px;
   }
 
-  .pollutant-name {
-    min-width: 150px;
+  .input-form {
+    padding: 20px;
   }
 }
 </style>
