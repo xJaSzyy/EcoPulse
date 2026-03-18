@@ -5,6 +5,13 @@
     </div>
     
     <div class="results-content">
+      <div class="pollutant-info" v-if="!Array.isArray(data) && data.pollutantInfo">
+        <h4>{{ data.pollutantInfo.name }}</h4>
+        <div class="pollutant-details">
+          <span v-if="data.pollutantInfo.mass">Масса: {{ data.pollutantInfo.mass }}</span>
+        </div>
+      </div>
+
       <div class="emissions-summary">
         <div class="summary-card" v-if="hasGrossEmission">
           <div class="summary-icon">📊</div>
@@ -17,9 +24,16 @@
           <div class="summary-value">{{ formatNumber(totalMaximumEmission) }}</div>
           <div class="summary-label">Суммарный макс. выброс (г/час)</div>
         </div>
+
+        <!-- Карточка ПДК для DistanceResultsTable -->
+        <div class="summary-card" v-if="!Array.isArray(data) && data.pollutantInfo?.maxPermissibleConcentration">
+          <div class="summary-icon">📏</div>
+          <div class="summary-value">{{ data.pollutantInfo.maxPermissibleConcentration }}</div>
+          <div class="summary-label">ПДК (мг/м³)</div>
+        </div>
       </div>
 
-      <div class="pollutants-table">
+      <div class="pollutants-table" v-if="Array.isArray(data) && data.length">
         <table>
           <thead>
             <tr>
@@ -55,6 +69,25 @@
           </tbody>
         </table>
       </div>
+
+      <div class="pollutants-table" v-else-if="!Array.isArray(data) && data.emissions?.length">
+        <table>
+          <thead>
+            <tr>
+              <th>Расстояние (м)</th>
+              <th>Макс. выброс (г/час)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in data.emissions" :key="index">
+              <td class="distance-cell">{{ item.distance }} м</td>
+              <td class="emission-value" :class="getEmissionClass(item)">
+                {{ formatNumber(item.maximumEmission) || '—' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
@@ -64,22 +97,31 @@ import { computed } from 'vue'
 
 const props = defineProps({
   data: {
-    type: Array,
+    type: [Array, Object],
     required: true,
     default: () => []
   }
 })
 
+const isArrayMode = computed(() => Array.isArray(props.data))
+const isDistanceMode = computed(() => !isArrayMode.value && props.data.emissions?.length)
+
 const hasGrossEmission = computed(() => {
-  return props.data.some(item => item.grossEmission != null && item.grossEmission > 0)
+  return isArrayMode.value && props.data.some(item => item.grossEmission != null && item.grossEmission > 0)
 })
 
 const totalGrossEmission = computed(() => {
-  return props.data.reduce((sum, item) => sum + (item.grossEmission || 0), 0)
+  return isArrayMode.value ? props.data.reduce((sum, item) => sum + (item.grossEmission || 0), 0) : 0
 })
 
 const totalMaximumEmission = computed(() => {
-  return props.data.reduce((sum, item) => sum + (item.maximumEmission || 0), 0)
+  if (isArrayMode.value) {
+    return props.data.reduce((sum, item) => sum + (item.maximumEmission || 0), 0)
+  }
+  if (isDistanceMode.value) {
+    return props.data.emissions.reduce((sum, item) => sum + (item.maximumEmission || 0), 0)
+  }
+  return 0
 })
 
 const formatNumber = (num) => {
@@ -87,8 +129,17 @@ const formatNumber = (num) => {
 }
 
 const getConcentrationClass = (item) => {
-  if (!item.maximumEmission || !item.pollutantInfo.maxPermissibleConcentration) return ''
+  if (!item.maximumEmission || !item.pollutantInfo?.maxPermissibleConcentration) return ''
   return item.maximumEmission > item.pollutantInfo.maxPermissibleConcentration ? 'exceeded' : 'normal'
+}
+
+const isPdKExceeded = (item) => {
+  const pdk = props.data.pollutantInfo?.maxPermissibleConcentration
+  return pdk && item.maximumEmission > pdk
+}
+
+const getEmissionClass = (item) => {
+  return isPdKExceeded(item) ? 'exceeded-emission' : 'normal-emission'
 }
 </script>
 
@@ -123,10 +174,32 @@ const getConcentrationClass = (item) => {
   flex-direction: column;
 }
 
+.pollutant-info {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pollutant-info h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.pollutant-details {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #7f8c8d;
+  flex-wrap: wrap;
+}
+
 .emissions-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
   margin-bottom: 25px;
 }
 
@@ -136,22 +209,23 @@ const getConcentrationClass = (item) => {
   border-radius: 8px;
   text-align: center;
   border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .summary-icon {
-  font-size: 28px;
+  font-size: 32px;
   margin-bottom: 10px;
 }
 
 .summary-value {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: bold;
   color: #e74c3c;
   margin-bottom: 8px;
 }
 
 .summary-label {
-  font-size: 13px;
+  font-size: 14px;
   color: #6c757d;
 }
 
@@ -166,7 +240,7 @@ table {
   background: white;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   min-width: 600px;
 }
 
@@ -201,13 +275,19 @@ td {
   margin-top: 3px;
 }
 
-.code-cell, .emission-value {
+.code-cell, .emission-value, .distance-cell {
   font-family: 'Courier New', monospace;
   font-weight: 500;
 }
 
 .emission-value {
   text-align: right;
+}
+
+.distance-cell {
+  font-weight: 600;
+  color: #2c3e50;
+  text-align: center;
 }
 
 .concentration-value {
@@ -219,13 +299,13 @@ td {
   color: #7f8c8d;
 }
 
-.exceeded {
-  color: #e74c3c;
+.exceeded, .exceeded-emission {
+  color: #e74c3c !important;
   font-weight: bold;
 }
 
-.normal {
-  color: #27ae60;
+.normal, .normal-emission {
+  color: #27ae60 !important;
   font-weight: bold;
 }
 
@@ -233,7 +313,6 @@ tbody tr:hover {
   background: #f8f9fa;
 }
 
-/* Мобильная адаптивность */
 @media (max-width: 768px) {
   .emissions-summary {
     grid-template-columns: 1fr;
@@ -241,6 +320,11 @@ tbody tr:hover {
   
   .results-content {
     padding: 15px;
+  }
+  
+  .pollutant-details {
+    flex-direction: column;
+    gap: 5px;
   }
 }
 </style>

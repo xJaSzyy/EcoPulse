@@ -138,7 +138,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import DistanceResultsTable from '../components/DistanceResultsTable.vue'
+import DistanceResultsTable from '../components/ResultsTable.vue'
 import { calculateMaximumSingleEmission } from '../api/emission.js'
 
 const router = useRouter()
