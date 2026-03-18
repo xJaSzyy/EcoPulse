@@ -24,4 +24,9 @@ public class TileModel
     /// Среднее значение концентрации
     /// </summary>
     public float AverageConcentration { get; set; }
+    
+    /// <summary>
+    /// Уровень загрязнения
+    /// </summary>
+    public string PollutionLevel { get; set; } = null!;
 }

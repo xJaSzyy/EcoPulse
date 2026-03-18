@@ -25,4 +25,9 @@ public class TrafficLightQueueDangerZone
     /// Среднее значение из n макисмальных концентраций
     /// </summary>
     public float AverageConcentration { get; set; }
+    
+    /// <summary>
+    /// Уровень загрязнения
+    /// </summary>
+    public string PollutionLevel { get; set; } = null!;
 }
