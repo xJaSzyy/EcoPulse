@@ -365,6 +365,11 @@ function createPopupElement() {
   popup.innerHTML = `
     <div class="popup-content">
       <div class="popup-text">
+        <div class="source-type">
+        <strong><label>Тип источника: </label></strong>
+        <span>${currentPopupData.value.sourceType}</span>
+      </div>
+
         <div class="average-concentration">
           <strong><label>Концентрация: </label></strong>
           <span>${currentPopupData.value.averageConcentration.toFixed(2)} мкг/м3</span>
