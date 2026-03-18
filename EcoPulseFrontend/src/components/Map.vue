@@ -217,7 +217,7 @@ const showInfo = ref(false);
 const streetName = ref(null);
 
 const singlePopup = ref(null)
-const currentSingle = ref(null)
+const currentPopupData = ref(null)
 const userPosition = ref(null);
 const currentRecommendation = ref(null)
 
@@ -329,10 +329,11 @@ function startCreateModeQueue() {
   createModeQueue.value = true
 }
 
-function showSinglePopup(coordinate, feature) {
-  currentSingle.value = feature.get('dangerData')
+function showPopup(coordinate, feature, sourceType) {
+  currentPopupData.value = feature.get('dangerData')
+  currentPopupData.value.sourceType = sourceType
   
-  const popupElement = createSinglePopupElement()
+  const popupElement = createPopupElement()
   
   if (!singlePopup.value) {
     singlePopup.value = new Overlay({
@@ -349,15 +350,15 @@ function showSinglePopup(coordinate, feature) {
   singlePopup.value.setPosition(coordinate)
 }
 
-function hideSinglePopup() {
+function hidePopup() {
   if (singlePopup.value) {
     map.value.removeOverlay(singlePopup.value)
     singlePopup.value = null
   }
-  currentSingle.value = null
+  currentPopupData.value = null
 }
 
-function createSinglePopupElement() {
+function createPopupElement() {
   const popup = document.createElement('div')
   popup.className = 'single-popup'
   
@@ -366,15 +367,15 @@ function createSinglePopupElement() {
       <div class="popup-text">
         <div class="average-concentration">
           <strong><label>Концентрация: </label></strong>
-          <span>${currentSingle.value.averageConcentration} мкг/м3</span>
+          <span>${currentPopupData.value.averageConcentration.toFixed(2)} мкг/м3</span>
         </div>
 
         <div class="legend-item">
           <strong><label>Уровень загрязнения -&nbsp;</label></strong> 
-          <span>${currentSingle.value.pollutionLevel}&nbsp;</span> 
+          <span>${currentPopupData.value.pollutionLevel}&nbsp;</span> 
           <span 
             class="legend-color" 
-            style="background-color: ${currentSingle.value.color}"
+            style="background-color: ${currentPopupData.value.color}"
           ></span>
         </div>
       </div>
@@ -717,6 +718,7 @@ function createVehicleFlowLayer(dangerZones) {
     });
     lineFeature.set('dangerColor', dz.color);
     lineFeature.set('emissionSourceId', dz.emissionSourceId);
+    lineFeature.set('dangerData', dz);
 
     vehicleFlowSource.addFeature(lineFeature);
   });
@@ -771,6 +773,7 @@ function createVehicleQueueLayer(dangerZones) {
     })
     pointFeature.set('dangerColor', dangerZone.color);
     pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
+    pointFeature.set('dangerData', dangerZone);
 
     vehicleQueueSource.addFeature(pointFeature)
   })
@@ -814,6 +817,8 @@ function createTileGridLayer(tileGridResult) {
       color: tileInfo.color,
       cityId: tileInfo.cityId
     });
+
+    polygonFeature.set('dangerData', tileInfo);
     
     tileGridSource.addFeature(polygonFeature);
   });
@@ -984,8 +989,8 @@ onMounted(async () => {
 
     let found = null;
 
-    map.value.forEachFeatureAtPixel(pixel, (feature) => {
-      if (feature.getGeometry().getType() === 'Polygon') {
+    map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
+      if (feature.getGeometry().getType() === 'Polygon' && layer === olLayers.single) {
         const dangerData = feature.get('dangerData');
         if (dangerData) {
           found = dangerData;
@@ -1074,23 +1079,30 @@ onMounted(async () => {
     if (evt.dragging) return
     
     const pixel = map.value.getEventPixel(evt.originalEvent)
-    let singleFeature = null
+    let popupFeature = null
+    let sourceType = null
     
     map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
-      if (layer === olLayers.single) {
-        singleFeature = feature
+      if (layer === olLayers.single || 
+          layer === olLayers.vehicleFlow || 
+          layer === olLayers.vehicleQueue /*|| 
+          layer === olLayers.tile ||
+          layer === olLayers.area*/) {
+
+        popupFeature = feature
+        sourceType = layer === olLayers.single ? 'котельная' : layer === olLayers.vehicleFlow ? 'дорога' : 'перекресток'
         return false
       }
     })
 
-    if (singleFeature) {
+    if (popupFeature) {
       const coordinate = evt.coordinate
-      showSinglePopup(coordinate, singleFeature)
+      showPopup(coordinate, popupFeature, sourceType)
       
       const mapElement = map.value.getTargetElement()
       mapElement.style.cursor = 'pointer'
     } else {
-      hideSinglePopup()
+      hidePopup()
     }
 
     const allHit = map.value.hasFeatureAtPixel(pixel)
@@ -1348,6 +1360,7 @@ function getHatchPattern(size) {
   max-width: 100%;
   max-height: 70vh;
   display: block;
+  z-index: 1000;
 }
 
 .city-select {
@@ -1459,7 +1472,7 @@ function getHatchPattern(size) {
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   font-size: 14px;
-  z-index: 10;
+  z-index: 8;
   white-space: nowrap;
   max-width: 90vw;
   overflow: hidden;
