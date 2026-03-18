@@ -108,6 +108,10 @@ const rightMethods = ref(allMethods.value.slice(4, 8))
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 h1 {

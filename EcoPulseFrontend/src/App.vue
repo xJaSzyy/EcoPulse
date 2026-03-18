@@ -9,10 +9,6 @@
     <main class="app-main">
       <router-view />
     </main>
-    
-    <footer class="app-footer" v-if="$route.name === 'home'">
-      <p>&copy; 2025 EcoPulse. Все права защищены.</p>
-    </footer>
   </div>
 </template>
 
@@ -74,7 +70,6 @@ const $route = useRoute()
   margin-top: auto;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
   .app-title {
     font-size: 1.5rem;
