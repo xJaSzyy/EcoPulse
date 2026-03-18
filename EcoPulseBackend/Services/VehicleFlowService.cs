@@ -76,13 +76,15 @@ public class VehicleFlowService : IVehicleFlowService
             
             var maximumEmission = emissionsResult.MaximumEmission;
             var color = DangerZoneUtils.GetColorByConcentration(maximumEmission);
+            var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(maximumEmission);
             
             result.Add(new VehicleFlowDangerZone
             {
                 EmissionSourceId = source.Id,
                 Points = points,
                 Color = color,
-                AverageConcentration = emissionsResult.MaximumEmission
+                AverageConcentration = emissionsResult.MaximumEmission,
+                PollutionLevel = pollutionLevel
             });
         }
 
