@@ -4,14 +4,12 @@ namespace EcoPulseWeatherService.Services;
 
 public class WeatherHostedService : BackgroundService
 {
-    private readonly IServiceProvider _services;
-    private readonly ILogger<WeatherHostedService> _logger;
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
+    private readonly IServiceProvider _serviceProvider;
+    private readonly TimeSpan _interval = TimeSpan.FromMinutes(15);
 
-    public WeatherHostedService(IServiceProvider services, ILogger<WeatherHostedService> logger)
+    public WeatherHostedService(IServiceProvider serviceProvider)
     {
-        _services = services;
-        _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -19,7 +17,7 @@ public class WeatherHostedService : BackgroundService
         using var timer = new PeriodicTimer(_interval);
         while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
-            using var scope = _services.CreateScope();
+            using var scope = _serviceProvider.CreateScope();
             var weatherService = scope.ServiceProvider.GetRequiredService<IWeatherService>();
             await weatherService.FetchAndSendAsync(stoppingToken);
         }
