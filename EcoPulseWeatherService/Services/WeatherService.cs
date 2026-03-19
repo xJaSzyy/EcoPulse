@@ -41,7 +41,7 @@ public class WeatherService : IWeatherService
                     weatherResponse.CurrentWeather.IsDay == 1).IconClass
             };
             
-            var backendResponse = await backendClient.PostAsJsonAsync("/api/weather/save", result, ct);
+            var backendResponse = await backendClient.PostAsJsonAsync("http://backend:5000/api/weather/save", result, ct);
             backendResponse.EnsureSuccessStatusCode();
         
             _logger.LogInformation($"Weather sent to backend: {currentDate}");

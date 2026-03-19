@@ -58,6 +58,20 @@ services:
       test: [ "CMD", "curl", "-f", "http://localhost:8500/v1/status/leader" ]
       interval: 10s
       timeout: 5s
+      
+  weather-service:
+    build:
+      context: .
+      dockerfile: EcoPulseWeatherService/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
 
 volumes:
   pgdata:
