@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoPulseBackend", "EcoPulse
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoPulseWeatherService", "..\EcoPulseWeatherService\EcoPulseWeatherService.csproj", "{9470803E-87E6-4AFD-AA31-F4D47FC62AAF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoPulseBackendTests", "..\EcoPulseBackendTests\EcoPulseBackendTests.csproj", "{5C84160B-3DFC-47A0-88C2-24C3D8C234C9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{9470803E-87E6-4AFD-AA31-F4D47FC62AAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9470803E-87E6-4AFD-AA31-F4D47FC62AAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9470803E-87E6-4AFD-AA31-F4D47FC62AAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C84160B-3DFC-47A0-88C2-24C3D8C234C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C84160B-3DFC-47A0-88C2-24C3D8C234C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C84160B-3DFC-47A0-88C2-24C3D8C234C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C84160B-3DFC-47A0-88C2-24C3D8C234C9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
