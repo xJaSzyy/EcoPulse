@@ -216,7 +216,8 @@ const modifyFlow = ref(null);
 const showInfo = ref(false);
 const streetName = ref(null);
 
-const singlePopup = ref(null)
+const popup = ref(null)
+let popupElement = null
 const currentPopupData = ref(null)
 const userPosition = ref(null);
 const currentRecommendation = ref(null)
@@ -329,35 +330,6 @@ function startCreateModeQueue() {
   createModeQueue.value = true
 }
 
-function showPopup(coordinate, feature, sourceType) {
-  currentPopupData.value = feature.get('dangerData')
-  currentPopupData.value.sourceType = sourceType
-  
-  const popupElement = createPopupElement()
-  
-  if (!singlePopup.value) {
-    singlePopup.value = new Overlay({
-      element: popupElement,
-      positioning: 'bottom-center',
-      stopEvent: false,
-      insertFirst: false,
-    })
-    map.value.addOverlay(singlePopup.value)
-  } else {
-    singlePopup.value.setElement(popupElement)
-  }
-  
-  singlePopup.value.setPosition(coordinate)
-}
-
-function hidePopup() {
-  if (singlePopup.value) {
-    map.value.removeOverlay(singlePopup.value)
-    singlePopup.value = null
-  }
-  currentPopupData.value = null
-}
-
 function createPopupElement() {
   const popup = document.createElement('div')
   popup.className = 'single-popup'
@@ -366,27 +338,62 @@ function createPopupElement() {
     <div class="popup-content">
       <div class="popup-text">
         <div class="source-type">
-        <strong><label>Тип источника: </label></strong>
-        <span>${currentPopupData.value.sourceType}</span>
-      </div>
-
+          <strong><label>Тип источника: </label></strong>
+          <span class="source-type-value">N/A</span>
+        </div>
         <div class="average-concentration">
           <strong><label>Концентрация: </label></strong>
-          <span>${currentPopupData.value.averageConcentration.toFixed(2)} мкг/м3</span>
+          <span class="concentration-value">0.00 мкг/м3</span>
         </div>
-
         <div class="legend-item">
           <strong><label>Уровень загрязнения -&nbsp;</label></strong> 
-          <span>${currentPopupData.value.pollutionLevel}&nbsp;</span> 
-          <span 
-            class="legend-color" 
-            style="background-color: ${currentPopupData.value.color}"
-          ></span>
+          <span class="pollution-level-value">N/A</span> 
+          <span class="legend-color" style="background-color: #ccc"></span>
         </div>
       </div>
     </div>
   `
   return popup
+}
+
+function initPopup() {
+  if (!popupElement) {
+    popupElement = createPopupElement()
+    popup.value = new Overlay({
+      element: popupElement,
+      positioning: 'bottom-center',
+      stopEvent: false,
+      insertFirst: false,
+    })
+    map.value.addOverlay(popup.value)
+  }
+}
+
+function updatePopup(coordinate, feature, sourceType) {
+  if (!popupElement || !feature) {
+    hidePopup()
+    return
+  }
+  
+  currentPopupData.value = feature.get('dangerData')
+  currentPopupData.value.sourceType = sourceType
+  
+  popupElement.querySelector('.source-type-value').textContent = sourceType
+  popupElement.querySelector('.concentration-value').textContent = 
+    `${currentPopupData.value.averageConcentration.toFixed(2)} мкг/м3`
+  popupElement.querySelector('.pollution-level-value').textContent = 
+    currentPopupData.value.pollutionLevel
+  popupElement.querySelector('.legend-color').style.backgroundColor = 
+    currentPopupData.value.color
+  
+  popup.value.setPosition(coordinate)
+}
+
+function hidePopup() {
+  if (popup.value) {
+    popup.value.setPosition(undefined)
+  }
+  currentPopupData.value = null
 }
 
 async function handleTwoPointsSelected(p1, p2) {
@@ -1101,8 +1108,8 @@ onMounted(async () => {
     })
 
     if (popupFeature) {
-      const coordinate = evt.coordinate
-      showPopup(coordinate, popupFeature, sourceType)
+      initPopup()
+      updatePopup(evt.coordinate, popupFeature, sourceType)
       
       const mapElement = map.value.getTargetElement()
       mapElement.style.cursor = 'pointer'
