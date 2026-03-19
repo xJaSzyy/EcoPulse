@@ -17,7 +17,7 @@ public class DiscoveryController : ControllerBase
         _logger = logger;
     }
 
-    [HttpPost("register")]
+    [HttpPost("discovery/register")]
     public async Task<IActionResult> RegisterService([FromBody] ServiceRegistrationModel model)
     {
         var client = _httpClientFactory.CreateClient();
@@ -43,7 +43,7 @@ public class DiscoveryController : ControllerBase
         return Ok();
     }
 
-    [HttpGet("services")]
+    [HttpGet("discovery/services")]
     public async Task<IActionResult> GetServices(string? tag)
     {
         var client = _httpClientFactory.CreateClient();

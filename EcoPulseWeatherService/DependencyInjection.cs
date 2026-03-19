@@ -9,5 +9,6 @@ public static class DependencyInjection
     {
         services.AddScoped<IWeatherService, WeatherService>();
         services.AddHostedService<WeatherHostedService>();
+        services.AddHostedService<ConsulRegistrationService>();
     }
 }
