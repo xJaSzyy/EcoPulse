@@ -39,8 +39,8 @@ public class WeatherController : ControllerBase
     public async Task<IActionResult> GetCurrentWeather([FromQuery] string city)
     {
         var weather = _dbContext.Weathers
-            .OrderBy(x => x.Date)
-            .LastOrDefault();
+            .OrderByDescending(x => x.Date)
+            .FirstOrDefault();
 
         if (weather == null)
         {

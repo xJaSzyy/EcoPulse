@@ -1,15 +1,19 @@
 using EcoPulseWeatherService.Interfaces;
+using EcoPulseWeatherService.Models;
+using Microsoft.Extensions.Options;
 
 namespace EcoPulseWeatherService.Services;
 
 public class WeatherHostedService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(15);
+    private readonly TimeSpan _interval;
 
-    public WeatherHostedService(IServiceProvider serviceProvider)
+    public WeatherHostedService(IServiceProvider serviceProvider, 
+        IOptions<WeatherServiceOptions> options)
     {
         _serviceProvider = serviceProvider;
+        _interval = TimeSpan.FromMinutes(options.Value.FetchIntervalMinutes);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -1,4 +1,5 @@
 using EcoPulseWeatherService;
+using EcoPulseWeatherService.Models;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddServices();
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
+
+builder.Services.Configure<WeatherServiceOptions>(
+    builder.Configuration.GetSection("WeatherService"));
 
 var app = builder.Build();
 
