@@ -86,13 +86,13 @@ public class MaximumSingleService : IMaximumSingleService
         return result;
     }
     
-    public SingleDangerZone CalculateDangerZone(MaximumSingleEmissionsCalculateModel model)
+    public Task<SingleDangerZone> CalculateDangerZone(MaximumSingleEmissionsCalculateModel model)
     {
         var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == model.Pollutant);
 
         if (!pollutantInfo.Mass.HasValue)
         {
-            return new SingleDangerZone();
+            return Task.FromResult(new SingleDangerZone());
         }
         
         Setup(model);
@@ -107,7 +107,7 @@ public class MaximumSingleService : IMaximumSingleService
             result.Polygon = CreateDangerZonePolygon(model.SourceLocation, result.Width, result.Length, model.WindDirection);
         }
 
-        return result;
+        return Task.FromResult(result);
     }
     
     private Polygon CreateDangerZonePolygon(Point center, double width, double length, double angle)

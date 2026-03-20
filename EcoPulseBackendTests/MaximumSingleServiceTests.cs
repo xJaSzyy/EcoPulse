@@ -7,6 +7,7 @@ using EcoPulseBackend.Models.Result;
 using EcoPulseBackend.Services;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackendTests;
 
@@ -78,6 +79,51 @@ public class MaximumSingleServiceTests
                 Assert.That(result.Emissions[emissionIndex].GrossEmission, Is.EqualTo(emissions[emissionIndex].GrossEmission));
                 Assert.That(result.Emissions[emissionIndex].Distance, Is.EqualTo(emissions[emissionIndex].Distance));
             }
+        });
+    }
+    
+    [Test]
+    public async Task CalculateDangerZone_WhenValidInput_ShouldReturnCorrectSingleDangerZone()
+    {
+        // Arrange
+        var calculateModel = new MaximumSingleEmissionsCalculateModel
+        {
+            Pollutant = Pollutant.SP,
+            EjectedTemp = 255,
+            AirTemp = 5,
+            AvgExitSpeed = 30,
+            HeightSource = 100,
+            DiameterSource = 3,
+            TempStratificationRatio = CoefficientRegion.CentralRegions,
+            SedimentationRateRatio = CoefficientDegreePurification.Low,
+            WindSpeed = 6,
+            WindDirection = 90,
+            Distance = 10000,
+            SourceLocation = new Point(85.99424, 55.34792)
+        };
+
+        var pollutantInfo = new PollutantInfo
+        {
+            Id = 1, Code = 2, Name = "Твердые частицы", ShortName = "PM2.5", Pollutant = Pollutant.SP,
+            Mass = 15.72f, MaxPermissibleConcentration = 0.5f
+        };
+
+        _dbContextMock
+            .Setup(x => x.PollutantInfos)
+            .Returns(GetMockDbSet(new List<PollutantInfo> { pollutantInfo }.AsQueryable()).Object);
+        
+        // Act
+        var result = await _service.CalculateDangerZone(calculateModel);
+        
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Location, Is.Null);
+            Assert.That(Convert.ToInt32(result.Length), Is.EqualTo(4841));
+            Assert.That(Convert.ToInt32(result.Width), Is.EqualTo(2388));
+            Assert.That(result.Color, Is.EqualTo("rgba(248, 212, 97, 1)"));
+            Assert.That(result.AverageConcentration, Is.EqualTo(21.91f));
+            Assert.That(result.PollutionLevel, Is.EqualTo("низкий"));
         });
     }
     

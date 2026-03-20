@@ -29,7 +29,7 @@ public class TrafficLightQueueService : ITrafficLightQueueService
         return pollutants.OrderBy(p => (int)p).Select(pollutant => CalculateTrafficLightQueueEmissions(pollutant, model)).OfType<EmissionsResult>().ToList();
     }
     
-    public List<TrafficLightQueueDangerZone> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources)
+    public Task<List<TrafficLightQueueDangerZone>> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources)
     {
         var result = new List<TrafficLightQueueDangerZone>();
         
@@ -46,7 +46,7 @@ public class TrafficLightQueueService : ITrafficLightQueueService
 
             if (emissionsResult == null)
             {
-                return [];
+                return Task.FromResult<List<TrafficLightQueueDangerZone>>([]);
             }
             
             var maximumEmission = emissionsResult.MaximumEmission;
@@ -63,7 +63,7 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             });
         }
 
-        return result;
+        return Task.FromResult(result);
     }
     
     private EmissionsResult? CalculateTrafficLightQueueEmissions(Pollutant pollutant, TrafficLightQueueEmissionsCalculateModel model)

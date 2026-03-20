@@ -22,5 +22,5 @@ public interface ITrafficLightQueueService
     /// </summary>
     /// <param name="emissionSources">Список источников выбросов</param>
     /// <returns></returns>
-    public List<TrafficLightQueueDangerZone> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources);
+    public Task<List<TrafficLightQueueDangerZone>> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources);
 }
