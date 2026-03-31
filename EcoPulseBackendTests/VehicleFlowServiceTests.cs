@@ -2,7 +2,7 @@ using EcoPulseBackend.Contexts;
 using EcoPulseBackend.Enums;
 using EcoPulseBackend.Interfaces;
 using EcoPulseBackend.Models;
-using EcoPulseBackend.Models.MaximumSingle;
+using EcoPulseBackend.Models.DangerZone;
 using EcoPulseBackend.Models.Result;
 using EcoPulseBackend.Models.VehicleFlow;
 using EcoPulseBackend.Models.VehicleFlowEmissionSource;
@@ -97,8 +97,10 @@ public class VehicleFlowServiceTests
 
             for (var emissionIndex = 0; emissionIndex < result.Count; emissionIndex++)
             {
-                Assert.That(result[emissionIndex].PollutantInfo.Id, Is.EqualTo(emissions[emissionIndex].PollutantInfo.Id));
-                Assert.That(result[emissionIndex].MaximumEmission, Is.EqualTo(emissions[emissionIndex].MaximumEmission));
+                Assert.That(result[emissionIndex].PollutantInfo.Id,
+                    Is.EqualTo(emissions[emissionIndex].PollutantInfo.Id));
+                Assert.That(result[emissionIndex].MaximumEmission,
+                    Is.EqualTo(emissions[emissionIndex].MaximumEmission));
                 Assert.That(result[emissionIndex].GrossEmission, Is.EqualTo(emissions[emissionIndex].GrossEmission));
                 Assert.That(result[emissionIndex].Distance, Is.EqualTo(emissions[emissionIndex].Distance));
             }
@@ -122,130 +124,142 @@ public class VehicleFlowServiceTests
                 AverageSpeed = 90,
                 UpdatedAt = DateTime.UtcNow,
             }
-};
+        };
 
-_dbContextMock
-    .Setup(x => x.PollutantInfos)
+        var expectedResult = new List<VehicleFlowDangerZone>
+        {
+            new()
+            {
+                EmissionSourceId = emissionSources[0].Id,
+                Points = emissionSources[0].Points,
+                Color = "rgba(251, 153, 86, 1)",
+                AverageConcentration = 47.23394f,
+                PollutionLevel = "средний"
+            }
+        };
+
+        _dbContextMock
+            .Setup(x => x.PollutantInfos)
             .Returns(GetMockDbSet(_pollutantInfos.AsQueryable()).Object);
-        
+
         // Act
         var result = await _service.CalculateDangerZones(emissionSources);
 
-// Assert
-Assert.Multiple(() =>
+        // Assert
+        Assert.Multiple(() =>
         {
             Assert.That(result, Has.Count.EqualTo(1));
 
-            for (var dangerZoneIndex = 0; dangerZoneIndex<result.Count; dangerZoneIndex++)
+            for (var dangerZoneIndex = 0; dangerZoneIndex < result.Count; dangerZoneIndex++)
             {
-                Assert.That(result[dangerZoneIndex].EmissionSourceId, Is.EqualTo(1));
-                Assert.That(result[dangerZoneIndex].Points, Is.EqualTo(emissionSources[dangerZoneIndex].Points));
-                Assert.That(result[dangerZoneIndex].Color, Is.EqualTo("rgba(251, 153, 86, 1)"));
-                Assert.That(result[dangerZoneIndex].AverageConcentration, Is.EqualTo(47.23394f));
-                Assert.That(result[dangerZoneIndex].PollutionLevel, Is.EqualTo("средний"));
+                Assert.That(result[dangerZoneIndex].EmissionSourceId, Is.EqualTo(expectedResult[dangerZoneIndex].EmissionSourceId));
+                Assert.That(result[dangerZoneIndex].Points, Is.EqualTo(expectedResult[dangerZoneIndex].Points));
+                Assert.That(result[dangerZoneIndex].Color, Is.EqualTo(expectedResult[dangerZoneIndex].Color));
+                Assert.That(result[dangerZoneIndex].AverageConcentration, Is.EqualTo(expectedResult[dangerZoneIndex].AverageConcentration));
+                Assert.That(result[dangerZoneIndex].PollutionLevel, Is.EqualTo(expectedResult[dangerZoneIndex].PollutionLevel));
             }
         });
     }
-    
+
     private static Mock<DbSet<T>> GetMockDbSet<T>(IQueryable<T> data) where T : class
-{
-    var mockSet = new Mock<DbSet<T>>();
-    mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(data.Provider);
-    mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(data.Expression);
-    mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(data.ElementType);
-    mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator);
+    {
+        var mockSet = new Mock<DbSet<T>>();
+        mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(data.Provider);
+        mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(data.Expression);
+        mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(data.ElementType);
+        mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator);
 
-    return mockSet;
-}
-
-#region TestData
-
-private readonly List<PollutantInfo> _pollutantInfos =
-
-[
-    new PollutantInfo
-    {
-        Id = 2,
-        Code = 337,
-        Name = "Углерода оксид (углерод окись; углерод моноокись; угарный газ)",
-        ShortName = "CO",
-        Pollutant = Pollutant.CO,
-        SpecificEmission = 7.5f,
-        DailyAverageConcentration = 3f,
-        MaxPermissibleConcentration = 5f
-    },
-    new PollutantInfo
-    {
-        Id = 3,
-        Code = 2704,
-        Name = "Бензин (нефтяной, малосернистый) /в пересчете на углерод/",
-        ShortName = "CH",
-        Pollutant = Pollutant.CH,
-        SpecificEmission = 1f,
-        DailyAverageConcentration = 1.5f,
-        MaxPermissibleConcentration = 5f
-    },
-    new PollutantInfo
-    {
-        Id = 4,
-        Code = 301,
-        Name = "Азота диоксид (двуокись азота; пероксид азота)",
-        ShortName = "NO2",
-        Pollutant = Pollutant.NO2,
-        SpecificEmission = 0.112f,
-        Mass = 0.2695f,
-        MaxPermissibleConcentration = 0.2f,
-        DailyAverageConcentration = 0.04f
-    },
-    new PollutantInfo
-    {
-        Id = 6,
-        Code = 330,
-        Name = "Серы диоксид",
-        ShortName = "SO2",
-        Pollutant = Pollutant.SO2,
-        SpecificEmission = 0.036f,
-        Mass = 1.0528f,
-        MaxPermissibleConcentration = 0.5f,
-        DailyAverageConcentration = 0.05f
-    },
-    new PollutantInfo
-    {
-        Id = 14,
-        Code = 328,
-        Name = "Сажа",
-        ShortName = "Soot",
-        Pollutant = Pollutant.Soot
-    },
-    new PollutantInfo
-    {
-        Id = 15,
-        Code = 184,
-        Name = "Соединения свинца",
-        ShortName = "LeadCompounds",
-        Pollutant = Pollutant.LeadCompounds,
-        MaxPermissibleConcentration = 0.001f,
-        DailyAverageConcentration = 0.0003f
-    },
-    new PollutantInfo
-    {
-        Id = 16,
-        Code = 1325,
-        Name = "Формальдегид",
-        ShortName = "CH2O",
-        Pollutant = Pollutant.CH2O,
-        MaxPermissibleConcentration = 0.035f,
-        DailyAverageConcentration = 0.003f
-    },
-    new PollutantInfo
-    {
-        Id = 17,
-        Code = 703,
-        Name = "Бенз(а)пирен",
-        ShortName = "C20H12",
-        Pollutant = Pollutant.C20H12,
+        return mockSet;
     }
-];
+
+    #region TestData
+
+    private readonly List<PollutantInfo> _pollutantInfos =
+
+    [
+        new()
+        {
+            Id = 2,
+            Code = 337,
+            Name = "Углерода оксид (углерод окись; углерод моноокись; угарный газ)",
+            ShortName = "CO",
+            Pollutant = Pollutant.CO,
+            SpecificEmission = 7.5f,
+            DailyAverageConcentration = 3f,
+            MaxPermissibleConcentration = 5f
+        },
+        new()
+        {
+            Id = 3,
+            Code = 2704,
+            Name = "Бензин (нефтяной, малосернистый) /в пересчете на углерод/",
+            ShortName = "CH",
+            Pollutant = Pollutant.CH,
+            SpecificEmission = 1f,
+            DailyAverageConcentration = 1.5f,
+            MaxPermissibleConcentration = 5f
+        },
+        new()
+        {
+            Id = 4,
+            Code = 301,
+            Name = "Азота диоксид (двуокись азота; пероксид азота)",
+            ShortName = "NO2",
+            Pollutant = Pollutant.NO2,
+            SpecificEmission = 0.112f,
+            Mass = 0.2695f,
+            MaxPermissibleConcentration = 0.2f,
+            DailyAverageConcentration = 0.04f
+        },
+        new()
+        {
+            Id = 6,
+            Code = 330,
+            Name = "Серы диоксид",
+            ShortName = "SO2",
+            Pollutant = Pollutant.SO2,
+            SpecificEmission = 0.036f,
+            Mass = 1.0528f,
+            MaxPermissibleConcentration = 0.5f,
+            DailyAverageConcentration = 0.05f
+        },
+        new()
+        {
+            Id = 14,
+            Code = 328,
+            Name = "Сажа",
+            ShortName = "Soot",
+            Pollutant = Pollutant.Soot
+        },
+        new()
+        {
+            Id = 15,
+            Code = 184,
+            Name = "Соединения свинца",
+            ShortName = "LeadCompounds",
+            Pollutant = Pollutant.LeadCompounds,
+            MaxPermissibleConcentration = 0.001f,
+            DailyAverageConcentration = 0.0003f
+        },
+        new()
+        {
+            Id = 16,
+            Code = 1325,
+            Name = "Формальдегид",
+            ShortName = "CH2O",
+            Pollutant = Pollutant.CH2O,
+            MaxPermissibleConcentration = 0.035f,
+            DailyAverageConcentration = 0.003f
+        },
+        new()
+        {
+            Id = 17,
+            Code = 703,
+            Name = "Бенз(а)пирен",
+            ShortName = "C20H12",
+            Pollutant = Pollutant.C20H12,
+        }
+    ];
 
     #endregion
 }
