@@ -4,18 +4,18 @@ using EcoPulseBackend.Interfaces;
 using EcoPulseBackend.Models;
 using EcoPulseBackend.Models.DangerZone;
 using EcoPulseBackend.Models.Result;
+using EcoPulseBackend.Models.TrafficLightQueue;
+using EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
 using EcoPulseBackend.Models.VehicleFlow;
-using EcoPulseBackend.Models.VehicleFlowEmissionSource;
 using EcoPulseBackend.Services;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackendTests;
 
-public class VehicleFlowServiceTests
+public class VehicleQueueServiceTests
 {
-    private IVehicleFlowService _service;
+    private ITrafficLightQueueService _service;
     private Mock<ApplicationDbContext> _dbContextMock;
 
     [SetUp]
@@ -23,63 +23,69 @@ public class VehicleFlowServiceTests
     {
         _dbContextMock = new Mock<ApplicationDbContext>();
 
-        _service = new VehicleFlowService(_dbContextMock.Object);
+        _service = new TrafficLightQueueService(_dbContextMock.Object);
     }
-
+    
     [Test]
     public void CalculateEmissionsBatch_WhenValidInput_ShouldReturnCorrectListOfEmissionsResult()
     {
         // Arrange
-        var calculateModel = new VehicleFlowEmissionsCalculateModel
+        var calculateModel = new TrafficLightQueueEmissionsCalculateModel
         {
             VehicleGroups =
             [
-                new VehicleGroup
+                new VehicleGroupQueue
                 {
-                    AverageSpeed = 90,
-                    MaxTrafficIntensity = 8,
-                    VehicleType = VehicleType.DieselBuses
+                    TrafficLightQueueEmissionSourceId = 1,
+                    VehicleType = VehicleType.DieselBuses,
+                    VehiclesCount = 5
                 }
             ],
-            Length = 1000
+            TrafficLightCycles = 10,
+            TrafficLightStopTime = 120
         };
 
         var emissions = new List<EmissionsResult>
         {
             new()
             {
+                PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.LeadCompounds),
+                MaximumEmission = 0f
+            },
+            new()
+            {
                 PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.NO2),
-                MaximumEmission = 11.555555f
+                MaximumEmission = 105f
             },
             new()
             {
                 PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.Soot),
-                MaximumEmission = 0.43333336f
+                MaximumEmission = 13.500001f
             },
             new()
             {
                 PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.SO2),
-                MaximumEmission = 2.0944445f
+                MaximumEmission = 13.500001f
             },
             new()
             {
                 PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.CO),
-                MaximumEmission = 12.711111f
+                MaximumEmission = 460.49997f
             },
             new()
             {
                 PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.C20H12),
-                MaximumEmission = 0.0000096777769f
+                MaximumEmission = 0.00095999998f
             },
             new()
             {
                 PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.CH2O),
-                MaximumEmission = 0.4477778f
+                MaximumEmission = 2.9999998f
             },
             new()
             {
                 PollutantInfo = _pollutantInfos.First(x => x.Pollutant == Pollutant.CH),
-                MaximumEmission = 9.388889f
+                MaximumEmission = 61.5f
             }
         };
 
@@ -93,7 +99,7 @@ public class VehicleFlowServiceTests
         // Assert
         Assert.Multiple(() =>
         {
-            Assert.That(result, Has.Count.EqualTo(7));
+            Assert.That(result, Has.Count.EqualTo(8));
 
             for (var emissionIndex = 0; emissionIndex < result.Count; emissionIndex++)
             {
@@ -106,35 +112,41 @@ public class VehicleFlowServiceTests
             }
         });
     }
-
+    
     [Test]
     public async Task CalculateDangerZones_WhenValidInput_ShouldReturnCorrectListOfVehicleFlowDangerZone()
     {
         // Arrange
-        var emissionSources = new List<VehicleFlowEmissionSource>
+        var emissionSources = new List<TrafficLightQueueEmissionSource>
         {
             new()
             {
                 Id = 1,
                 CityId = 1,
-                StreetName = "",
-                Points = new LineString([new Coordinate(86.177997, 55.312554), new Coordinate(86.147901, 55.345084)]),
-                VehicleType = VehicleType.DieselBuses,
-                MaxTrafficIntensity = 8,
-                AverageSpeed = 90,
-                UpdatedAt = DateTime.UtcNow,
+                Location = new Point(86.177997, 55.312554),
+                VehicleGroups =
+                [
+                    new VehicleGroupQueue
+                    {
+                        TrafficLightQueueEmissionSourceId = 1,
+                        VehicleType = VehicleType.DieselBuses,
+                        VehiclesCount = 5
+                    }
+                ],
+                TrafficLightCycles = 10,
+                TrafficLightStopTime = 120
             }
         };
 
-        var expectedResult = new List<VehicleFlowDangerZone>
+        var expectedResult = new List<TrafficLightQueueDangerZone>
         {
             new()
             {
                 EmissionSourceId = emissionSources[0].Id,
-                Points = emissionSources[0].Points,
-                Color = "rgba(251, 153, 86, 1)",
-                AverageConcentration = 47.23394f,
-                PollutionLevel = "средний"
+                Location = emissionSources[0].Location,
+                Color = "rgba(246, 104, 106, 1)",
+                AverageConcentration = 105.0f,
+                PollutionLevel = "высокий"
             }
         };
 
@@ -153,14 +165,14 @@ public class VehicleFlowServiceTests
             for (var dangerZoneIndex = 0; dangerZoneIndex < result.Count; dangerZoneIndex++)
             {
                 Assert.That(result[dangerZoneIndex].EmissionSourceId, Is.EqualTo(expectedResult[dangerZoneIndex].EmissionSourceId));
-                Assert.That(result[dangerZoneIndex].Points, Is.EqualTo(expectedResult[dangerZoneIndex].Points));
+                Assert.That(result[dangerZoneIndex].Location, Is.EqualTo(expectedResult[dangerZoneIndex].Location));
                 Assert.That(result[dangerZoneIndex].Color, Is.EqualTo(expectedResult[dangerZoneIndex].Color));
                 Assert.That(result[dangerZoneIndex].AverageConcentration, Is.EqualTo(expectedResult[dangerZoneIndex].AverageConcentration));
                 Assert.That(result[dangerZoneIndex].PollutionLevel, Is.EqualTo(expectedResult[dangerZoneIndex].PollutionLevel));
             }
         });
     }
-
+    
     #region TestData
 
     private readonly List<PollutantInfo> _pollutantInfos =

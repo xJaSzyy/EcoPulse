@@ -22,7 +22,7 @@ public class TrafficLightQueueService : ITrafficLightQueueService
     {
         var pollutants = new List<Pollutant>
         {
-            Pollutant.CO, Pollutant.NO2, Pollutant.CH, /*Pollutant.Soot,*/
+            Pollutant.CO, Pollutant.NO2, Pollutant.CH, Pollutant.Soot,
             Pollutant.SO2, Pollutant.LeadCompounds, Pollutant.CH2O, Pollutant.C20H12
         };
 
@@ -74,7 +74,10 @@ public class TrafficLightQueueService : ITrafficLightQueueService
 
         foreach (var vehicleGroup in model.VehicleGroups)
         {
-            var specificEmission = VehicleSpecificEmissions[vehicleGroup.VehicleType][pollutant];
+            if (!VehicleSpecificEmissions[vehicleGroup.VehicleType].TryGetValue(pollutant, out var specificEmission))
+            {
+                continue;
+            }
 
             emission += specificEmission * vehicleGroup.VehiclesCount;
         }
