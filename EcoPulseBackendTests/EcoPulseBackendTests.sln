@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoPulseBackendTests", "EcoPulseBackendTests\EcoPulseBackendTests.csproj", "{1BD9FBCD-D793-432A-9376-6CFD269E03E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoPulseBackendTests", "EcoPulseBackendTests.csproj", "{1BD9FBCD-D793-432A-9376-6CFD269E03E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

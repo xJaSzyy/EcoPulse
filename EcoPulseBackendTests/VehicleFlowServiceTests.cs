@@ -160,7 +160,7 @@ public class VehicleFlowServiceTests
 
     #region TestData
 
-    private List<PollutantInfo> _pollutantInfos =
+    private readonly List<PollutantInfo> _pollutantInfos =
     [
         new PollutantInfo
         {
