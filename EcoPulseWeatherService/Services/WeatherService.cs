@@ -23,7 +23,7 @@ public class WeatherService : IWeatherService
         const string weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=55.355198&longitude=86.086847&current_weather=true";
 
         var currentDate = DateTime.UtcNow;
-        
+
         try
         {
             var response = await weatherClient.GetAsync(weatherUrl, ct);
@@ -40,10 +40,10 @@ public class WeatherService : IWeatherService
                 IconClass = GetWeatherInfo(weatherResponse.CurrentWeather.WeatherCode,
                     weatherResponse.CurrentWeather.IsDay == 1).IconClass
             };
-            
+
             var backendResponse = await backendClient.PostAsJsonAsync("http://backend:5000/weather/save", result, ct);
             backendResponse.EnsureSuccessStatusCode();
-        
+
             _logger.LogInformation($"Weather sent to backend: {currentDate}");
         }
         catch (Exception ex)
@@ -51,7 +51,7 @@ public class WeatherService : IWeatherService
             _logger.LogError(ex, ex.Message);
         }
     }
-    
+
     private static (string Description, string IconClass) GetWeatherInfo(int weatherCode, bool isDay)
     {
         return weatherCode switch

@@ -12,7 +12,7 @@ public class VehicleFlowDangerZone
     /// Идентификатор источника выброса
     /// </summary>
     public int EmissionSourceId { get; set; }
-    
+
     [Column(TypeName = "geometry(LineString, 4326)")]
     public LineString Points { get; set; } = null!;
 
@@ -20,12 +20,12 @@ public class VehicleFlowDangerZone
     /// Цвет зоны выброса
     /// </summary>
     public string Color { get; set; } = null!;
-    
+
     /// <summary>
     /// Среднее значение концентрации
     /// </summary>
     public float AverageConcentration { get; set; }
-    
+
     /// <summary>
     /// Уровень загрязнения
     /// </summary>

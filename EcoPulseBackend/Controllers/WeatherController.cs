@@ -46,7 +46,7 @@ public class WeatherController : ControllerBase
         {
             return NotFound();
         }
-        
+
         return Ok(new WeatherViewModel
         {
             Date = weather.Date,

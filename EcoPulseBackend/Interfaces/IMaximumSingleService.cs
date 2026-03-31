@@ -15,7 +15,7 @@ public interface IMaximumSingleService
     /// <param name="model">Модель для расчета выбросов от одиночного точечного источника</param>
     /// <returns></returns>
     public EmissionsGroupResult CalculateEmissions(MaximumSingleEmissionsCalculateModel model);
-    
+
     /// <summary>
     /// Расчет зоны выброса
     /// </summary>

@@ -85,9 +85,9 @@ public class GridService : IGridService
                 var color = avg >= 0
                     ? DangerZoneUtils.GetColorByConcentration(avg)
                     : DangerZoneUtils.GetColorByIndex(0);
-                
+
                 var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(avg);
-                
+
                 Console.WriteLine($"avg: {avg}, lvl: {pollutionLevel}");
 
                 tiles.Add(new TileModel
@@ -118,7 +118,7 @@ public class GridService : IGridService
         var queueIndex = new NetTopologySuite.Index.Strtree.STRtree<TrafficLightQueueDangerZone>();
         foreach (var zone in model.TrafficLightQueueDangerZones)
             queueIndex.Insert(zone.Location.EnvelopeInternal, zone);
-        
+
         foreach (var area in mainPolygon)
         {
             var avgConcentration = GetAverageConcentration(singleIndex, flowIndex, queueIndex, (area as Polygon)!);
@@ -215,18 +215,18 @@ public class GridService : IGridService
                     result.Add(CreateMergedTileModel(group, polygon));
                     break;
                 case MultiPolygon multiPolygon:
-                {
-                    for (var i = 0; i < multiPolygon.NumGeometries; i++)
                     {
-                        var poly = (Polygon)multiPolygon.GetGeometryN(i);
-                        result.Add(CreateMergedTileModel(group, poly));
-                    }
+                        for (var i = 0; i < multiPolygon.NumGeometries; i++)
+                        {
+                            var poly = (Polygon)multiPolygon.GetGeometryN(i);
+                            result.Add(CreateMergedTileModel(group, poly));
+                        }
 
-                    break;
-                }
+                        break;
+                    }
             }
         }
-        
+
         return result;
     }
 

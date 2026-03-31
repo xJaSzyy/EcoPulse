@@ -15,7 +15,7 @@ public class VehicleFlowService : IVehicleFlowService
     private readonly ApplicationDbContext _dbContext;
 
     private const int CacheInMinutes = 15;
-    
+
     public VehicleFlowService(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
@@ -31,15 +31,15 @@ public class VehicleFlowService : IVehicleFlowService
 
         return pollutants.OrderBy(p => (int)p).Select(pollutant => CalculateVehicleFlowEmissions(pollutant, model)).OfType<EmissionsResult>().ToList();
     }
-    
+
     public async Task<List<VehicleFlowDangerZone>> CalculateDangerZones(List<VehicleFlowEmissionSource> emissionSources)
     {
         var result = new List<VehicleFlowDangerZone>();
-        
+
         foreach (var source in emissionSources)
         {
             var points = source.Points;
-            
+
             var length = (float)GeoUtils.CalculateHaversineLength(points.Coordinates);
 
             var currentDate = DateTime.UtcNow;
@@ -52,7 +52,7 @@ public class VehicleFlowService : IVehicleFlowService
                 _dbContext.VehicleFlowEmissionSources.Update(source);
                 await _dbContext.SaveChangesAsync();
             }
-            
+
             var calculateModel = new VehicleFlowEmissionsCalculateModel
             {
                 VehicleGroups =
@@ -66,18 +66,18 @@ public class VehicleFlowService : IVehicleFlowService
                 ],
                 Length = length
             };
-            
+
             var emissionsResult = CalculateVehicleFlowEmissions(Pollutant.NO2, calculateModel);
 
             if (emissionsResult == null)
             {
                 return [];
             }
-            
+
             var maximumEmission = emissionsResult.MaximumEmission;
             var color = DangerZoneUtils.GetColorByConcentration(maximumEmission);
             var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(maximumEmission);
-            
+
             result.Add(new VehicleFlowDangerZone
             {
                 EmissionSourceId = source.Id,
@@ -90,16 +90,16 @@ public class VehicleFlowService : IVehicleFlowService
 
         return result;
     }
-    
+
     private EmissionsResult? CalculateVehicleFlowEmissions(Pollutant pollutant, VehicleFlowEmissionsCalculateModel model)
     {
         var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == pollutant);
-        
+
         if (!VehicleEmissionFactors[model.VehicleGroups.First().VehicleType].ContainsKey(pollutant))
         {
             return null;
         }
-        
+
         var emission = 0f;
 
         foreach (var vehicleGroup in model.VehicleGroups)
@@ -107,18 +107,18 @@ public class VehicleFlowService : IVehicleFlowService
             var specificEmission = VehicleEmissionFactors[vehicleGroup.VehicleType][pollutant];
 
             var speedCorrectionFactor = GetSpeedCorrectionFactor(vehicleGroup.AverageSpeed);
-            
+
             emission += specificEmission * vehicleGroup.MaxTrafficIntensity * speedCorrectionFactor;
         }
-        
+
         emission *= model.Length / 3600f;
 
         var result = new EmissionsResult
         {
             MaximumEmission = emission,
-            PollutantInfo =  pollutantInfo
+            PollutantInfo = pollutantInfo
         };
-        
+
         return result;
     }
 
@@ -128,10 +128,10 @@ public class VehicleFlowService : IVehicleFlowService
             .Where(x => x.Key >= speed)
             .OrderBy(x => x.Key)
             .FirstOrDefault();
-    
+
         return nearest.Key == 0 ? SpeedCorrectionFactors.Values.Last() : nearest.Value;
     }
-    
+
     private static readonly Dictionary<int, float> SpeedCorrectionFactors = new()
     {
         { 10, 1.35f },
@@ -148,11 +148,12 @@ public class VehicleFlowService : IVehicleFlowService
         { 80, 0.5f },
         { 100, 0.65f }
     };
-    
+
     private static readonly Dictionary<VehicleType, Dictionary<Pollutant, float>> VehicleEmissionFactors = new()
     {
         {
-            VehicleType.Passenger, new Dictionary<Pollutant, float>
+            VehicleType.Passenger,
+            new Dictionary<Pollutant, float>
             {
                 { Pollutant.CO, 19f },
                 { Pollutant.NO2, 1.8f },
@@ -164,7 +165,8 @@ public class VehicleFlowService : IVehicleFlowService
             }
         },
         {
-            VehicleType.DieselPassenger, new Dictionary<Pollutant, float>
+            VehicleType.DieselPassenger,
+            new Dictionary<Pollutant, float>
             {
                 { Pollutant.CO, 2f },
                 { Pollutant.NO2, 1.3f },
@@ -175,7 +177,8 @@ public class VehicleFlowService : IVehicleFlowService
             }
         },
         {
-            VehicleType.CargoCarburetorLow, new Dictionary<Pollutant, float>()
+            VehicleType.CargoCarburetorLow,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 69.4f },
                 { Pollutant.NO2, 2.9f },
@@ -187,7 +190,8 @@ public class VehicleFlowService : IVehicleFlowService
             }
         },
         {
-            VehicleType.CargoCarburetorHigh, new Dictionary<Pollutant, float>()
+            VehicleType.CargoCarburetorHigh,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 75f },
                 { Pollutant.NO2, 5.2f },
@@ -199,7 +203,8 @@ public class VehicleFlowService : IVehicleFlowService
             }
         },
         {
-            VehicleType.CarburetorBuses, new Dictionary<Pollutant, float>()
+            VehicleType.CarburetorBuses,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 97.6f },
                 { Pollutant.NO2, 5.3f },
@@ -211,7 +216,8 @@ public class VehicleFlowService : IVehicleFlowService
             }
         },
         {
-            VehicleType.DieselTrucks, new Dictionary<Pollutant, float>()
+            VehicleType.DieselTrucks,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 8.5f },
                 { Pollutant.NO2, 7.7f },
@@ -223,7 +229,8 @@ public class VehicleFlowService : IVehicleFlowService
             }
         },
         {
-            VehicleType.DieselBuses, new Dictionary<Pollutant, float>()
+            VehicleType.DieselBuses,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 8.8f },
                 { Pollutant.NO2, 8f },
@@ -235,7 +242,8 @@ public class VehicleFlowService : IVehicleFlowService
             }
         },
         {
-            VehicleType.CargoGas, new Dictionary<Pollutant, float>()
+            VehicleType.CargoGas,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 39f },
                 { Pollutant.NO2, 2.6f },

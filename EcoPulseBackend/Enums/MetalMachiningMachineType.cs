@@ -11,14 +11,14 @@ public enum MetalMachiningMachineType
     /// Сверлильный
     /// </summary>
     [Description("Сверлильный станок")]
-    Drilling = 1, 
-    
+    Drilling = 1,
+
     /// <summary>
     /// Крацевальный
     /// </summary>
     [Description("Крацевальный станок")]
     Milling = 2,
-    
+
     /// <summary>
     /// Отрезной
     /// </summary>

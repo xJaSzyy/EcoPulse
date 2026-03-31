@@ -9,7 +9,7 @@ public class VehicleFlowEmissionsCalculateModel
     /// Список групп транспортных средств
     /// </summary>
     public List<VehicleGroup> VehicleGroups { get; set; } = new();
-    
+
     /// <summary>
     /// Протяженность автомагистрали (или ее участка)
     /// </summary>

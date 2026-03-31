@@ -35,13 +35,13 @@ public class EnterpriseController : ControllerBase
             Name = model.Name,
             SanitaryArea = model.SanitaryArea
         };
-        
+
         _dbContext.Enterprises.Add(enterprise);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(enterprise);
     }
-    
+
     [HttpPut("enterprise")]
     public async Task<IActionResult> UpdateEnterprise([FromBody] EnterpriseUpdateModel model)
     {
@@ -51,16 +51,16 @@ public class EnterpriseController : ControllerBase
         {
             return NotFound();
         }
-        
+
         enterprise.Name = model.Name ?? enterprise.Name;
         enterprise.SanitaryArea = model.SanitaryArea ?? enterprise.SanitaryArea;
-        
+
         _dbContext.Enterprises.Update(enterprise);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(enterprise);
     }
-    
+
     [HttpPost("enterprise/sanitary-area")]
     public IActionResult GetAllEnterpriseSanitaryAreas([FromBody] List<int> cityIds)
     {
@@ -68,7 +68,7 @@ public class EnterpriseController : ControllerBase
             .Where(e => cityIds.Contains(e.CityId))
             .Select(e => e.SanitaryArea)
             .ToList();
-        
+
         return Ok(sanitaryAreas);
     }
 }

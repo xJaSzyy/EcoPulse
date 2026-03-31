@@ -28,11 +28,11 @@ public class TrafficLightQueueService : ITrafficLightQueueService
 
         return pollutants.OrderBy(p => (int)p).Select(pollutant => CalculateTrafficLightQueueEmissions(pollutant, model)).OfType<EmissionsResult>().ToList();
     }
-    
+
     public Task<List<TrafficLightQueueDangerZone>> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources)
     {
         var result = new List<TrafficLightQueueDangerZone>();
-        
+
         foreach (var source in emissionSources)
         {
             var calculateModel = new TrafficLightQueueEmissionsCalculateModel
@@ -41,18 +41,18 @@ public class TrafficLightQueueService : ITrafficLightQueueService
                 TrafficLightCycles = source.TrafficLightCycles,
                 TrafficLightStopTime = source.TrafficLightStopTime
             };
-            
+
             var emissionsResult = CalculateTrafficLightQueueEmissions(Pollutant.NO2, calculateModel);
 
             if (emissionsResult == null)
             {
                 return Task.FromResult<List<TrafficLightQueueDangerZone>>([]);
             }
-            
+
             var maximumEmission = emissionsResult.MaximumEmission;
             var color = DangerZoneUtils.GetColorByConcentration(maximumEmission);
             var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(maximumEmission);
-            
+
             result.Add(new TrafficLightQueueDangerZone
             {
                 EmissionSourceId = source.Id,
@@ -65,11 +65,11 @@ public class TrafficLightQueueService : ITrafficLightQueueService
 
         return Task.FromResult(result);
     }
-    
+
     private EmissionsResult? CalculateTrafficLightQueueEmissions(Pollutant pollutant, TrafficLightQueueEmissionsCalculateModel model)
     {
         var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == pollutant);
-        
+
         var emission = 0f;
 
         foreach (var vehicleGroup in model.VehicleGroups)
@@ -78,22 +78,23 @@ public class TrafficLightQueueService : ITrafficLightQueueService
 
             emission += specificEmission * vehicleGroup.VehiclesCount;
         }
-        
+
         emission *= model.TrafficLightCycles * model.TrafficLightStopTime / 40f;
 
         var result = new EmissionsResult
         {
             MaximumEmission = emission,
-            PollutantInfo =  pollutantInfo
+            PollutantInfo = pollutantInfo
         };
-        
+
         return result;
     }
 
     private static readonly Dictionary<VehicleType, Dictionary<Pollutant, float>> VehicleSpecificEmissions = new()
     {
         {
-            VehicleType.Passenger, new Dictionary<Pollutant, float>
+            VehicleType.Passenger,
+            new Dictionary<Pollutant, float>
             {
                 { Pollutant.CO, 3.5f },
                 { Pollutant.NO2, 0.05f },
@@ -105,7 +106,8 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             }
         },
         {
-            VehicleType.DieselPassenger, new Dictionary<Pollutant, float>
+            VehicleType.DieselPassenger,
+            new Dictionary<Pollutant, float>
             {
                 { Pollutant.CO, 0.13f },
                 { Pollutant.NO2, 0.08f },
@@ -116,7 +118,8 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             }
         },
         {
-            VehicleType.CargoCarburetorLow, new Dictionary<Pollutant, float>()
+            VehicleType.CargoCarburetorLow,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 6.3f },
                 { Pollutant.NO2, 0.075f },
@@ -128,7 +131,8 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             }
         },
         {
-            VehicleType.CargoCarburetorHigh, new Dictionary<Pollutant, float>()
+            VehicleType.CargoCarburetorHigh,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 18.4f },
                 { Pollutant.NO2, 0.2f },
@@ -140,7 +144,8 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             }
         },
         {
-            VehicleType.CarburetorBuses, new Dictionary<Pollutant, float>()
+            VehicleType.CarburetorBuses,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 16.1f },
                 { Pollutant.NO2, 0.16f },
@@ -152,7 +157,8 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             }
         },
         {
-            VehicleType.DieselTrucks, new Dictionary<Pollutant, float>()
+            VehicleType.DieselTrucks,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 2.85f },
                 { Pollutant.NO2, 0.81f },
@@ -164,7 +170,8 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             }
         },
         {
-            VehicleType.DieselBuses, new Dictionary<Pollutant, float>()
+            VehicleType.DieselBuses,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 3.07f },
                 { Pollutant.NO2, 0.7f },
@@ -176,7 +183,8 @@ public class TrafficLightQueueService : ITrafficLightQueueService
             }
         },
         {
-            VehicleType.CargoGas, new Dictionary<Pollutant, float>()
+            VehicleType.CargoGas,
+            new Dictionary<Pollutant, float>()
             {
                 { Pollutant.CO, 6.44f },
                 { Pollutant.NO2, 0.09f },

@@ -14,10 +14,10 @@ public class SingleEmissionSourceUpdateModel
     /// Идентификатор
     /// </summary>
     public int Id { get; set; }
-    
+
     [Column(TypeName = "geometry(Point, 4326)")]
     public Point Location { get; set; } = null!;
-    
+
     /// <summary>
     /// Температура выбрасываемой ГВС
     /// </summary>

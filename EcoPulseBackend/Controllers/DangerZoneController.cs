@@ -18,16 +18,16 @@ public class DangerZoneController : ControllerBase
         _emissionService = emissionService;
         _dbContext = dbContext;
     }
-    
+
     [HttpPost("danger-zone/single")]
     public async Task<IActionResult> CalculateMaximumSingleEmissionsDangerZone([FromBody] MaximumSingleEmissionsCalculateModel model)
     {
         var result = await _emissionService.MaximumSingleService.CalculateDangerZone(model);
         result.Location = model.SourceLocation ?? result.Location;
-        
+
         return Ok(result);
     }
-    
+
     [HttpPost("danger-zones/single")]
     public async Task<IActionResult> CalculateSingleDangerZones([FromBody] SingleDangerZoneCalculateModel model)
     {
@@ -36,13 +36,13 @@ public class DangerZoneController : ControllerBase
             .ToListAsync();
 
         var result = new List<SingleDangerZone>();
-        
+
         foreach (var emissionSource in emissionSources)
         {
             var calculateModel = new MaximumSingleEmissionsCalculateModel
             {
                 Pollutant = model.Pollutant,
-                EjectedTemp =  emissionSource.EjectedTemp,
+                EjectedTemp = emissionSource.EjectedTemp,
                 AirTemp = model.AirTemp,
                 AvgExitSpeed = emissionSource.AvgExitSpeed,
                 HeightSource = emissionSource.HeightSource,
@@ -58,13 +58,13 @@ public class DangerZoneController : ControllerBase
             var dangerZone = await _emissionService.MaximumSingleService.CalculateDangerZone(calculateModel);
             dangerZone.EmissionSourceId = emissionSource.Id;
             dangerZone.Location = emissionSource.Location;
-            
+
             result.Add(dangerZone);
         }
 
         return Ok(result);
     }
-    
+
     [HttpPost("danger-zones/vehicle-flow")]
     public async Task<IActionResult> CalculateVehicleFlowDangerZones([FromBody] VehicleFlowDangerZoneCalculateModel model)
     {
@@ -76,7 +76,7 @@ public class DangerZoneController : ControllerBase
 
         return Ok(result);
     }
-    
+
     [HttpPost("danger-zones/traffic-light-queue")]
     public async Task<IActionResult> CalculateTrafficLightQueueDangerZones(TrafficLightQueueDangerZoneCalculateModel model)
     {

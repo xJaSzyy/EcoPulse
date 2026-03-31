@@ -15,12 +15,12 @@ public class MaximumSingleServiceTests
 {
     private IMaximumSingleService _service;
     private Mock<ApplicationDbContext> _dbContextMock;
-    
+
     [SetUp]
     public void Setup()
     {
         _dbContextMock = new Mock<ApplicationDbContext>();
-        
+
         _service = new MaximumSingleService(_dbContextMock.Object);
     }
 
@@ -55,17 +55,22 @@ public class MaximumSingleServiceTests
 
         var pollutantInfo = new PollutantInfo
         {
-            Id = 1, Code = 2, Name = "Твердые частицы", ShortName = "PM2.5", Pollutant = Pollutant.SP,
-            Mass = 15.72f, MaxPermissibleConcentration = 0.5f
+            Id = 1,
+            Code = 2,
+            Name = "Твердые частицы",
+            ShortName = "PM2.5",
+            Pollutant = Pollutant.SP,
+            Mass = 15.72f,
+            MaxPermissibleConcentration = 0.5f
         };
 
         _dbContextMock
             .Setup(x => x.PollutantInfos)
             .Returns(GetMockDbSet(new List<PollutantInfo> { pollutantInfo }.AsQueryable()).Object);
-        
+
         // Act
         var result = _service.CalculateEmissions(calculateModel);
-        
+
         // Assert
         Assert.Multiple(() =>
         {
@@ -81,7 +86,7 @@ public class MaximumSingleServiceTests
             }
         });
     }
-    
+
     [Test]
     public async Task CalculateDangerZone_WhenValidInput_ShouldReturnCorrectSingleDangerZone()
     {
@@ -104,17 +109,22 @@ public class MaximumSingleServiceTests
 
         var pollutantInfo = new PollutantInfo
         {
-            Id = 1, Code = 2, Name = "Твердые частицы", ShortName = "PM2.5", Pollutant = Pollutant.SP,
-            Mass = 15.72f, MaxPermissibleConcentration = 0.5f
+            Id = 1,
+            Code = 2,
+            Name = "Твердые частицы",
+            ShortName = "PM2.5",
+            Pollutant = Pollutant.SP,
+            Mass = 15.72f,
+            MaxPermissibleConcentration = 0.5f
         };
 
         _dbContextMock
             .Setup(x => x.PollutantInfos)
             .Returns(GetMockDbSet(new List<PollutantInfo> { pollutantInfo }.AsQueryable()).Object);
-        
+
         // Act
         var result = await _service.CalculateDangerZone(calculateModel);
-        
+
         // Assert
         Assert.Multiple(() =>
         {
@@ -126,7 +136,7 @@ public class MaximumSingleServiceTests
             Assert.That(result.PollutionLevel, Is.EqualTo("низкий"));
         });
     }
-    
+
     private static Mock<DbSet<T>> GetMockDbSet<T>(IQueryable<T> data) where T : class
     {
         var mockSet = new Mock<DbSet<T>>();

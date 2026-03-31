@@ -16,7 +16,7 @@ public interface ITrafficLightQueueService
     /// <param name="model">Модель для расчета выбросов стоящего транспорта на регулируемом перекрестке</param>
     /// <returns></returns>
     public List<EmissionsResult> CalculateEmissionsBatch(TrafficLightQueueEmissionsCalculateModel model);
-    
+
     /// <summary>
     /// Расчет нескольких зон выбросов
     /// </summary>

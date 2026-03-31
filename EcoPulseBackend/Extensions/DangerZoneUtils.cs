@@ -28,7 +28,7 @@ public static class DangerZoneUtils
 
     public static string GetColorByIndex(int index)
     {
-        var colors = ColorMap.ToList(); 
+        var colors = ColorMap.ToList();
         index = Math.Clamp(index, 0, colors.Count - 1);
         return colors[index].Value;
     }
@@ -38,20 +38,20 @@ public static class DangerZoneUtils
         var pair = ColorMap.FirstOrDefault(p => concentration <= p.Key);
         return ColorMap.Values.ToList().IndexOf(pair.Value);
     }
-    
+
     private static readonly SortedDictionary<double, string> ColorMap = new()
     {
-        { 9999, "rgba(138, 79, 163, 1)"},
+        { 9999, "rgba(138, 79, 163, 1)" },
         { 225.4, "rgba(164, 125, 184, 1)" },
         { 125.4, "rgba(246, 104, 106, 1)" },
         { 55.4, "rgba(251, 153, 86, 1)" },
         { 35.4, "rgba(248, 212, 97, 1)" },
         { 9.0, "rgba(171, 209, 98, 1)" }
     };
-    
+
     private static readonly SortedDictionary<double, string> PollutionLevelMap = new()
     {
-        { 9999, "экстремальный"},
+        { 9999, "экстремальный" },
         { 225.4, "очень высокий" },
         { 125.4, "высокий" },
         { 55.4, "средний" },

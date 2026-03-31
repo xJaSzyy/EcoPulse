@@ -19,15 +19,15 @@ public class EmissionController : ControllerBase
     private readonly IEmissionService _service;
     private readonly ApplicationDbContext _dbContext;
 
-    public EmissionController(ILogger<EmissionController> logger, 
-        IEmissionService service, 
+    public EmissionController(ILogger<EmissionController> logger,
+        IEmissionService service,
         ApplicationDbContext dbContext)
     {
         _logger = logger;
         _service = service;
         _dbContext = dbContext;
     }
-    
+
     [HttpPost("emission/gasoline-generator")]
     public IActionResult CalculateGasolineGenerator([FromBody] GasolineGeneratorEmissionsCalculateModel model)
     {
@@ -43,15 +43,15 @@ public class EmissionController : ControllerBase
 
         return Ok(result.Emissions);
     }
-    
+
     [HttpPost("emission/during-metal-machining")]
     public IActionResult CalculateDuringMetalMachining([FromBody] DuringMetalMachiningEmissionsCalculateModel model)
-    { 
+    {
         var result = _service.DuringMetalMachiningService.CalculateEmissionsBatch(model);
 
         return Ok(result);
     }
-    
+
     [HttpPost("emission/during-welding-operations")]
     public IActionResult CalculateDuringWeldingOperations([FromBody] DuringWeldingOperationsEmissionsCalculateModel model)
     {
@@ -59,7 +59,7 @@ public class EmissionController : ControllerBase
 
         return Ok(result.Emissions);
     }
-    
+
     [HttpPost("emission/maximum-single")]
     public IActionResult CalculateMaximumSingleEmissions([FromBody] MaximumSingleEmissionsCalculateModel model)
     {
@@ -67,7 +67,7 @@ public class EmissionController : ControllerBase
 
         return Ok(result);
     }
-    
+
     [HttpPost("emission/vehicle-flow")]
     public IActionResult CalculateVehicleFlowEmissions([FromBody] VehicleFlowEmissionsCalculateModel model)
     {
@@ -75,7 +75,7 @@ public class EmissionController : ControllerBase
 
         return Ok(result);
     }
-    
+
     [HttpPost("emission/traffic-light-queue")]
     public IActionResult CalculateTrafficLightQueueEmissions([FromBody] TrafficLightQueueEmissionsCalculateModel model)
     {

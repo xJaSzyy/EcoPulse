@@ -31,7 +31,7 @@ public class GridController : ControllerBase
             {
                 continue;
             }
-            
+
             var tiles = _gridService.GenerateTileGrid(city.Polygon, model);
             results.Add(new TileGridResult
             {
@@ -58,7 +58,7 @@ public class GridController : ControllerBase
             {
                 continue;
             }
-            
+
             var tiles = _gridService.GenerateTileArea(city.Polygon, model);
             results.Add(new TileGridResult
             {

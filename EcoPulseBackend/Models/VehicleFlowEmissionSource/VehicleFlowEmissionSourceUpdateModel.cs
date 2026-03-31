@@ -10,20 +10,20 @@ public class VehicleFlowEmissionSourceUpdateModel
     /// Идентификатор
     /// </summary>
     public int Id { get; set; }
-    
+
     [Column(TypeName = "geometry(LineString, 4326)")]
     public LineString? Points { get; set; } = null!;
-    
+
     /// <summary>
     /// Тип транспортного средства
     /// </summary>
     public VehicleType? VehicleType { get; set; }
-        
+
     /// <summary>
     /// Фактическая наибольшая интенсивность движения
     /// </summary>
     public float? MaxTrafficIntensity { get; set; }
-        
+
     /// <summary>
     /// Средняя скорость движения транспортного потока
     /// </summary>

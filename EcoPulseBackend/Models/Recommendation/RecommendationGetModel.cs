@@ -7,7 +7,7 @@ namespace EcoPulseBackend.Models.Recommendation;
 public class RecommendationGetModel
 {
     public List<TileModel> Tiles { get; set; } = [];
-    
+
     [Column(TypeName = "geometry(Point, 4326)")]
     public Point UserLocation { get; set; } = null!;
 }

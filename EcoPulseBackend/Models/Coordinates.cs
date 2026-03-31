@@ -9,7 +9,7 @@ public class Coordinates
     /// Долгота
     /// </summary>
     public double Lon { get; set; }
-    
+
     /// <summary>
     /// Широта
     /// </summary>

@@ -75,7 +75,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     ResponseWriter = async (context, report) =>
     {
         var db = context.RequestServices.GetRequiredService<ApplicationDbContext>();
-        try 
+        try
         {
             await db.Database.CanConnectAsync();
             context.Response.StatusCode = 200;
@@ -87,5 +87,5 @@ app.MapHealthChecks("/health", new HealthCheckOptions
             await context.Response.WriteAsync($"DB Error: {ex.Message}");
         }
     }
-}).DisableRateLimiting(); 
+}).DisableRateLimiting();
 app.Run();

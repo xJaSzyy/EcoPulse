@@ -12,7 +12,7 @@ public enum ReservoirType
     /// </summary>
     [Description("Наземный")]
     Ground = 1,
-    
+
     /// <summary>
     /// Заглубленный
     /// </summary>

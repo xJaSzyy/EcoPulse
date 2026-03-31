@@ -11,18 +11,18 @@ namespace EcoPulseBackend.Services;
 public class MaximumSingleService : IMaximumSingleService
 {
     private readonly ApplicationDbContext _dbContext;
-    
+
     public MaximumSingleService(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
     }
-    
-    private float _heightSource; 
-    private int _sedimentationRateRatio; 
-    private float _diameterSource; 
-    private int _tempStratificationRatio; 
-    private float _avgExitSpeed; 
-    private float _ejectedTemp; 
+
+    private float _heightSource;
+    private int _sedimentationRateRatio;
+    private float _diameterSource;
+    private int _tempStratificationRatio;
+    private float _avgExitSpeed;
+    private float _ejectedTemp;
     private float _airTemp;
 
     private float _tempDiff;
@@ -43,13 +43,13 @@ public class MaximumSingleService : IMaximumSingleService
         _airTemp = model.AirTemp;
 
         _tempDiff = _ejectedTemp - _airTemp;
-        _volumeFlow = (float)Math.PI * (float)Math.Pow(_diameterSource, 2) / 4f * _avgExitSpeed; 
+        _volumeFlow = (float)Math.PI * (float)Math.Pow(_diameterSource, 2) / 4f * _avgExitSpeed;
         _riseVelocity = 0.65f * (float)Math.Pow(_volumeFlow * _tempDiff / _heightSource, 1f / 3f);
         _velocityRatio = 1.3f * _avgExitSpeed * _diameterSource / _heightSource;
         _buoyancyParam = 1000f * ((float)Math.Pow(_avgExitSpeed, 2) * _diameterSource) / ((float)Math.Pow(_heightSource, 2) * _tempDiff);
         _effectiveBuoyancy = 800f * (float)Math.Pow(_velocityRatio, 3);
     }
-    
+
     public EmissionsGroupResult CalculateEmissions(MaximumSingleEmissionsCalculateModel model)
     {
         var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == model.Pollutant);
@@ -58,20 +58,20 @@ public class MaximumSingleService : IMaximumSingleService
         {
             return new EmissionsGroupResult();
         }
-        
+
         Setup(model);
-        
+
         var distances = Enumerable.Range(1, model.Distance / 5).Select(i => i * 5f).ToList();
-        
-        var concentrations = GetNormalSurfaceConcentration(distances, (float)pollutantInfo.Mass); 
-        
+
+        var concentrations = GetNormalSurfaceConcentration(distances, (float)pollutantInfo.Mass);
+
         var result = new EmissionsGroupResult { PollutantInfo = pollutantInfo };
-        
+
         var topConcentrations = concentrations
             .Select((c, i) => new { Value = c, Index = i })
             .OrderByDescending(x => x.Value)
             .Take(model.MaxCount)
-            .OrderBy(x => distances[x.Index]) 
+            .OrderBy(x => distances[x.Index])
             .ToList();
 
         foreach (var item in topConcentrations)
@@ -85,7 +85,7 @@ public class MaximumSingleService : IMaximumSingleService
 
         return result;
     }
-    
+
     public Task<SingleDangerZone> CalculateDangerZone(MaximumSingleEmissionsCalculateModel model)
     {
         var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == model.Pollutant);
@@ -94,14 +94,14 @@ public class MaximumSingleService : IMaximumSingleService
         {
             return Task.FromResult(new SingleDangerZone());
         }
-        
+
         Setup(model);
-        
+
         var distances = Enumerable.Range(1, model.Distance / 5).Select(i => i * 5f).ToList();
-        
+
         var concentrations = GetNormalSurfaceConcentration(distances, (float)pollutantInfo.Mass);
         var result = CalculateSingleDangerZone(concentrations, (float)pollutantInfo.Mass, model.WindSpeed);
-    
+
         if (result.Length > 0 && result.Width > 0)
         {
             result.Polygon = CreateDangerZonePolygon(model.SourceLocation, result.Width, result.Length, model.WindDirection);
@@ -109,7 +109,7 @@ public class MaximumSingleService : IMaximumSingleService
 
         return Task.FromResult(result);
     }
-    
+
     private Polygon CreateDangerZonePolygon(Point center, double width, double length, double angle)
     {
         var geomFactory = new GeometryFactory(new PrecisionModel(), 4326);
@@ -123,8 +123,8 @@ public class MaximumSingleService : IMaximumSingleService
         var metersPerDegreeLon = 111320.0 * Math.Cos(center.Y * Math.PI / 180.0);
         var metersPerDegreeLat = 111320.0;
 
-        var offsetX = (length / 2.0) * cosA;  
-        var offsetY = (length / 2.0) * sinA;  
+        var offsetX = (length / 2.0) * cosA;
+        var offsetY = (length / 2.0) * sinA;
         var shiftedLon = center.X + offsetX / metersPerDegreeLon;
         var shiftedLat = center.Y + offsetY / metersPerDegreeLat;
 
@@ -133,10 +133,10 @@ public class MaximumSingleService : IMaximumSingleService
             var theta = (360.0 - i * 15.0) * Math.PI / 180.0;
             var x = (length / 2.0) * Math.Cos(theta);
             var y = (width / 2.0) * Math.Sin(theta);
-    
+
             var rotatedX = x * cosA - y * sinA;
             var rotatedY = x * sinA + y * cosA;
-    
+
             coordinates[i] = new Coordinate(
                 shiftedLon + rotatedX / metersPerDegreeLon,
                 shiftedLat + rotatedY / metersPerDegreeLat
@@ -149,7 +149,7 @@ public class MaximumSingleService : IMaximumSingleService
 
         return polygon;
     }
-    
+
     private SingleDangerZone CalculateSingleDangerZone(List<float> concentrations, float mass, float windSpeed)
     {
         var maxIndex = int.MinValue;
@@ -157,7 +157,7 @@ public class MaximumSingleService : IMaximumSingleService
         var minDistance = double.MinValue;
 
         var valuesUpMax = new List<double>();
-        
+
         var maxConcentration = concentrations.Max();
         for (var i = 0; i < concentrations.Count; i++)
         {
@@ -174,7 +174,7 @@ public class MaximumSingleService : IMaximumSingleService
         double med;
 
         valuesUpMax.Sort();
-        
+
         if (valuesUpMax.Count % 2 == 0)
         {
             med = (valuesUpMax[(valuesUpMax.Count / 2)] + valuesUpMax[(valuesUpMax.Count / 2) - 1]) / 2;
@@ -195,20 +195,20 @@ public class MaximumSingleService : IMaximumSingleService
 
         const float windAverageSpeed = 3f;
 
-        var windSpeedCoeff =  windSpeed != 0  ? windAverageSpeed / windSpeed : windAverageSpeed;
+        var windSpeedCoeff = windSpeed != 0 ? windAverageSpeed / windSpeed : windAverageSpeed;
         windSpeedCoeff /= 2.1f;
-        
+
         var dangerZoneLength = (minDistance / Math.Sqrt(Math.Sqrt(mass))) * (1 / windSpeedCoeff);
         var dangerZoneWidth = Math.Round((minDistance - maxDistance) * 2 * windSpeedCoeff, 2) * Math.Sqrt(mass);
 
         var sortedConcentrations = concentrations.OrderByDescending(c => c).Take(100).ToList();
         var avgConcentration = sortedConcentrations.Average();
-        
+
         var pm = avgConcentration * 1000;
 
         var color = DangerZoneUtils.GetColorByConcentration(pm);
         var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(pm);
-        
+
         return new SingleDangerZone()
         {
             Length = dangerZoneLength,
@@ -218,7 +218,7 @@ public class MaximumSingleService : IMaximumSingleService
             PollutionLevel = pollutionLevel
         };
     }
-    
+
     private List<float> GetNormalSurfaceConcentration(List<float> distances, float mass)
     {
         var concentrations = new List<float>();
@@ -266,7 +266,7 @@ public class MaximumSingleService : IMaximumSingleService
 
         return concentrations;
     }
-    
+
     private float GetMaximumSingleSurfaceConcentration(float mass)
     {
         float cM;
@@ -278,7 +278,7 @@ public class MaximumSingleService : IMaximumSingleService
         if (_buoyancyParam < 100f)
         {
             m = 1f / (0.67f + 0.1f * (float)Math.Sqrt(_buoyancyParam) + 0.34f * (float)Math.Pow(_buoyancyParam, 1f / 3f));
-            
+
             if (_riseVelocity < 2f)
             {
                 n = 0.532f * (float)Math.Pow(_riseVelocity, 2) - 2.13f * _riseVelocity + 3.13f;
