@@ -25,17 +25,27 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x   
+          dotnet-version: 9.0.x
 
-      - name: Restore
-        run: dotnet restore
+      - name: Restore backend
+        run: |
+          cd EcoPulseBackend
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+
+      - name: Restore and build tests
+        run: |
+          cd EcoPulseBackendTests
+          dotnet restore EcoPulseBackendTests.sln
+          dotnet build EcoPulseBackendTests.sln --configuration Release --no-restore
 
       - name: Check formatting (dotnet-format)
         run: |
+          cd EcoPulseBackendTests
           dotnet tool install -g dotnet-format --ignore-failed-sources
-          dotnet-format --formatting --check --verbosity normal
+          dotnet-format EcoPulseBackendTests.sln --formatting --check --no-restore
 
       - name: Test
         run: |
           cd EcoPulseBackendTests
-          dotnet test --configuration Release --verbosity normal
+          dotnet test EcoPulseBackendTests.sln --configuration Release --verbosity normal
