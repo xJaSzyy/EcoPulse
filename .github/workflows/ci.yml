@@ -39,11 +39,11 @@ jobs:
           dotnet restore EcoPulseBackendTests.sln
           dotnet build EcoPulseBackendTests.sln --configuration Release --no-restore
 
-      - name: Check formatting (dotnet-format)
+      - name: Check formatting
         run: |
-          cd EcoPulseBackendTests
+          cd EcoPulseBackend
           dotnet tool install -g dotnet-format --ignore-failed-sources
-          dotnet-format EcoPulseBackendTests.sln --formatting --check --no-restore
+          dotnet-format EcoPulseBackend.sln --check --no-restore
 
       - name: Test
         run: |
