@@ -1,23 +1,23 @@
 version: '3.8'
 
 services:
-  #db:
-  #  image: postgis/postgis:16-3.4
-  #  environment:
-  #    POSTGRES_USER: ${DB_USER}
-  #    POSTGRES_PASSWORD: ${DB_PASSWORD}
-  #    POSTGRES_DB: ${DB_NAME}
-  #  healthcheck:
-  #    test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
-  #    interval: 10s
-  #    timeout: 3s
-  #    retries: 3
-  #  ports:
-  #    - "5433:5432"
-  # volumes:
-  #    - pgdata:/var/lib/postgresql/data 
-  #  networks:
-  #    - app-network
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
   
   backend:
     build:
@@ -31,12 +31,11 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-    restart: unless-stopped
-    #depends_on:
-    #  - db
+    depends_on:
+      - db
     networks:
       - app-network
-    
+  
   frontend:
     build:
       context: ./EcoPulseFrontend
@@ -52,14 +51,14 @@ services:
     ports:
       - "8500:8500"
       - "8600:8600/udp"
-    command: agent -dev -client=0.0.0.0 -ui -ui-content-path=/ui 
+    command: agent -dev -client=0.0.0.0 -ui -ui-content-path=/ui
     networks:
       - app-network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8500/v1/status/leader" ]
       interval: 10s
       timeout: 5s
-      
+  
   weather-service:
     build:
       context: .
@@ -74,9 +73,9 @@ services:
       - app-network
     restart: unless-stopped
 
-#volumes:
-#  pgdata:
-    
+volumes:
+  pgdata:
+
 networks:
   app-network:
     driver: bridge
