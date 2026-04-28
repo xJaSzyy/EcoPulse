@@ -32,6 +32,7 @@ public class DangerZoneController : ControllerBase
     public async Task<IActionResult> CalculateSingleDangerZones([FromBody] SingleDangerZoneCalculateModel model)
     {
         var emissionSources = await _dbContext.SingleEmissionSources
+            .AsNoTracking()
             .Where(s => model.CityIds.Contains(s.CityId))
             .ToListAsync();
 
@@ -69,6 +70,7 @@ public class DangerZoneController : ControllerBase
     public async Task<IActionResult> CalculateVehicleFlowDangerZones([FromBody] VehicleFlowDangerZoneCalculateModel model)
     {
         var emissionSources = await _dbContext.VehicleFlowEmissionSources
+            .AsNoTracking()
             .Where(s => model.CityIds.Contains(s.CityId))
             .ToListAsync();
 
@@ -81,6 +83,7 @@ public class DangerZoneController : ControllerBase
     public async Task<IActionResult> CalculateTrafficLightQueueDangerZones(TrafficLightQueueDangerZoneCalculateModel model)
     {
         var emissionSources = await _dbContext.TrafficLightQueueEmissionSources
+            .AsNoTracking()
             .Where(s => model.CityIds.Contains(s.CityId))
             .Include(s => s.VehicleGroups)
             .ToListAsync();

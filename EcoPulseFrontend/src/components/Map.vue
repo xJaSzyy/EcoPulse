@@ -914,37 +914,53 @@ onMounted(async () => {
     windDirection: currentWeather.windDirection,
   }
 
-  const singleDangerZones = await calculateSingleDangerZones({
-    pollutant: 2, // solid particles
-    airTemp: currentWeather.temperature,
+  const singleDangerZones = await calculateSingleDangerZones({ 
+    pollutant: 2, // solid particles 
+    airTemp: currentWeather.temperature, 
     windSpeed: currentWeather.windSpeed,
-    windDirection: currentWeather.windDirection,
-    cityIds: selectedCities.value.map(c => c.id)
+    windDirection: currentWeather.windDirection, 
+    cityIds: selectedCities.value.map(c => c.id) 
   });
 
-  const vehicleFlowDangerZones = await calculateVehicleFlowDangerZones({
-    cityIds: selectedCities.value.map(c => c.id)
-  });
+  const cityIds = selectedCities.value.map(c => c.id);
 
-  const vehicleQueueDangerZones = await calculateTrafficLightQueueDangerZones({
-    cityIds: selectedCities.value.map(c => c.id)
-  });
+  // 1. Поток машин
+  const vehicleFlowDangerZones = await withCache(
+    `vehicleFlow_${cityIds.join('_')}`,
+    () => calculateVehicleFlowDangerZones({ cityIds })
+  );
 
-  const tileGridResult = await calculateTileGrid({
-    cityIds: selectedCities.value.map(c => c.id),
-    tileSize: 750,
-    singleDangerZones: singleDangerZones,
-    vehicleFlowDangerZones: vehicleFlowDangerZones,
-    trafficLightQueueDangerZones: vehicleQueueDangerZones
-  });
+  // 2. Очереди на светофорах
+  const vehicleQueueDangerZones = await withCache(
+    `vehicleQueue_${cityIds.join('_')}`,
+    () => calculateTrafficLightQueueDangerZones({ cityIds })
+  );
 
-  const areaGridResult = await calculateTileArea({
-    cityIds: selectedCities.value.map(c => c.id),
-    tileSize: 750,
-    singleDangerZones: singleDangerZones,
-    vehicleFlowDangerZones: vehicleFlowDangerZones,
-    trafficLightQueueDangerZones: vehicleQueueDangerZones
-  });
+  // 3. Tile grid
+  const tileGridResult = await withCache(
+    `tileGrid_${cityIds.join('_')}_750`,
+    () =>
+      calculateTileGrid({
+        cityIds,
+        tileSize: 750,
+        singleDangerZones,
+        vehicleFlowDangerZones,
+        trafficLightQueueDangerZones: vehicleQueueDangerZones
+      })
+  );
+
+  // 4. Area grid
+  const areaGridResult = await withCache(
+    `areaGrid_${cityIds.join('_')}_750`,
+    () =>
+      calculateTileArea({
+        cityIds,
+        tileSize: 750,
+        singleDangerZones,
+        vehicleFlowDangerZones,
+        trafficLightQueueDangerZones: vehicleQueueDangerZones
+      })
+  );
 
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
 
@@ -1117,6 +1133,35 @@ onMounted(async () => {
 
   await updateModifyFlow();
 })
+
+async function withCache(key, fn, ttl = 10 * 60 * 1000) {
+  const cached = localStorage.getItem(key);
+
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      const isExpired = Date.now() - parsed.timestamp > ttl;
+
+      if (!isExpired) {
+        return parsed.data;
+      }
+    } catch (e) {
+      console.error('Ошибка парсинга кеша', e);
+    }
+  }
+
+  const data = await fn();
+
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      data,
+      timestamp: Date.now()
+    })
+  );
+
+  return data;
+}
 
 async function updateModifyFlow() {
   if (modifyFlow.value) {
