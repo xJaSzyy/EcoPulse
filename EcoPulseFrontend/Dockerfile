@@ -3,7 +3,7 @@ FROM node:22.12-alpine AS base
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci --only=production
 
 COPY . ./
 
