@@ -1,8 +1,10 @@
 using System.Threading.RateLimiting;
 using EcoPulseBackend;
 using EcoPulseBackend.Contexts;
+using EcoPulseBackend.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +65,9 @@ app.UseRateLimiter();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+app.UseHttpMetrics();
+app.MapMetrics();
+app.UseMiddleware<MetricsMiddleware>();
 
 using (var scope = app.Services.CreateScope())
 {

@@ -73,6 +73,26 @@ services:
       - app-network
     restart: unless-stopped
 
+  victoriametrics:
+    image: victoriametrics/victoria-metrics
+    ports:
+      - "8428:8428"
+    networks:
+      - app-network
+      
+  vmagent:
+    image: victoriametrics/vmagent
+    command:
+      - "-promscrape.config=/etc/vmagent/prometheus.yml"
+      - "-remoteWrite.url=http://victoriametrics:8428/api/v1/write"
+    volumes:
+      - ./prometheus.yml:/etc/vmagent/prometheus.yml
+    depends_on:
+      - backend
+      - victoriametrics
+    networks:
+      - app-network
+        
 volumes:
   pgdata:
 
