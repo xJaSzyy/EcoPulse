@@ -14,8 +14,6 @@ public class VehicleFlowService : IVehicleFlowService
 {
     private readonly ApplicationDbContext _dbContext;
 
-    private const int CacheInMinutes = 15;
-
     public VehicleFlowService(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
@@ -41,17 +39,6 @@ public class VehicleFlowService : IVehicleFlowService
             var points = source.Points;
 
             var length = (float)GeoUtils.CalculateHaversineLength(points.Coordinates);
-
-            var currentDate = DateTime.UtcNow;
-            if (source.UpdatedAt < currentDate.AddMinutes(-CacheInMinutes))
-            {
-                var rnd = new Random();
-                source.MaxTrafficIntensity = rnd.Next(25, 41) * (length / 1000f);
-                source.AverageSpeed = rnd.Next(50, 71);
-                source.UpdatedAt = currentDate;
-                _dbContext.VehicleFlowEmissionSources.Update(source);
-                await _dbContext.SaveChangesAsync();
-            }
 
             var calculateModel = new VehicleFlowEmissionsCalculateModel
             {

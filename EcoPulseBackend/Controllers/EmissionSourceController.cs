@@ -124,6 +124,14 @@ public class EmissionSourceController : ControllerBase
 
         return Ok(result);
     }
+    
+    [HttpGet("/emission-source/vehicle-flow")]
+    public IActionResult GetVehicleFlowEmissionSource()
+    {
+        var result = _dbContext.VehicleFlowEmissionSources.ToList();
+
+        return Ok(result);
+    }
 
     [HttpPut("/emission-source/vehicle-flow")]
     public async Task<IActionResult> UpdateVehicleFlowEmissionSource([FromBody] VehicleFlowEmissionSourceUpdateModel model)
@@ -140,6 +148,7 @@ public class EmissionSourceController : ControllerBase
         emissionSource.MaxTrafficIntensity = model.MaxTrafficIntensity ?? emissionSource.MaxTrafficIntensity;
         emissionSource.AverageSpeed = model.AverageSpeed ?? emissionSource.AverageSpeed;
         emissionSource.StreetName = model.StreetName ?? emissionSource.StreetName;
+        emissionSource.UpdatedAt = DateTime.UtcNow;
 
         _dbContext.VehicleFlowEmissionSources.Update(emissionSource);
         await _dbContext.SaveChangesAsync();

@@ -17,5 +17,9 @@
             <Link>.dockerignore</Link>
         </Content>
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\EcoPulseBackend\EcoPulseBackend.csproj" />
+    </ItemGroup>
     
 </Project>

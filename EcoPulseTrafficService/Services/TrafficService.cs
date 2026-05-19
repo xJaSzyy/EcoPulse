@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EcoPulseBackend.Models.VehicleFlowEmissionSource;
 using EcoPulseTrafficService.Interfaces;
 using EcoPulseTrafficService.Models;
 
@@ -15,33 +16,55 @@ public class TrafficService : ITrafficService
         _logger = logger;
     }
 
-    public async Task FetchAndSendAsync(TrafficServiceOptions options, CancellationToken ct)
+    public async Task FetchAndSendAsync(List<VehicleFlowEmissionSourceResponse>? emissionSources,
+        TrafficServiceOptions options, CancellationToken ct)
     {
+        if (emissionSources is null)
+        {
+            return;
+        }
+        
         var trafficClient = _httpClientFactory.CreateClient("traffic");
         var backendClient = _httpClientFactory.CreateClient("backend");
-
-        var trafficUrl = $"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={options.ApiKey}&point=55.344746,86.110833\n";
-
-        try
+        
+        var trafficBaseUrl = $"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={options.ApiKey}";
+        
+        foreach (var source in emissionSources.Take(2))
         {
-            var response = await trafficClient.GetAsync(trafficUrl, ct);
+            try
+            {
+                var response = await trafficClient.GetAsync(trafficBaseUrl + $"&point={source.Points.Coordinates[0][1]},{source.Points.Coordinates[0][0]}", ct);
 
-            var responseContent = await response.Content.ReadAsStringAsync(ct);
-            var trafficResponse = JsonSerializer.Deserialize<TrafficResponse>(responseContent);
+                var responseContent = await response.Content.ReadAsStringAsync(ct);
+                var trafficResponse = JsonSerializer.Deserialize<TrafficResponse>(responseContent);
 
-            Console.WriteLine(trafficResponse.FlowSegmentData.Frc);
-            Console.WriteLine(trafficResponse.FlowSegmentData.Coordinates.Coordinate.First().Latitude);
-            Console.WriteLine(trafficResponse.FlowSegmentData.Coordinates.Coordinate.First().Longitude);
-            Console.WriteLine(trafficResponse.FlowSegmentData.Coordinates.Coordinate.Count);
+                if (trafficResponse is null)
+                {
+                    _logger.LogError($"Failed to fetch traffic response: {responseContent}");
+                    continue;
+                }
 
-            /*var backendResponse = await backendClient.PostAsJsonAsync("http://backend:5000/weather/save", result, ct);
-            backendResponse.EnsureSuccessStatusCode();
+                var coords = source.Points.Coordinates
+                    .Where(c => double.IsFinite(c[0]) && double.IsFinite(c[1]))
+                    .Select(c => new NetTopologySuite.Geometries.Coordinate(c[1], c[0]))
+                    .ToArray();
+                
+                var updateModel = new VehicleFlowEmissionSourceUpdateModel
+                {
+                    Id = source.Id,
+                    AverageSpeed = trafficResponse.FlowSegmentData.CurrentSpeed,
+                    MaxTrafficIntensity = trafficResponse.FlowSegmentData.CurrentTravelTime / 13f,
+                };
+                
+                var backendResponse = await backendClient.PutAsJsonAsync("http://backend:5000/emission-source/vehicle-flow", updateModel, ct);
+                backendResponse.EnsureSuccessStatusCode();
 
-            _logger.LogInformation($"Weather sent to backend: {currentDate}");*/
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
+                _logger.LogInformation($"Emission source with Id: {updateModel.Id} updated successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+            }
         }
     }
 }

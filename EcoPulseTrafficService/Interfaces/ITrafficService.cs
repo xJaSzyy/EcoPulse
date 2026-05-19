@@ -4,5 +4,7 @@ namespace EcoPulseTrafficService.Interfaces;
 
 public interface ITrafficService
 {
-    public Task FetchAndSendAsync(TrafficServiceOptions options, CancellationToken ct);
+    public Task FetchAndSendAsync(List<VehicleFlowEmissionSourceResponse>? emissionSources,
+        TrafficServiceOptions options,
+        CancellationToken ct);
 }
