@@ -29,7 +29,7 @@ public class TrafficService : ITrafficService
         
         var trafficBaseUrl = $"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={options.ApiKey}";
         
-        foreach (var source in emissionSources.Take(2))
+        foreach (var source in emissionSources)
         {
             try
             {
