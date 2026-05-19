@@ -1,4 +1,5 @@
 using EcoPulseTrafficService;
+using EcoPulseTrafficService.Models;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,8 +11,8 @@ builder.Services.AddServices();
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
 
-/*builder.Services.Configure<WeatherServiceOptions>(
-    builder.Configuration.GetSection("WeatherService"));*/
+builder.Services.Configure<TrafficServiceOptions>(
+    builder.Configuration.GetSection("TrafficService"));
 
 var app = builder.Build();
 

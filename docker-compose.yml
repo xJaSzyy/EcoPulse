@@ -72,6 +72,20 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    
+  traffic-service:
+    build:
+      context: .
+      dockerfile: EcoPulseTrafficService/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
 
   victoriametrics:
     image: victoriametrics/victoria-metrics
