@@ -924,19 +924,16 @@ onMounted(async () => {
 
   const cityIds = selectedCities.value.map(c => c.id);
 
-  // 1. Поток машин
   const vehicleFlowDangerZones = await withCache(
     `vehicleFlow_${cityIds.join('_')}`,
     () => calculateVehicleFlowDangerZones({ cityIds })
   );
 
-  // 2. Очереди на светофорах
   const vehicleQueueDangerZones = await withCache(
     `vehicleQueue_${cityIds.join('_')}`,
     () => calculateTrafficLightQueueDangerZones({ cityIds })
   );
 
-  // 3. Tile grid
   const tileGridResult = await withCache(
     `tileGrid_${cityIds.join('_')}_750`,
     () =>
@@ -949,7 +946,6 @@ onMounted(async () => {
       })
   );
 
-  // 4. Area grid
   const areaGridResult = await withCache(
     `areaGrid_${cityIds.join('_')}_750`,
     () =>
@@ -1134,7 +1130,7 @@ onMounted(async () => {
   await updateModifyFlow();
 })
 
-async function withCache(key, fn, ttl = 10 * 60 * 1000) {
+async function withCache(key, fn, ttl = 5 * 60 * 1000) {
   const cached = localStorage.getItem(key);
 
   if (cached) {
