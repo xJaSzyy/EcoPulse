@@ -43,17 +43,12 @@ public class TrafficService : ITrafficService
                     _logger.LogError($"Failed to fetch traffic response: {responseContent}");
                     continue;
                 }
-
-                var coords = source.Points.Coordinates
-                    .Where(c => double.IsFinite(c[0]) && double.IsFinite(c[1]))
-                    .Select(c => new NetTopologySuite.Geometries.Coordinate(c[1], c[0]))
-                    .ToArray();
                 
                 var updateModel = new VehicleFlowEmissionSourceUpdateModel
                 {
                     Id = source.Id,
                     AverageSpeed = trafficResponse.FlowSegmentData.CurrentSpeed,
-                    MaxTrafficIntensity = trafficResponse.FlowSegmentData.CurrentTravelTime / 13f,
+                    MaxTrafficIntensity = trafficResponse.FlowSegmentData.CurrentTravelTime / 13f
                 };
                 
                 var backendResponse = await backendClient.PutAsJsonAsync("http://backend:5000/emission-source/vehicle-flow", updateModel, ct);
