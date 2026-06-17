@@ -25,7 +25,7 @@ public class TrafficHostedService : BackgroundService
         while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
             var sourceResponse = await GetEmissionSourceResponse(stoppingToken);
-            
+
             using var scope = _serviceProvider.CreateScope();
             var trafficService = scope.ServiceProvider.GetRequiredService<ITrafficService>();
             await trafficService.FetchAndSendAsync(sourceResponse, _options, stoppingToken);
@@ -39,7 +39,7 @@ public class TrafficHostedService : BackgroundService
 
         var responseContent = await response.Content.ReadAsStringAsync(ct);
         var sourceResponse = JsonSerializer.Deserialize<List<VehicleFlowEmissionSourceResponse>>(responseContent);
-        
+
         return sourceResponse;
     }
 }

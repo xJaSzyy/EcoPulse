@@ -25,7 +25,7 @@ public class VehicleQueueServiceTests
 
         _service = new TrafficLightQueueService(_dbContextMock.Object);
     }
-    
+
     [Test]
     public void CalculateEmissionsBatch_WhenValidInput_ShouldReturnCorrectListOfEmissionsResult()
     {
@@ -112,7 +112,7 @@ public class VehicleQueueServiceTests
             }
         });
     }
-    
+
     [Test]
     public async Task CalculateDangerZones_WhenValidInput_ShouldReturnCorrectListOfVehicleFlowDangerZone()
     {
@@ -172,7 +172,7 @@ public class VehicleQueueServiceTests
             }
         });
     }
-    
+
     #region TestData
 
     private readonly List<PollutantInfo> _pollutantInfos =

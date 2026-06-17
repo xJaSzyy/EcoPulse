@@ -124,7 +124,7 @@ public class EmissionSourceController : ControllerBase
 
         return Ok(result);
     }
-    
+
     [HttpGet("/emission-source/vehicle-flow")]
     public IActionResult GetVehicleFlowEmissionSource()
     {

@@ -23,12 +23,12 @@ public class TrafficService : ITrafficService
         {
             return;
         }
-        
+
         var trafficClient = _httpClientFactory.CreateClient("traffic");
         var backendClient = _httpClientFactory.CreateClient("backend");
-        
+
         var trafficBaseUrl = $"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={options.ApiKey}";
-        
+
         foreach (var source in emissionSources)
         {
             try
@@ -43,14 +43,14 @@ public class TrafficService : ITrafficService
                     _logger.LogError($"Failed to fetch traffic response: {responseContent}");
                     continue;
                 }
-                
+
                 var updateModel = new VehicleFlowEmissionSourceUpdateModel
                 {
                     Id = source.Id,
                     AverageSpeed = trafficResponse.FlowSegmentData.CurrentSpeed,
                     MaxTrafficIntensity = trafficResponse.FlowSegmentData.CurrentTravelTime / 13f
                 };
-                
+
                 var backendResponse = await backendClient.PutAsJsonAsync("http://backend:5000/emission-source/vehicle-flow", updateModel, ct);
                 backendResponse.EnsureSuccessStatusCode();
 

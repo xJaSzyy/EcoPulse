@@ -15,22 +15,22 @@ public class FlowSegmentData
 
     [JsonPropertyName("currentSpeed")]
     public int CurrentSpeed { get; set; }
-    
+
     [JsonPropertyName("freeFlowSpeed")]
     public int FreeFlowSpeed { get; set; }
-    
+
     [JsonPropertyName("currentTravelTime")]
     public int CurrentTravelTime { get; set; }
-    
+
     [JsonPropertyName("freeFlowTravelTime")]
     public int FreeFlowTravelTime { get; set; }
-    
+
     [JsonPropertyName("confidence")]
     public double Confidence { get; set; }
-    
+
     [JsonPropertyName("roadClosure")]
     public bool RoadClosure { get; set; }
-    
+
     [JsonPropertyName("coordinates")]
     public Coordinates Coordinates { get; set; } = null!;
 }

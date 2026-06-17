@@ -12,7 +12,7 @@ namespace EcoPulseBackendTests;
 public class LoadTests
 {
     private const string BaseUrl = "http://localhost:3000/api";
-    
+
     [Test]
     public void CalculateSingleDangerZones_LoadTest()
     {
@@ -54,7 +54,7 @@ public class LoadTests
             .RegisterScenarios(scenario)
             .Run();
     }
-    
+
     [Test]
     public void CalculateVehicleFlowDangerZones_LoadTest()
     {
@@ -92,7 +92,7 @@ public class LoadTests
             .RegisterScenarios(scenario)
             .Run();
     }
-    
+
     [Test]
     public void CalculateTrafficLightQueueDangerZones_LoadTest()
     {

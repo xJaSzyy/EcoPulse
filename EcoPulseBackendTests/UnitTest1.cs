@@ -15,7 +15,7 @@ public class Tests
     {
         Assert.Pass();
     }
-    
+
     public static Mock<DbSet<T>> GetMockDbSet<T>(IQueryable<T> data) where T : class
     {
         var mockSet = new Mock<DbSet<T>>();
