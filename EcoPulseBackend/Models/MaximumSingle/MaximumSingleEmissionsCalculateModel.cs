@@ -14,7 +14,7 @@ public class MaximumSingleEmissionsCalculateModel
     /// Загрязняющее вещество
     /// </summary>
     public Pollutant Pollutant { get; set; }
-    
+
     /// <summary>
     /// Температура выбрасываемой ГВС
     /// </summary>
@@ -54,12 +54,12 @@ public class MaximumSingleEmissionsCalculateModel
     /// Коэффициент степени очистки
     /// </summary>
     public CoefficientDegreePurification SedimentationRateRatio { get; set; }
-    
+
     /// <summary>
     /// Скорость ветра
     /// </summary>
     public float WindSpeed { get; set; }
-    
+
     /// <summary>
     /// Направление ветра
     /// </summary>
@@ -70,12 +70,12 @@ public class MaximumSingleEmissionsCalculateModel
     /// </summary>
     [Range(5, 10000)]
     public int Distance { get; set; }
-    
+
     /// <summary>
     /// Количество максимальных точек
     /// </summary>
     public int MaxCount { get; set; }
-    
+
     /// <summary>
     /// Координаты
     /// </summary>

@@ -8,7 +8,7 @@ public static class GeoUtils
     public static double CalculateHaversineLength(Coordinate[] coords)
     {
         double length = 0;
-        const double R = 6371000; 
+        const double R = 6371000;
 
         for (int i = 1; i < coords.Length; i++)
         {
@@ -25,11 +25,11 @@ public static class GeoUtils
         }
         return length;
     }
-    
+
     public static double Distance(Point p1, Point p2)
     {
-        const double R = 6371000; 
-        
+        const double R = 6371000;
+
         double lat1 = p1.Y * Math.PI / 180;
         double lon1 = p1.X * Math.PI / 180;
         double lat2 = p2.Y * Math.PI / 180;

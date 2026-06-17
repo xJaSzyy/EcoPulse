@@ -12,7 +12,7 @@ public class SingleEmissionSourceAddModel
 {
     [Column(TypeName = "geometry(Point, 4326)")]
     public Point Location { get; set; } = null!;
-    
+
     /// <summary>
     /// Температура выбрасываемой ГВС
     /// </summary>
@@ -46,7 +46,7 @@ public class SingleEmissionSourceAddModel
     /// Коэффициент степени очистки
     /// </summary>
     public CoefficientDegreePurification SedimentationRateRatio { get; set; }
-    
+
     /// <summary>
     /// Идентификатор города
     /// </summary>

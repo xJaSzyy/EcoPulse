@@ -15,7 +15,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data 
+      - pgdata:/var/lib/postgresql/data
     networks:
       - app-network
   
@@ -35,12 +35,12 @@ services:
       - db
     networks:
       - app-network
-    
+  
   frontend:
     build:
       context: ./EcoPulseFrontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - backend
     networks:
@@ -51,14 +51,14 @@ services:
     ports:
       - "8500:8500"
       - "8600:8600/udp"
-    command: agent -dev -client=0.0.0.0 -ui -ui-content-path=/ui 
+    command: agent -dev -client=0.0.0.0 -ui -ui-content-path=/ui
     networks:
       - app-network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8500/v1/status/leader" ]
       interval: 10s
       timeout: 5s
-      
+  
   weather-service:
     build:
       context: .
@@ -72,10 +72,44 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    
+  traffic-service:
+    build:
+      context: .
+      dockerfile: EcoPulseTrafficService/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
 
+  victoriametrics:
+    image: victoriametrics/victoria-metrics
+    ports:
+      - "8428:8428"
+    networks:
+      - app-network
+      
+  vmagent:
+    image: victoriametrics/vmagent
+    command:
+      - "-promscrape.config=/etc/vmagent/prometheus.yml"
+      - "-remoteWrite.url=http://victoriametrics:8428/api/v1/write"
+    volumes:
+      - ./prometheus.yml:/etc/vmagent/prometheus.yml
+    depends_on:
+      - backend
+      - victoriametrics
+    networks:
+      - app-network
+        
 volumes:
   pgdata:
-    
+
 networks:
   app-network:
     driver: bridge

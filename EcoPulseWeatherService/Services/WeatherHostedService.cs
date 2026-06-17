@@ -9,7 +9,7 @@ public class WeatherHostedService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly TimeSpan _interval;
 
-    public WeatherHostedService(IServiceProvider serviceProvider, 
+    public WeatherHostedService(IServiceProvider serviceProvider,
         IOptions<WeatherServiceOptions> options)
     {
         _serviceProvider = serviceProvider;

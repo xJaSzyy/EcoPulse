@@ -6,7 +6,7 @@ public class RecommendationResult
     /// Уровень воздуха
     /// </summary>
     public string? RecommendationLevel { get; set; }
-    
+
     /// <summary>
     /// Содержание рекомендации
     /// </summary>

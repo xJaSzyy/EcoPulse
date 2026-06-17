@@ -18,31 +18,32 @@ public class DangerZoneController : ControllerBase
         _emissionService = emissionService;
         _dbContext = dbContext;
     }
-    
+
     [HttpPost("danger-zone/single")]
-    public IActionResult CalculateMaximumSingleEmissionsDangerZone([FromBody] MaximumSingleEmissionsCalculateModel model)
+    public async Task<IActionResult> CalculateMaximumSingleEmissionsDangerZone([FromBody] MaximumSingleEmissionsCalculateModel model)
     {
-        var result = _emissionService.MaximumSingleService.CalculateDangerZone(model);
+        var result = await _emissionService.MaximumSingleService.CalculateDangerZone(model);
         result.Location = model.SourceLocation ?? result.Location;
-        
+
         return Ok(result);
     }
-    
+
     [HttpPost("danger-zones/single")]
-    public IActionResult CalculateSingleDangerZones([FromBody] SingleDangerZoneCalculateModel model)
+    public async Task<IActionResult> CalculateSingleDangerZones([FromBody] SingleDangerZoneCalculateModel model)
     {
-        var emissionSources = _dbContext.SingleEmissionSources
+        var emissionSources = await _dbContext.SingleEmissionSources
+            .AsNoTracking()
             .Where(s => model.CityIds.Contains(s.CityId))
-            .ToList();
+            .ToListAsync();
 
         var result = new List<SingleDangerZone>();
-        
+
         foreach (var emissionSource in emissionSources)
         {
             var calculateModel = new MaximumSingleEmissionsCalculateModel
             {
                 Pollutant = model.Pollutant,
-                EjectedTemp =  emissionSource.EjectedTemp,
+                EjectedTemp = emissionSource.EjectedTemp,
                 AirTemp = model.AirTemp,
                 AvgExitSpeed = emissionSource.AvgExitSpeed,
                 HeightSource = emissionSource.HeightSource,
@@ -55,37 +56,39 @@ public class DangerZoneController : ControllerBase
                 SourceLocation = emissionSource.Location
             };
 
-            var dangerZone = _emissionService.MaximumSingleService.CalculateDangerZone(calculateModel);
+            var dangerZone = await _emissionService.MaximumSingleService.CalculateDangerZone(calculateModel);
             dangerZone.EmissionSourceId = emissionSource.Id;
             dangerZone.Location = emissionSource.Location;
-            
+
             result.Add(dangerZone);
         }
 
         return Ok(result);
     }
-    
+
     [HttpPost("danger-zones/vehicle-flow")]
     public async Task<IActionResult> CalculateVehicleFlowDangerZones([FromBody] VehicleFlowDangerZoneCalculateModel model)
     {
-        var emissionSources = _dbContext.VehicleFlowEmissionSources
+        var emissionSources = await _dbContext.VehicleFlowEmissionSources
+            .AsNoTracking()
             .Where(s => model.CityIds.Contains(s.CityId))
-            .ToList();
+            .ToListAsync();
 
         var result = await _emissionService.VehicleFlowService.CalculateDangerZones(emissionSources);
 
         return Ok(result);
     }
-    
+
     [HttpPost("danger-zones/traffic-light-queue")]
-    public IActionResult CalculateTrafficLightQueueDangerZones(TrafficLightQueueDangerZoneCalculateModel model)
+    public async Task<IActionResult> CalculateTrafficLightQueueDangerZones(TrafficLightQueueDangerZoneCalculateModel model)
     {
-        var emissionSources = _dbContext.TrafficLightQueueEmissionSources
+        var emissionSources = await _dbContext.TrafficLightQueueEmissionSources
+            .AsNoTracking()
             .Where(s => model.CityIds.Contains(s.CityId))
             .Include(s => s.VehicleGroups)
-            .ToList();
+            .ToListAsync();
 
-        var result = _emissionService.TrafficLightQueueService.CalculateDangerZones(emissionSources);
+        var result = await _emissionService.TrafficLightQueueService.CalculateDangerZones(emissionSources);
 
         return Ok(result);
     }

@@ -26,7 +26,7 @@ public class ReservoirsService : IReservoirsService
         {
             return new ReservoirsEmissionsBatchResult();
         }
-        
+
         var result = new ReservoirsEmissionsBatchResult
         {
             AnnualInjectionEmissions = (vaporConcentration.AutumnWinterVaporConcentration * model.AutumnWinterOilAmount + vaporConcentration.SpringSummerVaporConcentration * model.SpringSummerOilAmount) * 1e-6f,
@@ -34,15 +34,15 @@ public class ReservoirsService : IReservoirsService
             MaxVaporEmission = (vaporConcentration.MaxVaporConcentration * model.DrainedVolume) / model.AverageDrainTime,
             Emissions = new List<EmissionsResult>()
         };
-        
+
         foreach (var pollutant in pollutants.OrderBy(p => (int)p))
         {
             result.Emissions.Add(CalculateReservoirsEmissions(pollutant, vaporConcentration, model));
         }
-        
+
         return result;
     }
-    
+
     private EmissionsResult CalculateReservoirsEmissions(Pollutant pollutant, VaporConcentration vaporConcentration, ReservoirsEmissionsCalculateModel model)
     {
         var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == pollutant);
@@ -51,7 +51,7 @@ public class ReservoirsService : IReservoirsService
         {
             return new EmissionsResult();
         }
-        
+
         var annualInjectionEmissions = (vaporConcentration.AutumnWinterVaporConcentration * model.AutumnWinterOilAmount +
                                         vaporConcentration.SpringSummerVaporConcentration * model.SpringSummerOilAmount) *
                                        1e-6f;

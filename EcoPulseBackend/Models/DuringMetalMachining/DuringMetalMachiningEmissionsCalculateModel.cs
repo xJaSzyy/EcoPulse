@@ -11,7 +11,7 @@ public class DuringMetalMachiningEmissionsCalculateModel
     /// Тип станка для обработки металла
     /// </summary>
     public MetalMachiningMachineType MetalMachiningMachineType { get; set; }
-    
+
     /// <summary>
     /// Годовой фонд времени работы оборудования, ч
     /// </summary>

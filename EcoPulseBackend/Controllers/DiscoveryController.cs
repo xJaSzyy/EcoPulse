@@ -24,7 +24,7 @@ public class DiscoveryController : ControllerBase
         var payload = new
         {
             ID = $"{model.ServiceName}-{Guid.NewGuid():N}",
-            Name = model.ServiceName,  
+            Name = model.ServiceName,
             Address = model.Address.Split(':')[0],
             Port = int.Parse(model.Address.Split(':')[1]),
             Tags = model.Tags ?? [],
