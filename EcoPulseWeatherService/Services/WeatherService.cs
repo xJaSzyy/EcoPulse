@@ -20,36 +20,148 @@ public class WeatherService : IWeatherService
         var weatherClient = _httpClientFactory.CreateClient("weather");
         var backendClient = _httpClientFactory.CreateClient("backend");
 
-        const string weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=55.355198&longitude=86.086847&current_weather=true";
-
-        var currentDate = DateTime.UtcNow;
+        const string weatherUrl =
+            "https://api.met.no/weatherapi/locationforecast/2.0/compact" +
+            "?lat=55.3552&lon=86.0868";
 
         try
         {
-            var response = await weatherClient.GetAsync(weatherUrl, ct);
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                weatherUrl);
 
-            var responseContent = await response.Content.ReadAsStringAsync(ct);
-            var weatherResponse = JsonSerializer.Deserialize<OpenMeteoResponse>(responseContent);
+            request.Headers.UserAgent.ParseAdd("EcoPulseWeatherService/1.0 (novosel.stepan@gmail.com)");
+
+            using var response = await weatherClient.SendAsync(
+                request,
+                ct);
+
+            response.EnsureSuccessStatusCode();
+
+            await using var stream =
+                await response.Content.ReadAsStreamAsync(ct);
+
+            using var document = await JsonDocument.ParseAsync(
+                stream,
+                cancellationToken: ct);
+
+            var root = document.RootElement;
+
+            var timeseries = root
+                .GetProperty("properties")
+                .GetProperty("timeseries");
+
+            var forecast = timeseries[0];
+
+            var forecastTime = forecast
+                .GetProperty("time")
+                .GetDateTime();
+
+            var instant = forecast
+                .GetProperty("data")
+                .GetProperty("instant")
+                .GetProperty("details");
+
+            var temperature = instant
+                .GetProperty("air_temperature")
+                .GetSingle();
+
+            var windSpeed = instant
+                .GetProperty("wind_speed")
+                .GetSingle();
+
+            var windDirection = (int)Math.Round(
+                instant.GetProperty("wind_from_direction").GetDouble());
+
+            windDirection = ((windDirection + 180) % 360 + 360) % 360;
+
+            var data = forecast.GetProperty("data");
+            var symbolCode = GetSymbolCode(data);
 
             var result = new WeatherViewModel
             {
-                Date = currentDate,
-                Temperature = (float)weatherResponse!.CurrentWeather.Temperature,
-                WindSpeed = (float)weatherResponse.CurrentWeather.WindSpeed,
-                WindDirection = (int)(weatherResponse.CurrentWeather.WindDirection + 180) % 360,
-                IconClass = GetWeatherInfo(weatherResponse.CurrentWeather.WeatherCode,
-                    weatherResponse.CurrentWeather.IsDay == 1).IconClass
+                Date = forecastTime,
+                Temperature = temperature,
+                WindSpeed = windSpeed,
+                WindDirection = windDirection,
+                IconClass = GetIconClass(symbolCode)
             };
 
-            var backendResponse = await backendClient.PostAsJsonAsync("http://backend:5000/weather/save", result, ct);
+            using var backendResponse =
+                await backendClient.PostAsJsonAsync(
+                    "http://backend:5000/weather/save",
+                    result,
+                    ct);
+
             backendResponse.EnsureSuccessStatusCode();
 
-            _logger.LogInformation($"Weather sent to backend: {currentDate}");
+            _logger.LogInformation(
+                "Weather sent to backend: {Date}",
+                forecastTime);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, ex.Message);
+            _logger.LogError(ex, "Failed to fetch or send weather data.");
         }
+    }
+
+    private static string GetSymbolCode(JsonElement data)
+    {
+        foreach (var period in new[]
+                 {
+                     "next_1_hours",
+                     "next_6_hours",
+                     "next_12_hours"
+                 })
+        {
+            if (data.TryGetProperty(period, out var forecastPeriod) &&
+                forecastPeriod.TryGetProperty("summary", out var summary) &&
+                summary.TryGetProperty("symbol_code", out var symbol))
+            {
+                return symbol.GetString() ?? "unknown";
+            }
+        }
+
+        return "unknown";
+    }
+
+    private static string GetIconClass(string symbolCode)
+    {
+        if (symbolCode.StartsWith("clearsky_day"))
+            return "wi-day-sunny";
+
+        if (symbolCode.StartsWith("clearsky_night"))
+            return "wi-night-clear";
+
+        if (symbolCode.StartsWith("fair_day"))
+            return "wi-day-sunny";
+
+        if (symbolCode.StartsWith("fair_night"))
+            return "wi-night-clear";
+
+        if (symbolCode.Contains("thunder"))
+            return "wi-thunderstorm";
+
+        if (symbolCode.Contains("snow"))
+            return "wi-snow";
+
+        if (symbolCode.Contains("sleet"))
+            return "wi-rain-mix";
+
+        if (symbolCode.Contains("rain"))
+            return "wi-rain";
+
+        if (symbolCode.Contains("fog"))
+            return "wi-fog";
+
+        if (symbolCode.Contains("cloud"))
+            return "wi-cloudy";
+
+        return "wi-na";
     }
 
     private static (string Description, string IconClass) GetWeatherInfo(int weatherCode, bool isDay)

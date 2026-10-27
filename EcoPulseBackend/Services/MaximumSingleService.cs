@@ -104,7 +104,7 @@ public class MaximumSingleService : IMaximumSingleService
 
         if (result.Length > 0 && result.Width > 0)
         {
-            result.Polygon = CreateDangerZonePolygon(model.SourceLocation, result.Width, result.Length, model.WindDirection);
+            result.Polygon = CreateDangerZonePolygon(model.SourceLocation!, result.Width, result.Length, model.WindDirection);
         }
 
         return Task.FromResult(result);
