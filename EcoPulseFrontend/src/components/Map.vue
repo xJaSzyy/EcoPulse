@@ -221,7 +221,7 @@ import OSM from 'ol/source/OSM'
 
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
-import {LineString, Point, Polygon} from 'ol/geom'
+import {LineString, Point, Polygon, MultiPolygon} from 'ol/geom'
 import Feature from 'ol/Feature'
 import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style'
 import Modify from 'ol/interaction/Modify';
@@ -731,10 +731,10 @@ let latestVehicleFlowDangerZones = [];
 let latestVehicleQueueDangerZones = [];
 
 async function updateTileGridLayer(
-    singleDangerZones,
-    vehicleFlowDangerZones,
-    vehicleQueueDangerZones,
-    tileSize
+  singleDangerZones,
+  vehicleFlowDangerZones,
+  vehicleQueueDangerZones,
+  tileSize
 ) {
   const tileGridResult = await calculateTileGrid({
     cityIds: selectedCities.value.map(c => c.id),
@@ -755,19 +755,17 @@ async function updateTileGridLayer(
   const allTiles = tileGridResult.flatMap(city => city.tiles);
 
   allTiles.forEach(tileInfo => {
-    const polygonCoords = tileInfo.tile.coordinates[0];
+    const geometry = geoJsonToOlGeometry(tileInfo.tile)
+    if (!geometry) return
 
-    const polygonFeature = new Feature({
-      geometry: new Polygon([
-        polygonCoords.map(coord => fromLonLat(coord))
-      ]),
+    const feature = new Feature({
+      geometry,
       color: tileInfo.color,
       cityId: tileInfo.cityId
-    });
+    })
 
-    polygonFeature.set('dangerData', tileInfo);
-
-    source.addFeature(polygonFeature);
+    feature.set('dangerData', tileInfo)
+    source.addFeature(feature)
   });
 
   layer.changed();
@@ -814,6 +812,46 @@ async function closeSimulationPanel() {
   simulationData.value = null;
   previousSimulationData.value = null;
   weatherBeforeSimulation.value = null;
+}
+
+function geoJsonToOlGeometry(geometry) {
+  if (!geometry || !geometry.type) return null
+
+  switch (geometry.type) {
+    case 'Polygon': {
+      const rings = geometry.coordinates.map(ring =>
+        ring.map(([lon, lat]) => fromLonLat([lon, lat]))
+      )
+      return new Polygon(rings)
+    }
+
+    case 'MultiPolygon': {
+      const polys = geometry.coordinates.map(polygon =>
+        polygon.map(ring =>
+          ring.map(([lon, lat]) => fromLonLat([lon, lat]))
+        )
+      )
+      return new MultiPolygon(polys)
+    }
+
+    case 'GeometryCollection': {
+      // на всякий случай — маловероятно, но пусть будет
+      const parts = geometry.geometries
+        .map(geoJsonToOlGeometry)
+        .filter(Boolean)
+      return parts.length ? new MultiPolygon(parts.flatMap(toPolygons)) : null
+    }
+
+    default:
+      console.warn('Неизвестный тип геометрии тайла:', geometry.type)
+      return null
+  }
+}
+
+function toPolygons(geom) {
+  if (geom instanceof Polygon) return [geom.getCoordinates()]
+  if (geom instanceof MultiPolygon) return geom.getCoordinates()
+  return []
 }
 
 function createEllipse(dangerZone) {
@@ -1023,40 +1061,36 @@ function createTileGridLayer(tileGridResult) {
   const tileGridSource = new VectorSource();
 
   const allTiles = tileGridResult.flatMap(city => city.tiles);
+
   allTiles.forEach(tileInfo => {
-    const polygonCoords = tileInfo.tile.coordinates[0]; 
-    
-    const polygonFeature = new Feature({
-      geometry: new Polygon([
-        polygonCoords.map(coord => fromLonLat(coord))
-      ]),
+    const geometry = geoJsonToOlGeometry(tileInfo.tile)
+    if (!geometry) return
+
+    const feature = new Feature({
+      geometry,
       color: tileInfo.color,
       cityId: tileInfo.cityId
-    });
+    })
 
-    polygonFeature.set('dangerData', tileInfo);
-    
-    tileGridSource.addFeature(polygonFeature);
-  });
+    feature.set('dangerData', tileInfo)
+    tileGridSource.addFeature(feature)
+  })
 
   return new VectorLayer({
     source: tileGridSource,
     visible: false,
     zIndex: 3,
     style: feature => {
-      const color = getColorWithAlpha(feature.get('color'), 0.6);
-      
+      const color = getColorWithAlpha(feature.get('color'), 0.6)
       return new Style({
-        fill: new Fill({
-          color: color 
-        }),
+        fill: new Fill({color}),
         stroke: new Stroke({
-          color: 'black', 
+          color: 'black',
           width: 0.1
         })
-      });
+      })
     }
-  });
+  })
 }
 
 function createSanitaryAreaLayer(sanitaryAreas) {

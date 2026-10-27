@@ -205,53 +205,32 @@ public class GridService : IGridService
     {
         var result = new List<TileModel>();
 
-        var grouped = tiles.GroupBy(t => t.AverageConcentration);
+        var grouped = tiles.GroupBy(t => t.Color);
 
         foreach (var group in grouped)
         {
             var geometries = group
                 .Select(t => t.Tile)
-                .Cast<Geometry>()
                 .ToList();
 
             var unionGeometry = UnaryUnionOp.Union(geometries);
-
-            switch (unionGeometry)
-            {
-                case Polygon polygon:
-                    result.Add(CreateMergedTileModel(group, polygon));
-                    break;
-                case MultiPolygon multiPolygon:
-                    {
-                        for (var i = 0; i < multiPolygon.NumGeometries; i++)
-                        {
-                            var poly = (Polygon)multiPolygon.GetGeometryN(i);
-                            result.Add(CreateMergedTileModel(group, poly));
-                        }
-
-                        break;
-                    }
-            }
+            result.Add(CreateMergedTileModel(group, unionGeometry));
         }
 
         return result;
     }
 
-    private TileModel CreateMergedTileModel(
-        IGrouping<float, TileModel> group,
-        Polygon polygon)
+    private TileModel CreateMergedTileModel(IGrouping<string, TileModel> group, Geometry geometry)
     {
-        var allConcentrations = group
-            .Where(t => t.AverageConcentration >= 0)
-            .Select(t => t.AverageConcentration)
-            .ToList();
+        var valid = group.Where(t => t.AverageConcentration >= 0).ToList();
+        var avg = valid.Count > 0 ? valid.Average(t => t.AverageConcentration) : 0f;
 
         return new TileModel
         {
-            Tile = polygon,
-            Color = DangerZoneUtils.GetColorByConcentration(group.Key),
-            AverageConcentration = group.Key,
-            PollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(group.Key),
+            Tile = geometry,
+            Color = group.Key,
+            AverageConcentration = avg,
+            PollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(avg),
         };
     }
 }

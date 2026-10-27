@@ -10,10 +10,10 @@ namespace EcoPulseBackend.Models.TileGrid;
 public class TileModel
 {
     /// <summary>
-    /// Полигон
+    /// Полигон/мультиполигон
     /// </summary>
-    [Column(TypeName = "geometry(Polygon, 4326)")]
-    public Polygon Tile { get; set; } = null!;
+    [Column(TypeName = "geometry(Geometry, 4326)")]
+    public Geometry Tile { get; set; } = null!;
 
     /// <summary>
     /// Цвет
