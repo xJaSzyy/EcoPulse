@@ -70,7 +70,7 @@ public class GridService : IGridService
                     queueIndex,
                     tilePolygon);
 
-                if (avg < 0)
+                /*if (avg < 0)
                 {
                     foreach (var district in preparedDistricts)
                     {
@@ -80,13 +80,15 @@ public class GridService : IGridService
                             break;
                         }
                     }
-                }
+                }*/
 
                 var color = avg >= 0
                     ? DangerZoneUtils.GetColorByConcentration(avg)
                     : DangerZoneUtils.GetColorByIndex(0);
 
-                var pollutionLevel = DangerZoneUtils.GetPollutionLevelByConcentration(avg);
+                var pollutionLevel = avg >= 0
+                    ? DangerZoneUtils.GetPollutionLevelByConcentration(avg)
+                    : DangerZoneUtils.GetPollutionLevelByConcentration(0);
 
                 Console.WriteLine($"avg: {avg}, lvl: {pollutionLevel}");
 
@@ -176,7 +178,7 @@ public class GridService : IGridService
             }
         }
 
-        return count == 0 ? -1 : sum / count;
+        return count == 0 ? -1 : sum;
     }
 
     private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)

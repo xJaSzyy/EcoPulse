@@ -67,6 +67,41 @@
       </label>
     </div>
 
+    <div
+      v-if="layersState.tileGrid.visible"
+      class="tile-size-control"
+    >
+      <div class="tile-size-header">
+        <label for="tileSize">Размер тайла</label>
+
+        <div class="tile-size-value">
+          {{ tileSize }} м
+        </div>
+      </div>
+
+      <input
+        id="tileSize"
+        v-model.number="tileSize"
+        class="tile-size-slider"
+        type="range"
+        min="100"
+        max="3000"
+        step="25"
+      />
+
+      <div class="tile-size-range">
+        <span>100 м</span>
+        <span>3000 м</span>
+      </div>
+
+      <button
+        class="tile-size-apply"
+        @click="applyTileSize"
+      >
+        Применить
+      </button>
+    </div>
+
 
     <!--<div class="edit-tool-panel">
       <span class="edit-tool__label" @click="toggleEditPanel">
@@ -154,12 +189,12 @@
   />
 
   <SimulationPanel
-      v-model:data="simulationData"  
-      :start-data="simulationStartData"
-      v-if="showSimulationPanel"
-      @buildSimulation="buildSimulation"
-      @close="closeSimulationPanel"
-  />
+    v-model:data="simulationData"
+    :start-data="simulationStartData"
+    v-if="showSimulationPanel"
+    @buildSimulation="handleBuildSimulation"
+    @close="closeSimulationPanel"
+/>
 </template>
 
 <script setup>
@@ -222,6 +257,8 @@ const userPosition = ref(null);
 const currentRecommendation = ref(null)
 
 const selectedGridLayer = ref('tile')
+
+const tileSize = ref(750);
 
 const olLayers = reactive({
   single: null,
@@ -409,6 +446,39 @@ async function handleTwoPointsSelected(p1, p2) {
   await updateVehicleFlowLayer();
 }
 
+const previousSimulationData = ref(null);
+
+async function handleBuildSimulation(data) {
+  const previous = previousSimulationData.value;
+
+  previousSimulationData.value = { ...data };
+
+  if (!previous) {
+    await buildSimulation(data);
+    return;
+  }
+
+  const windChanged =
+    Number(data.windSpeed) !== Number(previous.windSpeed) ||
+    Number(data.windDirection) !== Number(previous.windDirection);
+
+  if (windChanged) {
+    weather.value = {
+      ...weather.value,
+      windSpeed: Number(data.windSpeed),
+      windDirection: Number(data.windDirection),
+    };
+
+    await updateSingleLayer();
+
+    await buildSimulation(data);
+
+    return;
+  }
+
+  await buildSimulation(data);
+}
+
 async function buildSimulation(data) {
   const dangerZone = await calculateSingleDangerZone({
     pollutant: 2,
@@ -557,16 +627,55 @@ async function updateVehicleQueueLayer() {
   return vehicleQueueDangerZones;
 }
 
-async function updateTileGridLayer(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones) {
+function getTileSizeForZoom(zoom) {
+  if (zoom <= 8) return 3000;
+  if (zoom <= 10.5) return 1500;
+  if (zoom <= 11.5) return 1000;
+  if (zoom <= 12.5) return 750;
+  if (zoom <= 13) return 400;
+  if (zoom <= 14) return 200;
+
+  return 100;
+}
+
+async function applyTileSize() {
+  const size = Number(tileSize.value);
+
+  if (!Number.isFinite(size) || size <= 0) {
+    return;
+  }
+
+  tileSize.value = size;
+
+  await updateTileGridLayer(
+    latestSingleDangerZones,
+    latestVehicleFlowDangerZones,
+    latestVehicleQueueDangerZones,
+    size
+  );
+}
+
+let currentTileSize = null;
+
+let latestSingleDangerZones = [];
+let latestVehicleFlowDangerZones = [];
+let latestVehicleQueueDangerZones = [];
+
+async function updateTileGridLayer(
+    singleDangerZones,
+    vehicleFlowDangerZones,
+    vehicleQueueDangerZones,
+    tileSize
+) {
   const tileGridResult = await calculateTileGrid({
     cityIds: selectedCities.value.map(c => c.id),
-    tileSize: 750,
-    singleDangerZones: singleDangerZones,
-    vehicleFlowDangerZones: vehicleFlowDangerZones,
+    tileSize,
+    singleDangerZones,
+    vehicleFlowDangerZones,
     trafficLightQueueDangerZones: vehicleQueueDangerZones
   });
 
-  const layer = olLayers.tileGrid;
+  const layer = olLayers.tile;
   if (!layer) return;
 
   const source = layer.getSource();
@@ -575,9 +684,10 @@ async function updateTileGridLayer(singleDangerZones, vehicleFlowDangerZones, ve
   source.clear();
 
   const allTiles = tileGridResult.flatMap(city => city.tiles);
+
   allTiles.forEach(tileInfo => {
-    const polygonCoords = tileInfo.tile.coordinates[0]; 
-    
+    const polygonCoords = tileInfo.tile.coordinates[0];
+
     const polygonFeature = new Feature({
       geometry: new Polygon([
         polygonCoords.map(coord => fromLonLat(coord))
@@ -585,7 +695,9 @@ async function updateTileGridLayer(singleDangerZones, vehicleFlowDangerZones, ve
       color: tileInfo.color,
       cityId: tileInfo.cityId
     });
-    
+
+    polygonFeature.set('dangerData', tileInfo);
+
     source.addFeature(polygonFeature);
   });
 
@@ -599,10 +711,20 @@ async function updateLayers() {
   await updateTileGridLayer(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones);
 }
 
+const weatherBeforeSimulation = ref(null);
+
 async function closeSimulationPanel() {
-  await buildSimulation(simulationStartData.value);
+  if (weatherBeforeSimulation.value) {
+    weather.value = { ...weatherBeforeSimulation.value };
+  }
+
+  await updateSingleLayer();
+
   showSimulationPanel.value = false;
   simulationStartData.value = null;
+  simulationData.value = null;
+  previousSimulationData.value = null;
+  weatherBeforeSimulation.value = null;
 }
 
 function createEllipse(dangerZone) {
@@ -934,6 +1056,10 @@ onMounted(async () => {
     () => calculateTrafficLightQueueDangerZones({ cityIds })
   );
 
+  latestSingleDangerZones = singleDangerZones;
+  latestVehicleFlowDangerZones = vehicleFlowDangerZones;
+  latestVehicleQueueDangerZones = vehicleQueueDangerZones;
+
   const tileGridResult = await withCache(
     `tileGrid_${cityIds.join('_')}_750`,
     () =>
@@ -1000,6 +1126,10 @@ onMounted(async () => {
   })
 
   initLayersState();
+
+  map.value.on('moveend', refreshTileGridByZoom);
+
+  await refreshTileGridByZoom();
 
   map.value.on('singleclick', async (evt) => {
     const pixel = evt.pixel;
@@ -1068,6 +1198,8 @@ onMounted(async () => {
 
       showSimulationPanel.value = true;
 
+      weatherBeforeSimulation.value = { ...weather.value };
+
       const emissionSource = await getSingleEmissionSourceById(found.emissionSourceId);
 
       simulationStartData.value = {
@@ -1129,6 +1261,25 @@ onMounted(async () => {
 
   await updateModifyFlow();
 })
+
+async function refreshTileGridByZoom() {
+  if (!map.value) return;
+
+  const zoom = map.value.getView().getZoom();
+  const tileSizeZ = getTileSizeForZoom(zoom);
+  tileSize.value = tileSizeZ;
+
+  if (tileSizeZ === currentTileSize) return;
+
+  currentTileSize = tileSizeZ;
+
+  await updateTileGridLayer(
+    latestSingleDangerZones,
+    latestVehicleFlowDangerZones,
+    latestVehicleQueueDangerZones,
+    tileSizeZ
+  );
+}
 
 async function withCache(key, fn, ttl = 5 * 60 * 1000) {
   const cached = localStorage.getItem(key);
@@ -1523,5 +1674,118 @@ function getHatchPattern(size) {
   max-width: 90vw;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tile-size-control {
+  position: absolute;
+  top: 220px;
+  left: 24px;
+  z-index: 20;
+
+  width: 250px;
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+  font-family: Arial, sans-serif;
+}
+
+.tile-size-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tile-size-header label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.tile-size-value {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #f0f4fa;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tile-size-slider {
+  width: 100%;
+  height: 5px;
+  margin: 2px 0;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  background: #d9e0ea;
+  border-radius: 5px;
+  outline: none;
+  cursor: pointer;
+}
+
+.tile-size-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 16px;
+  height: 16px;
+
+  background: #4285f4;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+
+  cursor: pointer;
+}
+
+.tile-size-slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+
+  background: #4285f4;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+
+  cursor: pointer;
+}
+
+.tile-size-range {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -8px;
+
+  color: #777;
+  font-size: 11px;
+}
+
+.tile-size-apply {
+  width: 100%;
+  padding: 8px;
+
+  background: #4285f4;
+  color: #fff;
+
+  border: none;
+  border-radius: 5px;
+
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tile-size-apply:hover {
+  background: #2868c7;
 }
 </style>
