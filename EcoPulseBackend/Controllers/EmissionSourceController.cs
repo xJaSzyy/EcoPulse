@@ -30,16 +30,16 @@ public class EmissionSourceController : ControllerBase
             HeightSource = model.HeightSource,
             DiameterSource = model.DiameterSource,
             TempStratificationRatio = model.TempStratificationRatio,
-            SedimentationRateRatio = model.SedimentationRateRatio, 
+            SedimentationRateRatio = model.SedimentationRateRatio,
             CityId = model.CityId
         };
-        
+
         _dbContext.SingleEmissionSources.Add(emissionSource);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(emissionSource);
     }
-    
+
     [HttpGet("/emission-source/single/{id:int}")]
     public IActionResult GetSingleEmissionSourceById(int id)
     {
@@ -49,10 +49,10 @@ public class EmissionSourceController : ControllerBase
         {
             return NotFound();
         }
-        
+
         return Ok(result);
-    } 
-    
+    }
+
     [HttpPut("/emission-source/single")]
     public async Task<IActionResult> UpdateSingleEmissionSource([FromBody] SingleEmissionSourceUpdateModel model)
     {
@@ -62,7 +62,7 @@ public class EmissionSourceController : ControllerBase
         {
             return NotFound();
         }
-        
+
         emissionSource.Location = model.Location;
         emissionSource.EjectedTemp = model.EjectedTemp;
         emissionSource.AvgExitSpeed = model.AvgExitSpeed;
@@ -70,13 +70,13 @@ public class EmissionSourceController : ControllerBase
         emissionSource.DiameterSource = model.DiameterSource;
         emissionSource.TempStratificationRatio = model.TempStratificationRatio;
         emissionSource.SedimentationRateRatio = model.SedimentationRateRatio;
-        
+
         _dbContext.SingleEmissionSources.Update(emissionSource);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(emissionSource);
     }
-    
+
     [HttpDelete("/emission-source/single/{id:int}")]
     public async Task<IActionResult> DeleteSingleEmissionSource(int id)
     {
@@ -86,32 +86,32 @@ public class EmissionSourceController : ControllerBase
         {
             return NotFound();
         }
-        
+
         _dbContext.SingleEmissionSources.Remove(emissionSource);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(emissionSource);
     }
-    
+
     [HttpPost("/emission-source/vehicle-flow")]
     public async Task<IActionResult> AddVehicleFlowEmissionSource([FromBody] VehicleFlowEmissionSourceAddModel model)
     {
         var emissionSource = new VehicleFlowEmissionSource
         {
             CityId = model.CityId,
-            Points  = model.Points,
+            Points = model.Points,
             VehicleType = model.VehicleType,
             MaxTrafficIntensity = model.MaxTrafficIntensity,
-            AverageSpeed =  model.AverageSpeed,
+            AverageSpeed = model.AverageSpeed,
             StreetName = model.StreetName
         };
-        
+
         _dbContext.VehicleFlowEmissionSources.Add(emissionSource);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(emissionSource);
     }
-    
+
     [HttpGet("/emission-source/vehicle-flow/{id:int}")]
     public IActionResult GetVehicleFlowEmissionSourceById(int id)
     {
@@ -121,10 +121,18 @@ public class EmissionSourceController : ControllerBase
         {
             return NotFound();
         }
-        
+
         return Ok(result);
     }
-    
+
+    [HttpGet("/emission-source/vehicle-flow")]
+    public IActionResult GetVehicleFlowEmissionSource()
+    {
+        var result = _dbContext.VehicleFlowEmissionSources.ToList();
+
+        return Ok(result);
+    }
+
     [HttpPut("/emission-source/vehicle-flow")]
     public async Task<IActionResult> UpdateVehicleFlowEmissionSource([FromBody] VehicleFlowEmissionSourceUpdateModel model)
     {
@@ -140,13 +148,14 @@ public class EmissionSourceController : ControllerBase
         emissionSource.MaxTrafficIntensity = model.MaxTrafficIntensity ?? emissionSource.MaxTrafficIntensity;
         emissionSource.AverageSpeed = model.AverageSpeed ?? emissionSource.AverageSpeed;
         emissionSource.StreetName = model.StreetName ?? emissionSource.StreetName;
-        
+        emissionSource.UpdatedAt = DateTime.UtcNow;
+
         _dbContext.VehicleFlowEmissionSources.Update(emissionSource);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(emissionSource);
     }
-    
+
     [HttpPost("/emission-source/traffic-light-queue")]
     public async Task<IActionResult> AddTrafficLightQueueEmissionSource([FromBody] TrafficLightQueueEmissionSourceAddModel model)
     {
@@ -158,13 +167,13 @@ public class EmissionSourceController : ControllerBase
             VehicleGroups = model.VehicleGroups,
             CityId = model.CityId
         };
-        
+
         _dbContext.TrafficLightQueueEmissionSources.Add(emissionSource);
         await _dbContext.SaveChangesAsync();
-        
+
         return Ok(emissionSource);
     }
-    
+
     [HttpGet("/emission-source/traffic-light-queue")]
     public IActionResult GetTrafficLightQueueEmissionSources()
     {

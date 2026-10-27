@@ -1,8 +1,10 @@
 using System.Threading.RateLimiting;
 using EcoPulseBackend;
 using EcoPulseBackend.Contexts;
+using EcoPulseBackend.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +38,7 @@ builder.Services.AddRateLimiter(options =>
             factory: partition => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
-                PermitLimit = 100,
+                PermitLimit = 250,
                 Window = TimeSpan.FromMinutes(1)
             }));
 });
@@ -63,6 +65,9 @@ app.UseRateLimiter();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+app.UseHttpMetrics();
+app.MapMetrics();
+app.UseMiddleware<MetricsMiddleware>();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -75,7 +80,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     ResponseWriter = async (context, report) =>
     {
         var db = context.RequestServices.GetRequiredService<ApplicationDbContext>();
-        try 
+        try
         {
             await db.Database.CanConnectAsync();
             context.Response.StatusCode = 200;
@@ -87,5 +92,5 @@ app.MapHealthChecks("/health", new HealthCheckOptions
             await context.Response.WriteAsync($"DB Error: {ex.Message}");
         }
     }
-}).DisableRateLimiting(); 
+}).DisableRateLimiting();
 app.Run();

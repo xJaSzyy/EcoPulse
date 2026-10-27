@@ -19,18 +19,18 @@ public class ConsulRegistrationService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
-        
+
         await RegisterWithConsul(cancellationToken);
     }
 
     private async Task RegisterWithConsul(CancellationToken ct)
     {
         var backendClient = _httpClientFactory.CreateClient("backend");
-        
+
         var serviceAddress = _configuration.GetValue<string>("Consul:ServiceAddress") ?? "weather-service:5000";
         var serviceName = _configuration.GetValue<string>("Consul:ServiceName") ?? "weather";
         var checkInterval = _configuration.GetValue<string>("Consul:CheckInterval") ?? "10s";
-            
+
         var payload = new
         {
             ServiceName = serviceName,
@@ -38,7 +38,7 @@ public class ConsulRegistrationService : BackgroundService
             Tags = new[] { "weather", _environment.EnvironmentName },
             CheckInterval = checkInterval
         };
-        
+
         var backendResponse = await backendClient.PostAsJsonAsync("http://backend:5000/discovery/register", payload, ct);
         backendResponse.EnsureSuccessStatusCode();
     }

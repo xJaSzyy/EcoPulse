@@ -7,6 +7,6 @@ namespace EcoPulseBackend.Interfaces;
 public interface IGridService
 {
     List<TileModel> GenerateTileGrid(MultiPolygon cityPolygon, TileGridCalculateModel model);
-    
+
     List<TileModel> GenerateTileArea(MultiPolygon mainPolygon, TileGridCalculateModel model);
 }

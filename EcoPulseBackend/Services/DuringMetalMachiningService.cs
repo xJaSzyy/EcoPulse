@@ -21,7 +21,7 @@ public class DuringMetalMachiningService : IDuringMetalMachiningService
 
         return pollutants.OrderBy(p => (int)p).Select(pollutant => CalculateDuringMetalMachiningEmissions(pollutant, model)).ToList();
     }
-    
+
     private EmissionsResult CalculateDuringMetalMachiningEmissions(Pollutant pollutant, DuringMetalMachiningEmissionsCalculateModel model)
     {
         var pollutantInfo = _dbContext.PollutantInfos.First(i => i.Pollutant == pollutant);
@@ -31,7 +31,7 @@ public class DuringMetalMachiningService : IDuringMetalMachiningService
         {
             return new EmissionsResult();
         }
-        
+
         var maximumEmission = 0.2f * (float)pollutantInfo.SpecificEmission;
         var grossEmission = 0.2f * 3.6f * (float)pollutantInfo.SpecificEmission * model.WorkDaysPerYear * 1e-3f;
 
@@ -41,7 +41,7 @@ public class DuringMetalMachiningService : IDuringMetalMachiningService
             MaximumEmission = maximumEmission,
             GrossEmission = grossEmission
         };
-        
+
         return result;
     }
 

@@ -44,7 +44,7 @@ public class OpenCoalWarehouseService : IOpenCoalWarehouseService
         var maximumEmission2 = specificWindErosionRate * model.CoalPileBaseArea * humidityFactor * maxWindSpeedFactor *
                                protectionDegreeFactor * surfaceProfileFactor * rockCrushingFactor *
                                (1 - model.DustSuppressionEfficiency) * 1000f;
-        
+
         var result = new EmissionsResult
         {
             PollutantInfo = pollutantInfo,

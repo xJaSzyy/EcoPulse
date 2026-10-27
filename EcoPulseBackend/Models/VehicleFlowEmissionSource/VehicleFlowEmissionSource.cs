@@ -15,17 +15,17 @@ public class VehicleFlowEmissionSource
     /// </summary>
     [Key]
     public int Id { get; set; }
-    
+
     /// <summary>
     /// Идентификатор города
     /// </summary>
     public int CityId { get; set; }
-    
+
     /// <summary>
     /// Город
     /// </summary>
     public City.City City { get; set; } = null!;
-    
+
     /// <summary>
     /// Название улицы
     /// </summary>
@@ -41,17 +41,17 @@ public class VehicleFlowEmissionSource
     /// Тип транспортного средства
     /// </summary>
     public VehicleType VehicleType { get; set; }
-        
+
     /// <summary>
     /// Фактическая наибольшая интенсивность движения
     /// </summary>
     public float MaxTrafficIntensity { get; set; }
-        
+
     /// <summary>
     /// Средняя скорость движения транспортного потока
     /// </summary>
     public float AverageSpeed { get; set; }
-    
+
     /// <summary>
     /// Дата и время последнего изменения
     /// </summary>

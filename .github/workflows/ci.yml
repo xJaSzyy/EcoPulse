@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore backend
+        run: |
+          cd EcoPulseBackend
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+
+      - name: Restore and build tests
+        run: |
+          cd EcoPulseBackendTests
+          dotnet restore EcoPulseBackendTests.sln
+          dotnet build EcoPulseBackendTests.sln --configuration Release --no-restore
+
+      - name: Check formatting
+        run: |
+          cd EcoPulseBackend
+          dotnet tool install -g dotnet-format --ignore-failed-sources
+          dotnet-format EcoPulseBackend.sln --check --no-restore
+
+      - name: Test
+        run: |
+          cd EcoPulseBackendTests
+          dotnet test EcoPulseBackendTests.sln --configuration Release --verbosity normal

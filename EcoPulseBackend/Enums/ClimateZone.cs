@@ -12,13 +12,13 @@ public enum ClimateZone
     /// </summary>
     [Description("1-я климатическая зона")]
     First = 1,
-    
+
     /// <summary>
     /// 2-я климатическая зона
     /// </summary>
     [Description("2-я климатическая зона")]
     Second = 2,
-    
+
     /// <summary>
     /// 3-я климатическая зона
     /// </summary>

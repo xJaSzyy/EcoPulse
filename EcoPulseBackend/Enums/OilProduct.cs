@@ -9,12 +9,12 @@ public enum OilProduct
     /// Бензин автомобильный
     /// </summary>
     AutomobileGasoline = 1,
-    
+
     /// <summary>
     /// Дизельное топливо
     /// </summary>
     DieselFuel = 2,
-    
+
     /// <summary>
     /// Масла
     /// </summary>

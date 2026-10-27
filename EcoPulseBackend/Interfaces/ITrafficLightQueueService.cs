@@ -16,11 +16,11 @@ public interface ITrafficLightQueueService
     /// <param name="model">Модель для расчета выбросов стоящего транспорта на регулируемом перекрестке</param>
     /// <returns></returns>
     public List<EmissionsResult> CalculateEmissionsBatch(TrafficLightQueueEmissionsCalculateModel model);
-    
+
     /// <summary>
     /// Расчет нескольких зон выбросов
     /// </summary>
     /// <param name="emissionSources">Список источников выбросов</param>
     /// <returns></returns>
-    public List<TrafficLightQueueDangerZone> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources);
+    public Task<List<TrafficLightQueueDangerZone>> CalculateDangerZones(List<TrafficLightQueueEmissionSource> emissionSources);
 }

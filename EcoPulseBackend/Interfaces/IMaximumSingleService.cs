@@ -15,11 +15,11 @@ public interface IMaximumSingleService
     /// <param name="model">Модель для расчета выбросов от одиночного точечного источника</param>
     /// <returns></returns>
     public EmissionsGroupResult CalculateEmissions(MaximumSingleEmissionsCalculateModel model);
-    
+
     /// <summary>
     /// Расчет зоны выброса
     /// </summary>
     /// <param name="model">Модель для расчета выбросов от одиночного точечного источника</param>
     /// <returns></returns>
-    public SingleDangerZone CalculateDangerZone(MaximumSingleEmissionsCalculateModel model);
+    public Task<SingleDangerZone> CalculateDangerZone(MaximumSingleEmissionsCalculateModel model);
 }

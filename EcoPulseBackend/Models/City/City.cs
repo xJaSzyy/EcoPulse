@@ -14,12 +14,12 @@ public class City
     /// </summary>
     [Key]
     public int Id { get; set; }
-    
+
     /// <summary>
     /// Название
     /// </summary>
     public string Name { get; set; } = null!;
-    
+
     /// <summary>
     /// Координаты
     /// </summary>

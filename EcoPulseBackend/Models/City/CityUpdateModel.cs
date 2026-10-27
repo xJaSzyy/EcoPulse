@@ -9,21 +9,21 @@ public class CityUpdateModel
     /// Идентификатор
     /// </summary>
     public int Id { get; set; }
-    
+
     /// <summary>
     /// Название
     /// </summary>
-    public string? Name { get; set; } 
+    public string? Name { get; set; }
 
     /// <summary>
     /// Координаты
     /// </summary>
     [Column(TypeName = "geometry(Point, 4326)")]
-    public Point? Location { get; set; } 
-    
+    public Point? Location { get; set; }
+
     /// <summary>
     /// Границы
     /// </summary>
     [Column(TypeName = "geometry(MultiPolygon, 4326)")]
-    public MultiPolygon? Polygon { get; set; } 
+    public MultiPolygon? Polygon { get; set; }
 }

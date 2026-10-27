@@ -13,13 +13,13 @@ public class EmissionService : IEmissionService
     public ITrafficLightQueueService TrafficLightQueueService { get; }
     public IOpenCoalWarehouseService OpenCoalWarehouseService { get; }
 
-    public EmissionService(IMaximumSingleService maximumSingleService, 
-        IGasolineGeneratorService gasolineGeneratorService, 
-        IReservoirsService reservoirsService, 
-        IDuringMetalMachiningService duringMetalMachiningService, 
-        IDuringWeldingOperationsService duringWeldingOperationsService, 
-        IVehicleFlowService vehicleFlowService, 
-        ITrafficLightQueueService trafficLightQueueService, 
+    public EmissionService(IMaximumSingleService maximumSingleService,
+        IGasolineGeneratorService gasolineGeneratorService,
+        IReservoirsService reservoirsService,
+        IDuringMetalMachiningService duringMetalMachiningService,
+        IDuringWeldingOperationsService duringWeldingOperationsService,
+        IVehicleFlowService vehicleFlowService,
+        ITrafficLightQueueService trafficLightQueueService,
         IOpenCoalWarehouseService openCoalWarehouseService)
     {
         MaximumSingleService = maximumSingleService;

@@ -16,22 +16,22 @@ public class SingleEmissionSource
     /// </summary>
     [Key]
     public int Id { get; set; }
-    
+
     /// <summary>
     /// Идентификатор города
     /// </summary>
     public int CityId { get; set; }
-    
+
     /// <summary>
     /// Город
     /// </summary>
     public City.City City { get; set; } = null!;
-    
+
     /// <summary>
     /// Идентификатор предприятия
     /// </summary>
     public int? EnterpriseId { get; set; }
-    
+
     /// <summary>
     /// Предприятие
     /// </summary>

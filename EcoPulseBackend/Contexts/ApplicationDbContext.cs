@@ -23,9 +23,9 @@ public class ApplicationDbContext : DbContext
     public virtual DbSet<City> Cities { get; set; } = null!;
     public virtual DbSet<Enterprise> Enterprises { get; set; } = null!;
     public virtual DbSet<Weather> Weathers { get; set; } = null!;
-    
-    public ApplicationDbContext() {  }
-    
+
+    public ApplicationDbContext() { }
+
     public ApplicationDbContext(DbContextOptions options) : base(options)
     {
     }
@@ -33,33 +33,33 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        
+
         builder.HasPostgresExtension("postgis");
-    
+
         builder.Entity<SingleEmissionSource>(entity =>
         {
             entity.Property(e => e.Location)
-                .HasColumnType("geometry(Point, 4326)");  
-        
+                .HasColumnType("geometry(Point, 4326)");
+
             entity.HasIndex(e => e.Location).HasMethod("GIST");
         });
-        
+
         builder.Entity<VehicleFlowEmissionSource>(entity =>
         {
             entity.Property(e => e.Points)
                 .HasColumnType("geometry(LineString, 4326)");
-    
+
             entity.HasIndex(e => e.Points).HasMethod("GIST");
         });
 
         builder.Entity<TrafficLightQueueEmissionSource>(entity =>
         {
             entity.Property(e => e.Location)
-                .HasColumnType("geometry(Point, 4326)");  
-        
+                .HasColumnType("geometry(Point, 4326)");
+
             entity.HasIndex(e => e.Location).HasMethod("GIST");
         });
-        
+
         builder.Entity<City>(entity =>
         {
             entity.Property(e => e.Location)
@@ -67,33 +67,53 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.Polygon)
                 .HasColumnType("geometry(MultiPolygon, 4326)");
-        
+
             entity.HasIndex(e => e.Location).HasMethod("GIST");
         });
 
         builder.Entity<PollutantInfo>().HasData(
             new PollutantInfo
             {
-                Id = 1, Code = 2, Name = "Твердые частицы", ShortName = "PM2.5", Pollutant = Pollutant.SP,
-                Mass = 15.72f, MaxPermissibleConcentration = 0.5f
+                Id = 1,
+                Code = 2,
+                Name = "Твердые частицы",
+                ShortName = "PM2.5",
+                Pollutant = Pollutant.SP,
+                Mass = 15.72f,
+                MaxPermissibleConcentration = 0.5f
             },
             new PollutantInfo
             {
-                Id = 2, Code = 337, Name = "Углерода оксид (углерод окись; углерод моноокись; угарный газ)",
-                ShortName = "CO", Pollutant = Pollutant.CO,
-                SpecificEmission = 7.5f, DailyAverageConcentration = 3f, MaxPermissibleConcentration = 5f
+                Id = 2,
+                Code = 337,
+                Name = "Углерода оксид (углерод окись; углерод моноокись; угарный газ)",
+                ShortName = "CO",
+                Pollutant = Pollutant.CO,
+                SpecificEmission = 7.5f,
+                DailyAverageConcentration = 3f,
+                MaxPermissibleConcentration = 5f
             },
             new PollutantInfo
             {
-                Id = 3, Code = 2704, Name = "Бензин (нефтяной, малосернистый) /в пересчете на углерод/",
-                ShortName = "CH", Pollutant = Pollutant.CH,
-                SpecificEmission = 1f, DailyAverageConcentration = 1.5f, MaxPermissibleConcentration = 5f
+                Id = 3,
+                Code = 2704,
+                Name = "Бензин (нефтяной, малосернистый) /в пересчете на углерод/",
+                ShortName = "CH",
+                Pollutant = Pollutant.CH,
+                SpecificEmission = 1f,
+                DailyAverageConcentration = 1.5f,
+                MaxPermissibleConcentration = 5f
             },
             new PollutantInfo
             {
-                Id = 4, Code = 301, Name = "Азота диоксид (двуокись азота; пероксид азота)", ShortName = "NO2",
+                Id = 4,
+                Code = 301,
+                Name = "Азота диоксид (двуокись азота; пероксид азота)",
+                ShortName = "NO2",
                 Pollutant = Pollutant.NO2,
-                SpecificEmission = 0.112f, Mass = 0.2695f, MaxPermissibleConcentration = 0.2f,
+                SpecificEmission = 0.112f,
+                Mass = 0.2695f,
+                MaxPermissibleConcentration = 0.2f,
                 DailyAverageConcentration = 0.04f
             },
             new PollutantInfo
@@ -238,93 +258,183 @@ public class ApplicationDbContext : DbContext
         builder.Entity<VaporConcentration>().HasData(
             new VaporConcentration
             {
-                Id = 1, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.First, OilProduct = OilProduct.AutomobileGasoline,
-                MaxVaporConcentration = 464f, AutumnWinterVaporConcentration = 205f, SpringSummerVaporConcentration = 248f
+                Id = 1,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.First,
+                OilProduct = OilProduct.AutomobileGasoline,
+                MaxVaporConcentration = 464f,
+                AutumnWinterVaporConcentration = 205f,
+                SpringSummerVaporConcentration = 248f
             },
             new VaporConcentration
             {
-                Id = 2, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.First, OilProduct = OilProduct.DieselFuel,
-                MaxVaporConcentration = 1.49f, AutumnWinterVaporConcentration = 0.79f, SpringSummerVaporConcentration = 1.06f
+                Id = 2,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.First,
+                OilProduct = OilProduct.DieselFuel,
+                MaxVaporConcentration = 1.49f,
+                AutumnWinterVaporConcentration = 0.79f,
+                SpringSummerVaporConcentration = 1.06f
             },
             new VaporConcentration
             {
-                Id = 3, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.First, OilProduct = OilProduct.Oils,
-                MaxVaporConcentration = 0.16f, AutumnWinterVaporConcentration = 0.1f, SpringSummerVaporConcentration = 0.1f
+                Id = 3,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.First,
+                OilProduct = OilProduct.Oils,
+                MaxVaporConcentration = 0.16f,
+                AutumnWinterVaporConcentration = 0.1f,
+                SpringSummerVaporConcentration = 0.1f
             },
             new VaporConcentration
             {
-                Id = 4, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.Second, OilProduct = OilProduct.AutomobileGasoline,
-                MaxVaporConcentration = 580f, AutumnWinterVaporConcentration = 250f, SpringSummerVaporConcentration = 310f
+                Id = 4,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.Second,
+                OilProduct = OilProduct.AutomobileGasoline,
+                MaxVaporConcentration = 580f,
+                AutumnWinterVaporConcentration = 250f,
+                SpringSummerVaporConcentration = 310f
             },
             new VaporConcentration
             {
-                Id = 5, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.Second, OilProduct = OilProduct.DieselFuel,
-                MaxVaporConcentration = 1.86f, AutumnWinterVaporConcentration = 0.96f, SpringSummerVaporConcentration = 1.32f
+                Id = 5,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.Second,
+                OilProduct = OilProduct.DieselFuel,
+                MaxVaporConcentration = 1.86f,
+                AutumnWinterVaporConcentration = 0.96f,
+                SpringSummerVaporConcentration = 1.32f
             },
             new VaporConcentration
             {
-                Id = 6, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.Second, OilProduct = OilProduct.Oils,
-                MaxVaporConcentration = 0.2f, AutumnWinterVaporConcentration = 0.12f, SpringSummerVaporConcentration = 0.12f
+                Id = 6,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.Second,
+                OilProduct = OilProduct.Oils,
+                MaxVaporConcentration = 0.2f,
+                AutumnWinterVaporConcentration = 0.12f,
+                SpringSummerVaporConcentration = 0.12f
             },
             new VaporConcentration
             {
-                Id = 7, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.Third, OilProduct = OilProduct.AutomobileGasoline,
-                MaxVaporConcentration = 701.8f, AutumnWinterVaporConcentration = 310f, SpringSummerVaporConcentration = 375.1f
+                Id = 7,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.Third,
+                OilProduct = OilProduct.AutomobileGasoline,
+                MaxVaporConcentration = 701.8f,
+                AutumnWinterVaporConcentration = 310f,
+                SpringSummerVaporConcentration = 375.1f
             },
             new VaporConcentration
             {
-                Id = 8, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.Third, OilProduct = OilProduct.DieselFuel,
-                MaxVaporConcentration = 2.25f, AutumnWinterVaporConcentration = 1.19f, SpringSummerVaporConcentration = 1.6f
+                Id = 8,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.Third,
+                OilProduct = OilProduct.DieselFuel,
+                MaxVaporConcentration = 2.25f,
+                AutumnWinterVaporConcentration = 1.19f,
+                SpringSummerVaporConcentration = 1.6f
             },
             new VaporConcentration
             {
-                Id = 9, ReservoirType = ReservoirType.Ground, ClimateZone = ClimateZone.Third, OilProduct = OilProduct.Oils,
-                MaxVaporConcentration = 0.24f, AutumnWinterVaporConcentration = 0.15f, SpringSummerVaporConcentration = 0.15f
+                Id = 9,
+                ReservoirType = ReservoirType.Ground,
+                ClimateZone = ClimateZone.Third,
+                OilProduct = OilProduct.Oils,
+                MaxVaporConcentration = 0.24f,
+                AutumnWinterVaporConcentration = 0.15f,
+                SpringSummerVaporConcentration = 0.15f
             },
             new VaporConcentration
             {
-                Id = 10, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.First, OilProduct = OilProduct.AutomobileGasoline,
-                MaxVaporConcentration = 384f, AutumnWinterVaporConcentration = 172.2f, SpringSummerVaporConcentration = 255f
+                Id = 10,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.First,
+                OilProduct = OilProduct.AutomobileGasoline,
+                MaxVaporConcentration = 384f,
+                AutumnWinterVaporConcentration = 172.2f,
+                SpringSummerVaporConcentration = 255f
             },
             new VaporConcentration
             {
-                Id = 11, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.First, OilProduct = OilProduct.DieselFuel,
-                MaxVaporConcentration = 1.24f, AutumnWinterVaporConcentration = 0.66f, SpringSummerVaporConcentration = 0.88f
+                Id = 11,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.First,
+                OilProduct = OilProduct.DieselFuel,
+                MaxVaporConcentration = 1.24f,
+                AutumnWinterVaporConcentration = 0.66f,
+                SpringSummerVaporConcentration = 0.88f
             },
             new VaporConcentration
             {
-                Id = 12, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.First, OilProduct = OilProduct.Oils,
-                MaxVaporConcentration = 0.13f, AutumnWinterVaporConcentration = 0.08f, SpringSummerVaporConcentration = 0.08f
+                Id = 12,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.First,
+                OilProduct = OilProduct.Oils,
+                MaxVaporConcentration = 0.13f,
+                AutumnWinterVaporConcentration = 0.08f,
+                SpringSummerVaporConcentration = 0.08f
             },
             new VaporConcentration
             {
-                Id = 13, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.Second, OilProduct = OilProduct.AutomobileGasoline,
-                MaxVaporConcentration = 480f, AutumnWinterVaporConcentration = 210.2f, SpringSummerVaporConcentration = 255f
+                Id = 13,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.Second,
+                OilProduct = OilProduct.AutomobileGasoline,
+                MaxVaporConcentration = 480f,
+                AutumnWinterVaporConcentration = 210.2f,
+                SpringSummerVaporConcentration = 255f
             },
             new VaporConcentration
             {
-                Id = 14, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.Second, OilProduct = OilProduct.DieselFuel,
-                MaxVaporConcentration = 1.55f, AutumnWinterVaporConcentration = 0.8f, SpringSummerVaporConcentration = 1.1f
+                Id = 14,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.Second,
+                OilProduct = OilProduct.DieselFuel,
+                MaxVaporConcentration = 1.55f,
+                AutumnWinterVaporConcentration = 0.8f,
+                SpringSummerVaporConcentration = 1.1f
             },
             new VaporConcentration
             {
-                Id = 15, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.Second, OilProduct = OilProduct.Oils,
-                MaxVaporConcentration = 0.16f, AutumnWinterVaporConcentration = 0.1f, SpringSummerVaporConcentration = 0.1f
+                Id = 15,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.Second,
+                OilProduct = OilProduct.Oils,
+                MaxVaporConcentration = 0.16f,
+                AutumnWinterVaporConcentration = 0.1f,
+                SpringSummerVaporConcentration = 0.1f
             },
             new VaporConcentration
             {
-                Id = 16, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.Third, OilProduct = OilProduct.AutomobileGasoline,
-                MaxVaporConcentration = 508f, AutumnWinterVaporConcentration = 260.4f, SpringSummerVaporConcentration = 308.5f
+                Id = 16,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.Third,
+                OilProduct = OilProduct.AutomobileGasoline,
+                MaxVaporConcentration = 508f,
+                AutumnWinterVaporConcentration = 260.4f,
+                SpringSummerVaporConcentration = 308.5f
             },
             new VaporConcentration
             {
-                Id = 17, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.Third, OilProduct = OilProduct.DieselFuel,
-                MaxVaporConcentration = 1.88f, AutumnWinterVaporConcentration = 0.99f, SpringSummerVaporConcentration = 1.33f
+                Id = 17,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.Third,
+                OilProduct = OilProduct.DieselFuel,
+                MaxVaporConcentration = 1.88f,
+                AutumnWinterVaporConcentration = 0.99f,
+                SpringSummerVaporConcentration = 1.33f
             },
             new VaporConcentration
             {
-                Id = 18, ReservoirType = ReservoirType.Buried, ClimateZone = ClimateZone.Third, OilProduct = OilProduct.Oils,
-                MaxVaporConcentration = 0.19f, AutumnWinterVaporConcentration = 0.12f, SpringSummerVaporConcentration = 0.12f
+                Id = 18,
+                ReservoirType = ReservoirType.Buried,
+                ClimateZone = ClimateZone.Third,
+                OilProduct = OilProduct.Oils,
+                MaxVaporConcentration = 0.19f,
+                AutumnWinterVaporConcentration = 0.12f,
+                SpringSummerVaporConcentration = 0.12f
             }
         );
     }

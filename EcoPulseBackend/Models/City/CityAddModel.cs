@@ -15,7 +15,7 @@ public class CityAddModel
     /// </summary>
     [Column(TypeName = "geometry(Point, 4326)")]
     public Point Location { get; set; } = null!;
-    
+
     /// <summary>
     /// Границы
     /// </summary>

@@ -25,7 +25,7 @@ public class ConsulRegistrationService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
-        
+
         await RegisterWithConsul(cancellationToken);
     }
 
@@ -34,12 +34,12 @@ public class ConsulRegistrationService : BackgroundService
         try
         {
             var client = _httpClientFactory.CreateClient();
-            
+
             var serviceAddress = _configuration.GetValue<string>("Consul:ServiceAddress") ?? "backend:5000";
             var serviceName = _configuration.GetValue<string>("Consul:ServiceName") ?? "backend";
             var healthCheckPath = _configuration.GetValue<string>("Consul:HealthCheckPath") ?? "/health";
             var serviceId = $"{serviceName}-{Guid.NewGuid():N}";
-            
+
             var payload = new
             {
                 ID = serviceId,
@@ -56,13 +56,13 @@ public class ConsulRegistrationService : BackgroundService
 
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            
-            _logger.LogInformation("Registering service with Consul. ServiceId: {ServiceId}, Address: {Address}", 
+
+            _logger.LogInformation("Registering service with Consul. ServiceId: {ServiceId}, Address: {Address}",
                 serviceId, serviceAddress);
-            
+
             var response = await client.PutAsync(
-                "http://consul:8500/v1/agent/service/register", 
-                content, 
+                "http://consul:8500/v1/agent/service/register",
+                content,
                 cancellationToken);
 
             if (response.IsSuccessStatusCode)
@@ -72,7 +72,7 @@ public class ConsulRegistrationService : BackgroundService
             else
             {
                 var error = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogError("Failed to register with Consul. Status: {StatusCode}, Error: {Error}", 
+                _logger.LogError("Failed to register with Consul. Status: {StatusCode}, Error: {Error}",
                     response.StatusCode, error);
             }
         }

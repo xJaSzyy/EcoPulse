@@ -12,28 +12,28 @@ public class SingleDangerZone
     /// Идентификатор источника выброса
     /// </summary>
     public int EmissionSourceId { get; set; }
-    
+
     [Column(TypeName = "geometry(Point, 4326)")]
     public Point Location { get; set; } = null!;
-    
+
     [Column(TypeName = "geometry(Polygon, 4326)")]
     public Polygon Polygon { get; set; } = null!;
-    
+
     /// <summary>
     /// Длина зоны выброса
     /// </summary>
     public double Length { get; set; }
-    
+
     /// <summary>
     /// Ширина зоны выброса
     /// </summary>
     public double Width { get; set; }
-    
+
     /// <summary>
     /// Цвет зоны выброса
     /// </summary>
     public string Color { get; set; } = null!;
-    
+
     /// <summary>
     /// Среднее значение из n макисмальных концентраций
     /// </summary>
