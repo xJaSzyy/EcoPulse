@@ -45,7 +45,7 @@ public class GridService : IGridService
                 if (!preparedMainPolygon.Intersects(tilePolygon))
                     continue;
 
-                var avg = GetAverageConcentration(
+                var avg = GetSumConcentration(
                     singleIndex,
                     flowIndex,
                     queueIndex,
@@ -145,7 +145,45 @@ public class GridService : IGridService
             }
         }
 
-        return count == 0 ? -1 : sum;
+        return count == 0 ? -1 : sum / count;
+    }
+    
+    private float GetSumConcentration(
+        NetTopologySuite.Index.Strtree.STRtree<SingleDangerZone> singleIndex,
+        NetTopologySuite.Index.Strtree.STRtree<VehicleFlowDangerZone> flowIndex,
+        NetTopologySuite.Index.Strtree.STRtree<TrafficLightQueueDangerZone> queueIndex,
+        Polygon polygon)
+    {
+        float sum = 0;
+
+        var singleCandidates = singleIndex.Query(polygon.EnvelopeInternal);
+        foreach (var zone in singleCandidates)
+        {
+            if (zone.Polygon.Intersects(polygon))
+            {
+                sum += zone.AverageConcentration;
+            }
+        }
+
+        var flowCandidates = flowIndex.Query(polygon.EnvelopeInternal);
+        foreach (var zone in flowCandidates)
+        {
+            if (zone.Points.Intersects(polygon))
+            {
+                sum += zone.AverageConcentration;
+            }
+        }
+
+        var queueCandidates = queueIndex.Query(polygon.EnvelopeInternal);
+        foreach (var zone in queueCandidates)
+        {
+            if (zone.Location.Intersects(polygon))
+            {
+                sum += zone.AverageConcentration;
+            }
+        }
+
+        return sum;
     }
 
     private Polygon CreateTilePolygon(double minLon, double minLat, double lonSize, double latSize)
