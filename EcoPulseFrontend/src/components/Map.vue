@@ -454,6 +454,32 @@ async function refreshTileGrid() {
   );
 }
 
+async function patchSingleZoneForSource(data) {
+  const source = olLayers.single?.getSource();
+  if (!source) return;
+
+  const feature = source.getFeatures().find(
+    f =>
+      f.get('emissionSourceId') === data.emissionSourceId &&
+      f.getGeometry().getType() === 'Polygon'
+  );
+
+  if (!feature) return;
+
+  const updatedZone = feature.get('dangerData');
+  if (!updatedZone) return;
+
+  const idx = latestSingleDangerZones.findIndex(
+    z => z.emissionSourceId === data.emissionSourceId
+  );
+
+  if (idx >= 0) {
+    latestSingleDangerZones[idx] = updatedZone;
+  } else {
+    latestSingleDangerZones.push(updatedZone);
+  }
+}
+
 async function handleTwoPointsSelected(p1, p2) {
   const selectedCityId = selectedCities.value.length > 0
       ? selectedCities.value[0].id
@@ -478,7 +504,6 @@ const previousSimulationData = ref(null);
 
 async function handleBuildSimulation(data) {
   const previous = previousSimulationData.value;
-
   previousSimulationData.value = { ...data };
 
   if (!previous) {
@@ -490,27 +515,34 @@ async function handleBuildSimulation(data) {
     Number(data.windSpeed) !== Number(previous.windSpeed) ||
     Number(data.windDirection) !== Number(previous.windDirection);
 
-if (windChanged) {
-  weather.value = {
-    ...weather.value,
-    windSpeed: Number(data.windSpeed),
-    windDirection: Number(data.windDirection),
-  };
+  const sourceChanged =
+    Number(data.ejectedTemp) !== Number(previous.ejectedTemp) ||
+    Number(data.airTemp) !== Number(previous.airTemp) ||
+    Number(data.avgExitSpeed) !== Number(previous.avgExitSpeed) ||
+    Number(data.heightSource) !== Number(previous.heightSource) ||
+    Number(data.diameterSource) !== Number(previous.diameterSource) ||
+    Number(data.tempStratificationRatio) !== Number(previous.tempStratificationRatio) ||
+    Number(data.sedimentationRateRatio) !== Number(previous.sedimentationRateRatio);
 
-  // 1. Пересчитываем зоны одиночных источников
-  const singleDangerZones = await updateSingleLayer();
+  if (windChanged || sourceChanged) {
+    if (windChanged) {
+      weather.value = {
+        ...weather.value,
+        windSpeed: Number(data.windSpeed),
+        windDirection: Number(data.windDirection),
+      };
 
-  // 2. Сохраняем актуальные данные для построения сетки
-  latestSingleDangerZones = singleDangerZones;
+      latestSingleDangerZones = await updateSingleLayer();
+      await refreshTileGrid();
+      await buildSimulation(data);
+      return;
+    }
 
-  // 3. Перестраиваем сетку с обновлёнными зонами
-  await refreshTileGrid();
-
-  // 4. Строим симуляцию выбранного источника
-  await buildSimulation(data);
-
-  return;
-}
+    await buildSimulation(data);          
+    await patchSingleZoneForSource(data); 
+    await refreshTileGrid();              
+    return;
+  }
 
   await buildSimulation(data);
 }
