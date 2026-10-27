@@ -36,25 +36,6 @@ public class GridService : IGridService
         foreach (var zone in model.TrafficLightQueueDangerZones)
             queueIndex.Insert(zone.Location.EnvelopeInternal, zone);
 
-        var preparedDistricts =
-            new List<(Polygon polygon, NetTopologySuite.Geometries.Prepared.IPreparedGeometry prepared, float avg)>();
-
-        for (var i = 0; i < mainPolygon.NumGeometries; i++)
-        {
-            var district = (Polygon)mainPolygon.GetGeometryN(i);
-
-            var prepared = NetTopologySuite.Geometries.Prepared.PreparedGeometryFactory
-                .Prepare(district);
-
-            var avgDistrict = GetAverageConcentration(
-                singleIndex,
-                flowIndex,
-                queueIndex,
-                district);
-
-            preparedDistricts.Add((district, prepared, avgDistrict));
-        }
-
         for (var lon = Math.Floor(envelope.MinX / lonStep) * lonStep; lon < envelope.MaxX; lon += lonStep)
         {
             for (var lat = Math.Floor(envelope.MinY / latStep) * latStep; lat < envelope.MaxY; lat += latStep)
@@ -70,18 +51,6 @@ public class GridService : IGridService
                     queueIndex,
                     tilePolygon);
 
-                /*if (avg < 0)
-                {
-                    foreach (var district in preparedDistricts)
-                    {
-                        if (district.prepared.Intersects(tilePolygon))
-                        {
-                            avg = district.avg;
-                            break;
-                        }
-                    }
-                }*/
-
                 var color = avg >= 0
                     ? DangerZoneUtils.GetColorByConcentration(avg)
                     : DangerZoneUtils.GetColorByIndex(0);
@@ -89,8 +58,6 @@ public class GridService : IGridService
                 var pollutionLevel = avg >= 0
                     ? DangerZoneUtils.GetPollutionLevelByConcentration(avg)
                     : DangerZoneUtils.GetPollutionLevelByConcentration(0);
-
-                Console.WriteLine($"avg: {avg}, lvl: {pollutionLevel}");
 
                 tiles.Add(new TileModel
                 {
