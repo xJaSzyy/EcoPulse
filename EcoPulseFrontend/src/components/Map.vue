@@ -71,22 +71,33 @@
       v-if="layersState.tileGrid.visible"
       class="tile-size-control"
     >
+      <label class="tile-size-auto">
+        <input
+          type="checkbox"
+          v-model="autoTileSizeByZoom"
+          @change="onAutoTileSizeChange"
+        />
+        Автоматически
+      </label>
+
       <div class="tile-size-header">
         <label for="tileSize">Размер тайла</label>
 
         <div class="tile-size-value">
-          {{ tileSize }} м
+          {{ autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize }} м
         </div>
       </div>
 
       <input
         id="tileSize"
-        v-model.number="tileSize"
+        :value="autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize"
         class="tile-size-slider"
         type="range"
         min="100"
         max="3000"
         step="25"
+        :disabled="autoTileSizeByZoom"
+        @input="tileSize = Number($event.target.value)"
       />
 
       <div class="tile-size-range">
@@ -95,6 +106,7 @@
       </div>
 
       <button
+        v-if="!autoTileSizeByZoom"
         class="tile-size-apply"
         @click="applyTileSize"
       >
@@ -259,6 +271,7 @@ const currentRecommendation = ref(null)
 const selectedGridLayer = ref('tile')
 
 const tileSize = ref(750);
+const autoTileSizeByZoom = ref(true);
 
 const olLayers = reactive({
   single: null,
@@ -628,8 +641,8 @@ async function updateVehicleQueueLayer() {
 }
 
 function getTileSizeForZoom(zoom) {
-  if (zoom <= 8) return 3000;
-  if (zoom <= 10.5) return 1500;
+  if (zoom <= 10.25) return 3000;
+  if (zoom <= 10.75) return 1500;
   if (zoom <= 11.5) return 1000;
   if (zoom <= 12.5) return 750;
   if (zoom <= 13) return 400;
@@ -641,11 +654,44 @@ function getTileSizeForZoom(zoom) {
 async function applyTileSize() {
   const size = Number(tileSize.value);
 
-  if (!Number.isFinite(size) || size <= 0) {
-    return;
-  }
+  if (!Number.isFinite(size)) return;
 
-  tileSize.value = size;
+  const normalizedSize = Math.min(
+    3000,
+    Math.max(100, Math.round(size / 25) * 25)
+  );
+
+  tileSize.value = normalizedSize;
+  currentTileSize.value = normalizedSize;
+
+  await updateTileGridLayer(
+    latestSingleDangerZones,
+    latestVehicleFlowDangerZones,
+    latestVehicleQueueDangerZones,
+    normalizedSize
+  );
+}
+
+async function onAutoTileSizeChange() {
+  if (autoTileSizeByZoom.value) {
+    await refreshTileGridByZoom();
+  } else {
+    await applyTileSize();
+  }
+}
+
+async function refreshTileGridByZoom() {
+  if (!map.value || !autoTileSizeByZoom.value) return;
+
+  const zoom = map.value.getView().getZoom();
+
+  if (zoom == null) return;
+
+  const size = getTileSizeForZoom(zoom);
+
+  if (size === currentTileSize.value) return;
+
+  currentTileSize.value = size;
 
   await updateTileGridLayer(
     latestSingleDangerZones,
@@ -655,7 +701,7 @@ async function applyTileSize() {
   );
 }
 
-let currentTileSize = null;
+const currentTileSize = ref(null);
 
 let latestSingleDangerZones = [];
 let latestVehicleFlowDangerZones = [];
@@ -708,7 +754,23 @@ async function updateLayers() {
   const singleDangerZones = await updateSingleLayer();
   const vehicleFlowDangerZones = await updateVehicleFlowLayer();
   const vehicleQueueDangerZones = await updateVehicleQueueLayer();
-  await updateTileGridLayer(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones);
+
+  latestSingleDangerZones = singleDangerZones;
+  latestVehicleFlowDangerZones = vehicleFlowDangerZones;
+  latestVehicleQueueDangerZones = vehicleQueueDangerZones;
+
+  const tileSizeToUse = autoTileSizeByZoom.value
+    ? getTileSizeForZoom(map.value?.getView().getZoom() ?? 12)
+    : tileSize.value;
+
+  currentTileSize.value = tileSizeToUse;
+
+  await updateTileGridLayer(
+    singleDangerZones,
+    vehicleFlowDangerZones,
+    vehicleQueueDangerZones,
+    tileSizeToUse
+  );
 }
 
 const weatherBeforeSimulation = ref(null);
@@ -1262,25 +1324,6 @@ onMounted(async () => {
   await updateModifyFlow();
 })
 
-async function refreshTileGridByZoom() {
-  if (!map.value) return;
-
-  const zoom = map.value.getView().getZoom();
-  const tileSizeZ = getTileSizeForZoom(zoom);
-  tileSize.value = tileSizeZ;
-
-  if (tileSizeZ === currentTileSize) return;
-
-  currentTileSize = tileSizeZ;
-
-  await updateTileGridLayer(
-    latestSingleDangerZones,
-    latestVehicleFlowDangerZones,
-    latestVehicleQueueDangerZones,
-    tileSizeZ
-  );
-}
-
 async function withCache(key, fn, ttl = 5 * 60 * 1000) {
   const cached = localStorage.getItem(key);
 
@@ -1684,18 +1727,22 @@ function getHatchPattern(size) {
 
   width: 250px;
   padding: 14px;
+  box-sizing: border-box;
 
   display: flex;
   flex-direction: column;
   gap: 12px;
 
-  box-sizing: border-box;
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 
-  font-family: Arial, sans-serif;
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #333;
 }
 
 .tile-size-header {
@@ -1706,18 +1753,25 @@ function getHatchPattern(size) {
 }
 
 .tile-size-header label {
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.4;
   color: #333;
 }
 
 .tile-size-value {
   padding: 4px 7px;
   border-radius: 5px;
+
   background: #f0f4fa;
   color: #2563eb;
-  font-size: 14px;
+
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .tile-size-slider {
@@ -1761,18 +1815,28 @@ function getHatchPattern(size) {
   cursor: pointer;
 }
 
+.tile-size-slider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .tile-size-range {
   display: flex;
   justify-content: space-between;
   margin-top: -8px;
 
-  color: #777;
+  font-family: inherit;
   font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #777;
 }
 
 .tile-size-apply {
   width: 100%;
+  margin-top: 2px;
   padding: 8px;
+  box-sizing: border-box;
 
   background: #4285f4;
   color: #fff;
@@ -1780,12 +1844,35 @@ function getHatchPattern(size) {
   border: none;
   border-radius: 5px;
 
+  font-family: inherit;
   font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .tile-size-apply:hover {
   background: #2868c7;
+}
+
+.tile-size-auto {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #333;
+
+  cursor: pointer;
+}
+
+.tile-size-auto input {
+  margin: 2px 0 0;
+  flex-shrink: 0;
 }
 </style>
