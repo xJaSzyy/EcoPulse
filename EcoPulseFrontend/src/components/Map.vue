@@ -439,6 +439,21 @@ function createPopupElement() {
   return popup
 }
 
+async function refreshTileGrid() {
+  const tileSizeToUse = autoTileSizeByZoom.value
+    ? getTileSizeForZoom(map.value?.getView().getZoom() ?? 12)
+    : tileSize.value;
+
+  currentTileSize.value = tileSizeToUse;
+
+  await updateTileGridLayer(
+    latestSingleDangerZones,
+    latestVehicleFlowDangerZones,
+    latestVehicleQueueDangerZones,
+    tileSizeToUse
+  );
+}
+
 async function handleTwoPointsSelected(p1, p2) {
   const selectedCityId = selectedCities.value.length > 0
       ? selectedCities.value[0].id
@@ -475,19 +490,27 @@ async function handleBuildSimulation(data) {
     Number(data.windSpeed) !== Number(previous.windSpeed) ||
     Number(data.windDirection) !== Number(previous.windDirection);
 
-  if (windChanged) {
-    weather.value = {
-      ...weather.value,
-      windSpeed: Number(data.windSpeed),
-      windDirection: Number(data.windDirection),
-    };
+if (windChanged) {
+  weather.value = {
+    ...weather.value,
+    windSpeed: Number(data.windSpeed),
+    windDirection: Number(data.windDirection),
+  };
 
-    await updateSingleLayer();
+  // 1. Пересчитываем зоны одиночных источников
+  const singleDangerZones = await updateSingleLayer();
 
-    await buildSimulation(data);
+  // 2. Сохраняем актуальные данные для построения сетки
+  latestSingleDangerZones = singleDangerZones;
 
-    return;
-  }
+  // 3. Перестраиваем сетку с обновлёнными зонами
+  await refreshTileGrid();
+
+  // 4. Строим симуляцию выбранного источника
+  await buildSimulation(data);
+
+  return;
+}
 
   await buildSimulation(data);
 }
@@ -780,7 +803,11 @@ async function closeSimulationPanel() {
     weather.value = { ...weatherBeforeSimulation.value };
   }
 
-  await updateSingleLayer();
+  const singleDangerZones = await updateSingleLayer();
+
+  latestSingleDangerZones = singleDangerZones;
+
+  await refreshTileGrid();
 
   showSimulationPanel.value = false;
   simulationStartData.value = null;
@@ -1745,6 +1772,7 @@ function getHatchPattern(size) {
   color: #333;
 }
 
+/* Заголовок и значение */
 .tile-size-header {
   display: flex;
   align-items: center;
@@ -1774,6 +1802,7 @@ function getHatchPattern(size) {
   white-space: nowrap;
 }
 
+/* Ползунок */
 .tile-size-slider {
   width: 100%;
   height: 5px;
