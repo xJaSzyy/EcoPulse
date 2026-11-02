@@ -237,7 +237,7 @@ import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
   addVehicleFlowEmissionSource,
-  getSingleEmissionSourceById, updateVehicleFlowEmissionSource
+  getSingleEmissionSourceById, updateVehicleFlowEmissionSource, getVehicleFlowEmissionSourceById
 } from '../api/emissionSource.js';
 import boilerIcon from '../icons/boiler.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
@@ -410,15 +410,25 @@ function hidePopup() {
 
 function createPopupElement() {
   const popup = document.createElement('div')
-  popup.className = 'single-popup'
-  
+  popup.className = 'popup-element'
+
+  const coalConsumptionHtml =
+    currentPopupData.value.coalConsumption != null
+      ? `
+        <div class="average-concentration">
+          <strong><label>Расход угля: </label></strong>
+          <span>${currentPopupData.value.coalConsumption.toFixed(2)} тонн/час</span>
+        </div>
+      `
+      : ''
+
   popup.innerHTML = `
     <div class="popup-content">
       <div class="popup-text">
         <div class="source-type">
-        <strong><label>Тип источника: </label></strong>
-        <span>${currentPopupData.value.sourceType}</span>
-      </div>
+          <strong><label>Тип источника: </label></strong>
+          <span>${currentPopupData.value.sourceType}</span>
+        </div>
 
         <div class="average-concentration">
           <strong><label>Концентрация: </label></strong>
@@ -426,16 +436,19 @@ function createPopupElement() {
         </div>
 
         <div class="legend-item">
-          <strong><label>Уровень загрязнения -&nbsp;</label></strong> 
-          <span>${currentPopupData.value.pollutionLevel}&nbsp;</span> 
-          <span 
-            class="legend-color" 
+          <strong><label>Уровень загрязнения -&nbsp;</label></strong>
+          <span>${currentPopupData.value.pollutionLevel}&nbsp;</span>
+          <span
+            class="legend-color"
             style="background-color: ${currentPopupData.value.color}"
           ></span>
         </div>
+
+        ${coalConsumptionHtml}
       </div>
     </div>
   `
+
   return popup
 }
 
@@ -575,7 +588,7 @@ async function buildSimulation(data) {
 
   source.removeFeatures(featuresToRemove);
 
-  const ellipse = createEllipse(dangerZone);
+  const ellipse = await createEllipse(dangerZone);
   ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
   source.addFeature(ellipse);
 
@@ -610,8 +623,8 @@ async function updateSingleLayer() {
 
   source.clear();
 
-  singleDangerZones.forEach(dangerZone => {
-    const ellipse = createEllipse(dangerZone);
+  singleDangerZones.forEach(async dangerZone => {
+    const ellipse = await createEllipse(dangerZone);
     ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
     source.addFeature(ellipse);
 
@@ -886,7 +899,7 @@ function toPolygons(geom) {
   return []
 }
 
-function createEllipse(dangerZone) {
+async function createEllipse(dangerZone) {
   const polygonCoords = dangerZone.polygon.coordinates[0];
   const coords = polygonCoords.map(coord => 
     fromLonLat(coord)
@@ -895,6 +908,15 @@ function createEllipse(dangerZone) {
   const ellipseFeature = new Feature({
     geometry: new Polygon([coords])
   });
+
+  const sourceData = await getSingleEmissionSourceById(dangerZone.emissionSourceId);
+
+  const s = Math.PI * Math.pow(sourceData.diameterSource, 2) / 4;
+  const v = sourceData.avgExitSpeed * s * 3600;
+
+  const coalConsumption = (v / 11) * (273 / (273 + sourceData.ejectedTemp));
+
+  dangerZone.coalConsumption = coalConsumption / 1000;
 
   ellipseFeature.set('dangerData', dangerZone);
   ellipseFeature.set('emissionSourceId', dangerZone.emissionSourceId);
@@ -917,8 +939,8 @@ function getColorWithAlpha(baseColor, alpha = 0.75) {
 function createSingleLayer(dangerZones) {
   const singleSource = new VectorSource();
 
-  dangerZones.forEach(dangerZone => {
-    const ellipse = createEllipse(dangerZone);
+  dangerZones.forEach(async dangerZone => {
+    const ellipse = await createEllipse(dangerZone);
     ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
     singleSource.addFeature(ellipse);
 
@@ -1771,7 +1793,7 @@ function getHatchPattern(size) {
   margin-bottom: 4px;
 }
 
-.single-popup {
+.popup-element {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
