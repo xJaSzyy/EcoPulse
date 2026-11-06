@@ -892,17 +892,25 @@ async function preloadTileGrids(
   vehicleFlowDangerZones,
   vehicleQueueDangerZones
 ) {
-  const cityIds = selectedCities.value.map(c => c.id);
+  const cityIds = selectedCities.value
+    .map(c => c.id)
+    .sort((a, b) => a - b);
 
   const results = await Promise.all(
     TILE_SIZES.map(async size => {
-      const result = await calculateTileGrid({
-        cityIds,
-        tileSize: size,
-        singleDangerZones,
-        vehicleFlowDangerZones,
-        trafficLightQueueDangerZones: vehicleQueueDangerZones
-      });
+
+      const cacheKey = `tileGrid_${cityIds.join('_')}_${size}`;
+
+      const result = await withCache(
+        cacheKey,
+        () => calculateTileGrid({
+          cityIds,
+          tileSize: size,
+          singleDangerZones,
+          vehicleFlowDangerZones,
+          trafficLightQueueDangerZones: vehicleQueueDangerZones
+        })
+      );
 
       return [size, result];
     })
