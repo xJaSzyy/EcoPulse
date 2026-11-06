@@ -2,69 +2,109 @@
   <div class="map-wrapper">
     <div ref="mapRoot" class="fullscreen-map"></div>
 
-    <div class="layer-panel">
-      <h3>Слои</h3>
-      <label>
-        <input
-            type="checkbox"
-            v-model="layersState.single.visible"
-            @change="toggleLayer('single')"
-        />
-        Котельные
-      </label>
-      <label>
-        <input
-            type="checkbox"
-            v-model="layersState.vehicleFlow.visible"
-            @change="toggleLayer('vehicleFlow')"
-        />
-        Дороги
-      </label>
-      <label>
-        <input
-            type="checkbox"
-            v-model="layersState.vehicleQueue.visible"
-            @change="toggleLayer('vehicleQueue')"
-        />
-        Перекрестки
-      </label>
-      <label>
-        <input
-            type="checkbox"
-            v-model="layersState.tileGrid.visible"
-            @change="toggleLayer('tileGrid')"
-        />
-        Сетка
-      </label>
-      <label>
-        <input
-            type="checkbox"
-            v-model="layersState.sanitaryArea.visible"
-            @change="toggleLayer('sanitaryArea')"
-        />
-        СЗЗ
-      </label>
-    </div>
+    <div class="map-controls">
 
-    <div class="tileLayer-panel" v-if="layersState.tileGrid.visible">
-      <label>
-        <input
-            type="radio"
-            v-model="selectedGridLayer"
-            value="tile"
-            @change="toggleLayer('tile')"
-        />
-        Ячейки
-      </label>
-      <label>
-        <input
-            type="radio"
-            v-model="selectedGridLayer"
-            value="area"
-            @change="toggleLayer('area')"
-        />
-        Районы
-      </label>
+      <div class="base-map-selector">
+        <label for="baseMap">Карта:</label>
+
+        <select id="baseMap" v-model="selectedBaseMap" @change="changeBaseMap">
+          <option value="osm">Обычная</option>
+          <option value="esri">Спутник</option>
+          <option value="cartoVoyager">Вояджер</option>
+          <option value="cartoLight">Светлая</option>
+          <option value="cartoDark">Темная</option>
+        </select>
+      </div>
+
+      <div class="layer-panel">
+        <h3>Слои</h3>
+        <label>
+          <input
+              type="checkbox"
+              v-model="layersState.single.visible"
+              @change="toggleLayer('single')"
+          />
+          Котельные
+        </label>
+        <label>
+          <input
+              type="checkbox"
+              v-model="layersState.vehicleFlow.visible"
+              @change="toggleLayer('vehicleFlow')"
+          />
+          Дороги
+        </label>
+        <label>
+          <input
+              type="checkbox"
+              v-model="layersState.vehicleQueue.visible"
+              @change="toggleLayer('vehicleQueue')"
+          />
+          Перекрестки
+        </label>
+        <label>
+          <input
+              type="checkbox"
+              v-model="layersState.tileGrid.visible"
+              @change="toggleLayer('tileGrid')"
+          />
+          Сетка
+        </label>
+        <label>
+          <input
+              type="checkbox"
+              v-model="layersState.sanitaryArea.visible"
+              @change="toggleLayer('sanitaryArea')"
+          />
+          СЗЗ
+        </label>
+      </div>
+
+      <div class="city-select">
+        <span class="city-select__label" @click="toggleCityDropdown">
+          {{ selectedCities.length ? selectedCities.map(c => c.name).join(', ') : 'Выберите города' }}
+        </span>
+
+        <div
+            v-if="cityDropdownOpen"
+            class="city-select-dropdown"
+        >
+          <label
+              v-for="city in cities"
+              :key="city.id"
+              class="city-select-dropdown__item"
+          >
+            <input
+                type="checkbox"
+                :value="city"
+                v-model="selectedCities"
+            />
+            <span>{{ city.name }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="tileLayer-panel" v-if="layersState.tileGrid.visible">
+        <label>
+          <input
+              type="radio"
+              v-model="selectedGridLayer"
+              value="tile"
+              @change="toggleLayer('tile')"
+          />
+          Ячейки
+        </label>
+        <label>
+          <input
+              type="radio"
+              v-model="selectedGridLayer"
+              value="area"
+              @change="toggleLayer('area')"
+          />
+          Районы
+        </label>
+      </div>
+
     </div>
 
     <div
@@ -136,29 +176,7 @@
 
     </div>-->
 
-    <div class="city-select">
-      <span class="city-select__label" @click="toggleCityDropdown">
-        {{ selectedCities.length ? selectedCities.map(c => c.name).join(', ') : 'Выберите города' }}
-      </span>
-
-      <div
-          v-if="cityDropdownOpen"
-          class="city-select-dropdown"
-      >
-        <label
-            v-for="city in cities"
-            :key="city.id"
-            class="city-select-dropdown__item"
-        >
-          <input
-              type="checkbox"
-              :value="city"
-              v-model="selectedCities"
-          />
-          <span>{{ city.name }}</span>
-        </label>
-      </div>
-    </div>
+    
 
     <div class="legend">
       <div class="legend-title">Уровни загрязнения</div>
@@ -251,6 +269,60 @@ import XYZ from 'ol/source/XYZ.js';
 
 const mapRoot = ref(null)
 const map = ref(null)
+
+const selectedBaseMap = ref(
+  localStorage.getItem('selectedBaseMap') || 'osm'
+)
+
+const baseLayers = {
+  osm: new TileLayer({
+    source: new OSM(),
+    visible: true
+  }),
+
+  esri: new TileLayer({
+    source: new XYZ({
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attributions: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
+    }),
+    visible: false
+  }),
+
+  cartoVoyager: new TileLayer({
+    source: new XYZ({
+      url: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_KEY}`,
+      attributions: '© CARTO © OpenStreetMap contributors'
+    }),
+    visible: false
+  }),
+
+  cartoLight: new TileLayer({
+    source: new XYZ({
+      url: `https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key=${CARTO_KEY}`,
+      attributions: '© CARTO © OpenStreetMap contributors'
+    }),
+    visible: false
+  }),
+
+  cartoDark: new TileLayer({
+    source: new XYZ({
+      url: `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_KEY}`,
+      attributions: '© CARTO © OpenStreetMap contributors'
+    }),
+    visible: false
+  }),
+}
+
+const CARTO_KEY = 'cb1_538x_1_20b2eb0d83aad49f8f9257c5'
+
+function changeBaseMap() {
+  Object.entries(baseLayers).forEach(([key, layer]) => {
+    layer.setVisible(key === selectedBaseMap.value)
+  })
+
+  localStorage.setItem('selectedBaseMap', selectedBaseMap.value)
+}
+
 const weather = ref(null)
 const showSimulationPanel = ref(false)
 const simulationStartData = ref(null)
@@ -903,7 +975,6 @@ function geoJsonToOlGeometry(geometry) {
     }
 
     case 'GeometryCollection': {
-      // на всякий случай — маловероятно, но пусть будет
       const parts = geometry.geometries
         .map(geoJsonToOlGeometry)
         .filter(Boolean)
@@ -1262,9 +1333,7 @@ function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDan
 }
 
 onMounted(async () => {
-  const baseLayer = new TileLayer({
-    source: new OSM()
-  })
+  const baseLayer = baseLayers.osm
 
   const currentWeather = await getCurrentWeather();
   weather.value = {
@@ -1345,7 +1414,7 @@ onMounted(async () => {
     areaGridLayer
   } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, sanitaryAreas, tileGridResult, areaGridResult);
 
-  let coords = [86.0833, 55.3333]
+  let coords = [86.811102, 53.848768]
   if (selectedCities.value.length > 0) {
     const selectedCity = await getCityById(selectedCities.value[0].id)
     coords = selectedCity.location.coordinates;
@@ -1353,7 +1422,21 @@ onMounted(async () => {
 
   map.value = new Map({
     target: mapRoot.value,
-    layers: [baseLayer, singleLayer, vehicleFlowLayer, vehicleQueueLayer, sanitaryAreaLayer, tileGridLayer, areaGridLayer],
+    layers: [
+      baseLayers.osm,
+      baseLayers.esri,
+
+      baseLayers.cartoVoyager,
+      baseLayers.cartoLight,
+      baseLayers.cartoDark,
+
+      singleLayer,
+      vehicleFlowLayer,
+      vehicleQueueLayer,
+      sanitaryAreaLayer,
+      tileGridLayer,
+      areaGridLayer
+    ],
     view: new View({
       center: fromLonLat(coords),
       zoom: 12
@@ -1362,6 +1445,10 @@ onMounted(async () => {
       zoom: false
     })
   })
+
+  if (selectedBaseMap.value !== 'osm') {
+    await changeBaseMap()
+  }
 
   initLayersState();
 
@@ -1664,9 +1751,6 @@ function getHatchPattern(size) {
 }
 
 .layer-panel {
-  position: absolute;
-  top: 24px;
-  left: 24px;
   padding: 8px 12px;
   background: white;
   border-radius: 4px;
@@ -1675,9 +1759,6 @@ function getHatchPattern(size) {
 }
 
 .tileLayer-panel {
-  position: absolute;
-  top: 144px;
-  left: 24px;
   padding: 8px 12px;
   background: white;
   border-radius: 4px;
@@ -1780,9 +1861,6 @@ function getHatchPattern(size) {
 }
 
 .city-select {
-  position: absolute;
-  top: 24px;
-  left: 160px;
   font-family: sans-serif;
   font-size: 14px;
 }
@@ -2052,5 +2130,134 @@ function getHatchPattern(size) {
 .tile-size-auto input {
   margin: 2px 0 0;
   flex-shrink: 0;
+}
+
+/* Общий контейнер управления картой */
+.map-controls {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 1000;
+
+  display: grid;
+  grid-template-columns: max-content max-content;
+  grid-template-rows: auto auto auto;
+  align-items: start;
+  gap: 10px 12px;
+
+  font-family: sans-serif;
+  font-size: 14px;
+}
+
+/* Общий внешний вид всех панелей */
+.base-map-selector,
+.layer-panel,
+.tileLayer-panel,
+.city-select {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+
+  box-sizing: border-box;
+  padding: 10px 12px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e0e0e0;
+  border-radius: 7px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+  font-family: sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+/* Выбор базовой карты */
+.base-map-selector {
+  grid-column: 1;
+  grid-row: 1;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Выбор отображаемых слоёв */
+.layer-panel {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 210px;
+}
+
+/* Выбор города — справа от слоёв */
+.city-select {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 180px;
+}
+
+/* Дополнительные слои */
+.tileLayer-panel {
+  grid-column: 1;
+  grid-row: 3;
+  min-width: 210px;
+}
+
+/* Заголовки */
+.layer-panel h3,
+.tileLayer-panel h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Выпадающие списки */
+.base-map-selector select,
+.city-select select {
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+}
+
+.base-map-selector select:focus,
+.city-select select:focus {
+  border-color: #4285f4;
+}
+
+/* Элементы выбора слоёв */
+.layer-panel label,
+.tileLayer-panel label {
+  display: block;
+  margin: 5px 0;
+  cursor: pointer;
+}
+
+/* Кнопки */
+.layer-panel .create-btn,
+.tileLayer-panel .create-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 7px 10px;
+
+  border: none;
+  border-radius: 5px;
+
+  background: #4285f4;
+  color: white;
+
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.layer-panel .create-btn:hover,
+.tileLayer-panel .create-btn:hover {
+  background: #2868c7;
 }
 </style>
