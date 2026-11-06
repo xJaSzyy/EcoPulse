@@ -627,18 +627,13 @@ function createPopupElement() {
 }
 
 async function refreshTileGrid() {
-  const tileSizeToUse = autoTileSizeByZoom.value
+  const size = autoTileSizeByZoom.value
     ? getTileSizeForZoom(map.value?.getView().getZoom() ?? 12)
     : tileSize.value;
 
-  currentTileSize.value = tileSizeToUse;
+  currentTileSize.value = size;
 
-  await updateTileGridLayer(
-    latestSingleDangerZones,
-    latestVehicleFlowDangerZones,
-    latestVehicleQueueDangerZones,
-    tileSizeToUse
-  );
+  await updateTileGridLayer(size);
 }
 
 async function patchSingleZoneForSource(data) {
@@ -720,14 +715,20 @@ async function handleBuildSimulation(data) {
       };
 
       latestSingleDangerZones = await updateSingleLayer();
-      await refreshTileGrid();
+      await preloadTileGrids(
+        latestSingleDangerZones,
+        latestVehicleFlowDangerZones,
+        latestVehicleQueueDangerZones
+      );
+
+      await refreshTileGrid();   
       await buildSimulation(data);
       return;
     }
 
     await buildSimulation(data);          
     await patchSingleZoneForSource(data); 
-    await refreshTileGrid();              
+    await refreshTileGrid();             
     return;
   }
 
@@ -882,6 +883,34 @@ async function updateVehicleQueueLayer() {
   return vehicleQueueDangerZones;
 }
 
+const tileGridCache = ref({});
+
+const TILE_SIZES = [3000, 1500, 1000, 750, 400, 200, 100];
+
+async function preloadTileGrids(
+  singleDangerZones,
+  vehicleFlowDangerZones,
+  vehicleQueueDangerZones
+) {
+  const cityIds = selectedCities.value.map(c => c.id);
+
+  const results = await Promise.all(
+    TILE_SIZES.map(async size => {
+      const result = await calculateTileGrid({
+        cityIds,
+        tileSize: size,
+        singleDangerZones,
+        vehicleFlowDangerZones,
+        trafficLightQueueDangerZones: vehicleQueueDangerZones
+      });
+
+      return [size, result];
+    })
+  );
+
+  tileGridCache.value = Object.fromEntries(results);
+}
+
 function getTileSizeForZoom(zoom) {
   if (zoom <= 10.25) return 3000;
   if (zoom <= 10.75) return 1500;
@@ -906,12 +935,7 @@ async function applyTileSize() {
   tileSize.value = normalizedSize;
   currentTileSize.value = normalizedSize;
 
-  await updateTileGridLayer(
-    latestSingleDangerZones,
-    latestVehicleFlowDangerZones,
-    latestVehicleQueueDangerZones,
-    normalizedSize
-  );
+  await updateTileGridLayer(normalizedSize);
 }
 
 async function onAutoTileSizeChange() {
@@ -935,12 +959,7 @@ async function refreshTileGridByZoom() {
 
   currentTileSize.value = size;
 
-  await updateTileGridLayer(
-    latestSingleDangerZones,
-    latestVehicleFlowDangerZones,
-    latestVehicleQueueDangerZones,
-    size
-  );
+  await updateTileGridLayer(size);
 }
 
 const currentTileSize = ref(null);
@@ -949,19 +968,25 @@ let latestSingleDangerZones = [];
 let latestVehicleFlowDangerZones = [];
 let latestVehicleQueueDangerZones = [];
 
-async function updateTileGridLayer(
-  singleDangerZones,
-  vehicleFlowDangerZones,
-  vehicleQueueDangerZones,
-  tileSize
-) {
-  const tileGridResult = await calculateTileGrid({
-    cityIds: selectedCities.value.map(c => c.id),
-    tileSize,
-    singleDangerZones,
-    vehicleFlowDangerZones,
-    trafficLightQueueDangerZones: vehicleQueueDangerZones
-  });
+async function updateTileGridLayer(tileSize) {
+  let tileGridResult = tileGridCache.value[tileSize];
+
+  if (!tileGridResult) {
+    console.log(`Сетка ${tileSize} м отсутствует в кеше. Загружаем...`);
+
+    tileGridResult = await calculateTileGrid({
+      cityIds: selectedCities.value.map(c => c.id),
+      tileSize,
+      singleDangerZones: latestSingleDangerZones,
+      vehicleFlowDangerZones: latestVehicleFlowDangerZones,
+      trafficLightQueueDangerZones: latestVehicleQueueDangerZones
+    });
+    
+    tileGridCache.value = {
+      ...tileGridCache.value,
+      [tileSize]: tileGridResult
+    };
+  }
 
   const layer = olLayers.tile;
   if (!layer) return;
@@ -974,17 +999,17 @@ async function updateTileGridLayer(
   const allTiles = tileGridResult.flatMap(city => city.tiles);
 
   allTiles.forEach(tileInfo => {
-    const geometry = geoJsonToOlGeometry(tileInfo.tile)
-    if (!geometry) return
+    const geometry = geoJsonToOlGeometry(tileInfo.tile);
+    if (!geometry) return;
 
     const feature = new Feature({
       geometry,
       color: tileInfo.color,
       cityId: tileInfo.cityId
-    })
+    });
 
-    feature.set('dangerData', tileInfo)
-    source.addFeature(feature)
+    feature.set('dangerData', tileInfo);
+    source.addFeature(feature);
   });
 
   layer.changed();
@@ -999,18 +1024,13 @@ async function updateLayers() {
   latestVehicleFlowDangerZones = vehicleFlowDangerZones;
   latestVehicleQueueDangerZones = vehicleQueueDangerZones;
 
-  const tileSizeToUse = autoTileSizeByZoom.value
-    ? getTileSizeForZoom(map.value?.getView().getZoom() ?? 12)
-    : tileSize.value;
-
-  currentTileSize.value = tileSizeToUse;
-
-  await updateTileGridLayer(
+  await preloadTileGrids(
     singleDangerZones,
     vehicleFlowDangerZones,
-    vehicleQueueDangerZones,
-    tileSizeToUse
+    vehicleQueueDangerZones
   );
+
+  await refreshTileGridByZoom();
 }
 
 const weatherBeforeSimulation = ref(null);
@@ -1446,17 +1466,13 @@ onMounted(async () => {
   latestVehicleFlowDangerZones = vehicleFlowDangerZones;
   latestVehicleQueueDangerZones = vehicleQueueDangerZones;
 
-  const tileGridResult = await withCache(
-    `tileGrid_${cityIds.join('_')}_750`,
-    () =>
-      calculateTileGrid({
-        cityIds,
-        tileSize: 750,
-        singleDangerZones,
-        vehicleFlowDangerZones,
-        trafficLightQueueDangerZones: vehicleQueueDangerZones
-      })
+  await preloadTileGrids(
+    singleDangerZones,
+    vehicleFlowDangerZones,
+    vehicleQueueDangerZones
   );
+
+  const tileGridResult = tileGridCache.value[750];
 
   const areaGridResult = await withCache(
     `areaGrid_${cityIds.join('_')}_750`,
