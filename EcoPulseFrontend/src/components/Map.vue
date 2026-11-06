@@ -145,53 +145,50 @@
         </label>
       </div>
 
-    </div>
+      <div v-if="layersState.tileGrid.visible" class="tile-size-control">
+        <label class="tile-size-auto">
+          <input
+            type="checkbox"
+            v-model="autoTileSizeByZoom"
+            @change="onAutoTileSizeChange"
+          />
+          Автоматически
+        </label>
 
-    <div
-      v-if="layersState.tileGrid.visible"
-      class="tile-size-control"
-    >
-      <label class="tile-size-auto">
-        <input
-          type="checkbox"
-          v-model="autoTileSizeByZoom"
-          @change="onAutoTileSizeChange"
-        />
-        Автоматически
-      </label>
+        <div class="tile-size-header">
+          <label for="tileSize">Размер тайла</label>
 
-      <div class="tile-size-header">
-        <label for="tileSize">Размер тайла</label>
-
-        <div class="tile-size-value">
-          {{ autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize }} м
+          <div class="tile-size-value">
+            {{ autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize }} м
+          </div>
         </div>
+
+        <input
+          id="tileSize"
+          :value="autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize"
+          class="tile-size-slider"
+          type="range"
+          min="100"
+          max="3000"
+          step="25"
+          :disabled="autoTileSizeByZoom"
+          @input="tileSize = Number($event.target.value)"
+        />
+
+        <div class="tile-size-range">
+          <span>100 м</span>
+          <span>3000 м</span>
+        </div>
+
+        <button
+          v-if="!autoTileSizeByZoom"
+          class="tile-size-apply"
+          @click="applyTileSize"
+        >
+          Применить
+        </button>
       </div>
 
-      <input
-        id="tileSize"
-        :value="autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize"
-        class="tile-size-slider"
-        type="range"
-        min="100"
-        max="3000"
-        step="25"
-        :disabled="autoTileSizeByZoom"
-        @input="tileSize = Number($event.target.value)"
-      />
-
-      <div class="tile-size-range">
-        <span>100 м</span>
-        <span>3000 м</span>
-      </div>
-
-      <button
-        v-if="!autoTileSizeByZoom"
-        class="tile-size-apply"
-        @click="applyTileSize"
-      >
-        Применить
-      </button>
     </div>
 
 
@@ -2076,9 +2073,10 @@ function getHatchPattern(size) {
 }
 
 .tile-size-control {
-  position: absolute;
-  top: 220px;
-  left: 24px;
+  
+  grid-column: 1;
+  grid-row: 4;
+
   z-index: 20;
 
   width: 250px;
