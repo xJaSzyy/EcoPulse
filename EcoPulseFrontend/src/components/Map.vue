@@ -313,7 +313,7 @@ const baseLayers = {
   }),
 }
 
-const CARTO_KEY = 'cb1_538x_1_20b2eb0d83aad49f8f9257c5'
+const CARTO_KEY = ''
 
 function changeBaseMap() {
   Object.entries(baseLayers).forEach(([key, layer]) => {
