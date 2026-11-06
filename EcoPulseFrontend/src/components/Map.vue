@@ -270,6 +270,8 @@ import XYZ from 'ol/source/XYZ.js';
 const mapRoot = ref(null)
 const map = ref(null)
 
+const CARTO_KEY = import.meta.env.VITE_CARTO_KEY
+
 const selectedBaseMap = ref(
   localStorage.getItem('selectedBaseMap') || 'osm'
 )
@@ -312,8 +314,6 @@ const baseLayers = {
     visible: false
   }),
 }
-
-const CARTO_KEY = ''
 
 function changeBaseMap() {
   Object.entries(baseLayers).forEach(([key, layer]) => {
