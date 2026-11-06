@@ -29,6 +29,7 @@
           <input
             class="z-index-input"
             type="number"
+            min="0"
             v-model.number="layersState.single.zIndex"
             @change="updateLayerZIndex('single')"
           />
@@ -44,6 +45,7 @@
           <input
             class="z-index-input"
             type="number"
+            min="0"
             v-model.number="layersState.vehicleFlow.zIndex"
             @change="updateLayerZIndex('vehicleFlow')"
           />
@@ -59,6 +61,7 @@
           <input
             class="z-index-input"
             type="number"
+            min="0"
             v-model.number="layersState.vehicleQueue.zIndex"
             @change="updateLayerZIndex('vehicleQueue')"
           />
@@ -74,6 +77,7 @@
           <input
             class="z-index-input"
             type="number"
+            min="0"
             v-model.number="layersState.tileGrid.zIndex"
             @change="updateLayerZIndex('tileGrid')"
           />
@@ -89,6 +93,7 @@
           <input
             class="z-index-input"
             type="number"
+            min="0"
             v-model.number="layersState.sanitaryArea.zIndex"
             @change="updateLayerZIndex('sanitaryArea')"
           />
@@ -443,7 +448,6 @@ const updateLayerZIndex = (layerName) => {
   let layer;
 
   if (layerName === 'tileGrid') {
-    // Сетка может отображаться как ячейки или районы
     layer = olLayers[selectedGridLayer.value];
   } else {
     layer = olLayers[layerName];
@@ -1759,14 +1763,12 @@ const initLayersState = () => {
   selectedGridLayer.value =
     localStorage.getItem('selectedGridLayer') || 'tile';
 
-  // Восстанавливаем видимость
   Object.keys(olLayers).forEach(key => {
     if (olLayers[key]) {
       olLayers[key].setVisible(layersState[key].visible);
     }
   });
 
-  // Восстанавливаем приоритеты
   updateLayerZIndex('single');
   updateLayerZIndex('vehicleFlow');
   updateLayerZIndex('vehicleQueue');
@@ -2039,7 +2041,6 @@ function getHatchPattern(size) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 8px;
   font-size: 12px;
-  min-width: 180px;
   pointer-events: none;
 }
 
@@ -2100,7 +2101,6 @@ function getHatchPattern(size) {
   color: #333;
 }
 
-/* Заголовок и значение */
 .tile-size-header {
   display: flex;
   align-items: center;
@@ -2130,7 +2130,6 @@ function getHatchPattern(size) {
   white-space: nowrap;
 }
 
-/* Ползунок */
 .tile-size-slider {
   width: 100%;
   height: 5px;
@@ -2233,7 +2232,6 @@ function getHatchPattern(size) {
   flex-shrink: 0;
 }
 
-/* Общий контейнер управления картой */
 .map-controls {
   position: absolute;
   top: 24px;
@@ -2244,13 +2242,12 @@ function getHatchPattern(size) {
   grid-template-columns: max-content max-content;
   grid-template-rows: auto auto auto;
   align-items: start;
-  gap: 10px 12px;
+  gap: 8px 8px;
 
   font-family: sans-serif;
   font-size: 14px;
 }
 
-/* Общий внешний вид всех панелей */
 .base-map-selector,
 .layer-panel,
 .tileLayer-panel,
@@ -2261,7 +2258,7 @@ function getHatchPattern(size) {
   right: auto;
 
   box-sizing: border-box;
-  padding: 10px 12px;
+  padding: 12px 10px;
 
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid #e0e0e0;
@@ -2274,7 +2271,6 @@ function getHatchPattern(size) {
   color: #333;
 }
 
-/* Выбор базовой карты */
 .base-map-selector {
   grid-column: 1;
   grid-row: 1;
@@ -2284,28 +2280,21 @@ function getHatchPattern(size) {
   gap: 10px;
 }
 
-/* Выбор отображаемых слоёв */
 .layer-panel {
   grid-column: 1;
   grid-row: 2;
-  min-width: 210px;
 }
 
-/* Выбор города — справа от слоёв */
 .city-select {
   grid-column: 2;
-  grid-row: 2;
-  min-width: 180px;
+  grid-row: 1;
 }
 
-/* Дополнительные слои */
 .tileLayer-panel {
   grid-column: 1;
   grid-row: 3;
-  min-width: 210px;
 }
 
-/* Заголовки */
 .layer-panel h3,
 .tileLayer-panel h3 {
   margin: 0 0 8px;
@@ -2314,12 +2303,12 @@ function getHatchPattern(size) {
   color: #333;
 }
 
-/* Выпадающие списки */
 .base-map-selector select,
 .city-select select {
-  padding: 7px 10px;
+  padding: 8px 6px;
+  width: 100%;
   border: 1px solid #d1d5db;
-  border-radius: 5px;
+  border-radius: 6px;
   background: #fff;
   font-size: 13px;
   color: #333;
@@ -2332,23 +2321,21 @@ function getHatchPattern(size) {
   border-color: #4285f4;
 }
 
-/* Элементы выбора слоёв */
 .layer-panel label,
 .tileLayer-panel label {
   display: block;
-  margin: 5px 0;
+  margin: 6px 0;
   cursor: pointer;
 }
 
-/* Кнопки */
 .layer-panel .create-btn,
 .tileLayer-panel .create-btn {
   margin-top: 8px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 6px;
 
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
 
   background: #4285f4;
   color: white;
@@ -2369,9 +2356,38 @@ function getHatchPattern(size) {
 }
 
 .z-index-input {
-  width: 55px;
+  width: 64px;
   margin-left: auto;
-  padding: 3px 5px;
+  padding: 5px 7px;
+
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+
+  font-size: 13px;
+  font-weight: 600;
   text-align: center;
+
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.z-index-input:hover {
+  border-color: #94a3b8;
+  background: #ffffff;
+}
+
+.z-index-input:focus {
+  background: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.z-index-input::-webkit-inner-spin-button,
+.z-index-input::-webkit-outer-spin-button {
+  opacity: 0.5;
+  cursor: pointer;
 }
 </style>
