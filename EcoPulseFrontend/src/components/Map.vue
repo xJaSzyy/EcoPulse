@@ -18,45 +18,80 @@
 
       <div class="layer-panel">
         <h3>Слои</h3>
+
         <label>
           <input
-              type="checkbox"
-              v-model="layersState.single.visible"
-              @change="toggleLayer('single')"
+            type="checkbox"
+            v-model="layersState.single.visible"
+            @change="toggleLayer('single')"
           />
-          Котельные
+          <span>Котельные</span>
+          <input
+            class="z-index-input"
+            type="number"
+            v-model.number="layersState.single.zIndex"
+            @change="updateLayerZIndex('single')"
+          />
         </label>
+
         <label>
           <input
-              type="checkbox"
-              v-model="layersState.vehicleFlow.visible"
-              @change="toggleLayer('vehicleFlow')"
+            type="checkbox"
+            v-model="layersState.vehicleFlow.visible"
+            @change="toggleLayer('vehicleFlow')"
           />
-          Дороги
+          <span>Дороги</span>
+          <input
+            class="z-index-input"
+            type="number"
+            v-model.number="layersState.vehicleFlow.zIndex"
+            @change="updateLayerZIndex('vehicleFlow')"
+          />
         </label>
+
         <label>
           <input
-              type="checkbox"
-              v-model="layersState.vehicleQueue.visible"
-              @change="toggleLayer('vehicleQueue')"
+            type="checkbox"
+            v-model="layersState.vehicleQueue.visible"
+            @change="toggleLayer('vehicleQueue')"
           />
-          Перекрестки
+          <span>Перекрестки</span>
+          <input
+            class="z-index-input"
+            type="number"
+            v-model.number="layersState.vehicleQueue.zIndex"
+            @change="updateLayerZIndex('vehicleQueue')"
+          />
         </label>
+
         <label>
           <input
-              type="checkbox"
-              v-model="layersState.tileGrid.visible"
-              @change="toggleLayer('tileGrid')"
+            type="checkbox"
+            v-model="layersState.tileGrid.visible"
+            @change="toggleLayer('tileGrid')"
           />
-          Сетка
+          <span>Сетка</span>
+          <input
+            class="z-index-input"
+            type="number"
+            v-model.number="layersState.tileGrid.zIndex"
+            @change="updateLayerZIndex('tileGrid')"
+          />
         </label>
+
         <label>
           <input
-              type="checkbox"
-              v-model="layersState.sanitaryArea.visible"
-              @change="toggleLayer('sanitaryArea')"
+            type="checkbox"
+            v-model="layersState.sanitaryArea.visible"
+            @change="toggleLayer('sanitaryArea')"
           />
-          СЗЗ
+          <span>СЗЗ</span>
+          <input
+            class="z-index-input"
+            type="number"
+            v-model.number="layersState.sanitaryArea.zIndex"
+            @change="updateLayerZIndex('sanitaryArea')"
+          />
         </label>
       </div>
 
@@ -356,14 +391,33 @@ const olLayers = reactive({
 })
 
 const layersState = reactive({
-  single: {visible: false},
-  vehicleFlow: {visible: false},
-  vehicleQueue: {visible: false},
-  sanitaryArea: {visible: false},
-  tileGrid: {visible: false},
-  tile: {visible: false},
-  area: {visible: false}
-})
+  single: {
+    visible: false,
+    zIndex: 2
+  },
+  vehicleFlow: {
+    visible: false,
+    zIndex: 1
+  },
+  vehicleQueue: {
+    visible: false,
+    zIndex: 3
+  },
+  sanitaryArea: {
+    visible: false,
+    zIndex: 5
+  },
+  tileGrid: {
+    visible: false,
+    zIndex: 4
+  },
+  tile: {
+    visible: false
+  },
+  area: {
+    visible: false
+  }
+});
 
 const levels = [
   {max: 9.0, color: 'rgba(171, 209, 98, 1)', label: 'Очень низкий'},
@@ -384,6 +438,30 @@ const cities = ref([
 const selectedCities = ref(JSON.parse(localStorage.getItem("selectedCities") || 'null') ?? [cities.value[0]])
 const cityDropdownOpen = ref(false)
 const editPanelOpen = ref(false)
+
+const updateLayerZIndex = (layerName) => {
+  let layer;
+
+  if (layerName === 'tileGrid') {
+    // Сетка может отображаться как ячейки или районы
+    layer = olLayers[selectedGridLayer.value];
+  } else {
+    layer = olLayers[layerName];
+  }
+
+  if (!layer) {
+    console.warn('Слой не найден:', layerName);
+    return;
+  }
+
+  const zIndex = Number(layersState[layerName].zIndex);
+
+  if (!Number.isFinite(zIndex)) return;
+
+  layer.setZIndex(zIndex);
+
+  saveLayersState();
+};
 
 const getUserPosition = () => {
     return new Promise((resolve) => {
@@ -1661,22 +1739,39 @@ function randomInt(min, max) {
 
 const initLayersState = () => {
   const savedState = localStorage.getItem('layersState');
+
   if (savedState) {
     const parsedState = JSON.parse(savedState);
+
     Object.keys(layersState).forEach(key => {
       if (parsedState[key]) {
-        layersState[key].visible = parsedState[key].visible ?? true;
+        layersState[key].visible =
+          parsedState[key].visible ?? layersState[key].visible;
+
+        if (layersState[key].zIndex !== undefined) {
+          layersState[key].zIndex =
+            parsedState[key].zIndex ?? layersState[key].zIndex;
+        }
       }
     });
   }
 
+  selectedGridLayer.value =
+    localStorage.getItem('selectedGridLayer') || 'tile';
+
+  // Восстанавливаем видимость
   Object.keys(olLayers).forEach(key => {
     if (olLayers[key]) {
       olLayers[key].setVisible(layersState[key].visible);
     }
   });
 
-  selectedGridLayer.value = localStorage.getItem('selectedGridLayer');
+  // Восстанавливаем приоритеты
+  updateLayerZIndex('single');
+  updateLayerZIndex('vehicleFlow');
+  updateLayerZIndex('vehicleQueue');
+  updateLayerZIndex('sanitaryArea');
+  updateLayerZIndex('tileGrid');
 };
 
 const toggleLayer = key => {
@@ -1687,6 +1782,7 @@ const toggleLayer = key => {
 
     layersState[key].visible = true;
     olLayers[key].setVisible(true);
+    olLayers[key].setZIndex(Number(layersState.tileGrid.zIndex));
   } else if (key === 'tileGrid') {
       const visible = layersState[key].visible;
 
@@ -1712,12 +1808,17 @@ const toggleLayer = key => {
 
 const saveLayersState = () => {
   const stateToSave = {};
+
   Object.keys(layersState).forEach(key => {
-    stateToSave[key] = { visible: layersState[key].visible };
+    stateToSave[key] = {
+      visible: layersState[key].visible,
+      zIndex: layersState[key].zIndex
+    };
   });
+
   localStorage.setItem('layersState', JSON.stringify(stateToSave));
 
-  localStorage.setItem('selectedGridLayer', selectedGridLayer.value)
+  localStorage.setItem('selectedGridLayer', selectedGridLayer.value);
 };
 
 function getHatchPattern(size) {
@@ -2259,5 +2360,18 @@ function getHatchPattern(size) {
 .layer-panel .create-btn:hover,
 .tileLayer-panel .create-btn:hover {
   background: #2868c7;
+}
+
+.layer-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.z-index-input {
+  width: 55px;
+  margin-left: auto;
+  padding: 3px 5px;
+  text-align: center;
 }
 </style>
