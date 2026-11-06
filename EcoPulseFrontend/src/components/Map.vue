@@ -718,7 +718,8 @@ async function handleBuildSimulation(data) {
       await preloadTileGrids(
         latestSingleDangerZones,
         latestVehicleFlowDangerZones,
-        latestVehicleQueueDangerZones
+        latestVehicleQueueDangerZones,
+        true
       );
 
       await refreshTileGrid();   
@@ -728,6 +729,13 @@ async function handleBuildSimulation(data) {
 
     await buildSimulation(data);          
     await patchSingleZoneForSource(data); 
+
+    await preloadTileGrids(
+        latestSingleDangerZones,
+        latestVehicleFlowDangerZones,
+        latestVehicleQueueDangerZones,
+        true
+      );
     await refreshTileGrid();             
     return;
   }
@@ -890,7 +898,8 @@ const TILE_SIZES = [3000, 1500, 1000, 750, 400, 200, 100];
 async function preloadTileGrids(
   singleDangerZones,
   vehicleFlowDangerZones,
-  vehicleQueueDangerZones
+  vehicleQueueDangerZones,
+  forceRecalculate = false
 ) {
   const cityIds = selectedCities.value
     .map(c => c.id)
@@ -898,19 +907,19 @@ async function preloadTileGrids(
 
   const results = await Promise.all(
     TILE_SIZES.map(async size => {
-
       const cacheKey = `tileGrid_${cityIds.join('_')}_${size}`;
 
-      const result = await withCache(
-        cacheKey,
-        () => calculateTileGrid({
-          cityIds,
-          tileSize: size,
-          singleDangerZones,
-          vehicleFlowDangerZones,
-          trafficLightQueueDangerZones: vehicleQueueDangerZones
-        })
-      );
+      const calculate = () => calculateTileGrid({
+        cityIds,
+        tileSize: size,
+        singleDangerZones,
+        vehicleFlowDangerZones,
+        trafficLightQueueDangerZones: vehicleQueueDangerZones
+      });
+
+      const result = forceRecalculate
+        ? await calculate()
+        : await withCache(cacheKey, calculate);
 
       return [size, result];
     })
@@ -1052,6 +1061,11 @@ async function closeSimulationPanel() {
 
   latestSingleDangerZones = singleDangerZones;
 
+  await preloadTileGrids(
+        latestSingleDangerZones,
+        latestVehicleFlowDangerZones,
+        latestVehicleQueueDangerZones
+      );
   await refreshTileGrid();
 
   showSimulationPanel.value = false;
