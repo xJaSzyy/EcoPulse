@@ -328,6 +328,7 @@ import {getCityById} from "../api/city.js";
 import Overlay from 'ol/Overlay'
 import XYZ from 'ol/source/XYZ.js';
 import { useAreaMeasurement } from '../composables/useAreaMeasurement.js'
+import { useTileGrid } from '../composables/useTileGrid.js'
 
 const mapRoot = ref(null)
 const map = ref(null)
@@ -472,6 +473,27 @@ const cities = ref([
 ])
 
 const selectedCities = ref(JSON.parse(localStorage.getItem("selectedCities") || 'null') ?? [cities.value[0]])
+const {
+  tileGridCache,
+  currentTileSize,
+  preloadTileGrids,
+  getTileSizeForZoom,
+  applyTileSize,
+  onAutoTileSizeChange,
+  refreshTileGridByZoom,
+  refreshTileGrid,
+  updateTileGridLayer
+} = useTileGrid({
+  map,
+  selectedCities,
+  olLayers,
+  tileSize,
+  autoTileSizeByZoom,
+  withCache,
+  geoJsonToOlGeometry
+})
+
+
 const cityDropdownOpen = ref(false)
 const editPanelOpen = ref(false)
 
@@ -658,16 +680,6 @@ function createPopupElement() {
   `
 
   return popup
-}
-
-async function refreshTileGrid() {
-  const size = autoTileSizeByZoom.value
-    ? getTileSizeForZoom(map.value?.getView().getZoom() ?? 12)
-    : tileSize.value;
-
-  currentTileSize.value = size;
-
-  await updateTileGridLayer(size);
 }
 
 async function patchSingleZoneForSource(data) {
@@ -925,146 +937,9 @@ async function updateVehicleQueueLayer() {
   return vehicleQueueDangerZones;
 }
 
-const tileGridCache = ref({});
-
-const TILE_SIZES = [3000, 1500, 1000, 750, 400, 200, 100];
-
-async function preloadTileGrids(
-  singleDangerZones,
-  vehicleFlowDangerZones,
-  vehicleQueueDangerZones,
-  forceRecalculate = false
-) {
-  const cityIds = selectedCities.value
-    .map(c => c.id)
-    .sort((a, b) => a - b);
-
-  const results = await Promise.all(
-    TILE_SIZES.map(async size => {
-      const cacheKey = `tileGrid_${cityIds.join('_')}_${size}`;
-
-      const calculate = () => calculateTileGrid({
-        cityIds,
-        tileSize: size,
-        singleDangerZones,
-        vehicleFlowDangerZones,
-        trafficLightQueueDangerZones: vehicleQueueDangerZones
-      });
-
-      const result = forceRecalculate
-        ? await calculate()
-        : await withCache(cacheKey, calculate);
-
-      return [size, result];
-    })
-  );
-
-  tileGridCache.value = Object.fromEntries(results);
-}
-
-function getTileSizeForZoom(zoom) {
-  if (zoom <= 10.25) return 3000;
-  if (zoom <= 10.75) return 1500;
-  if (zoom <= 11.5) return 1000;
-  if (zoom <= 12.5) return 750;
-  if (zoom <= 13) return 400;
-  if (zoom <= 14) return 200;
-
-  return 100;
-}
-
-async function applyTileSize() {
-  const size = Number(tileSize.value);
-
-  if (!Number.isFinite(size)) return;
-
-  const normalizedSize = Math.min(
-    3000,
-    Math.max(100, Math.round(size / 25) * 25)
-  );
-
-  tileSize.value = normalizedSize;
-  currentTileSize.value = normalizedSize;
-
-  await updateTileGridLayer(normalizedSize);
-}
-
-async function onAutoTileSizeChange() {
-  if (autoTileSizeByZoom.value) {
-    await refreshTileGridByZoom();
-  } else {
-    await applyTileSize();
-  }
-}
-
-async function refreshTileGridByZoom() {
-  if (!map.value || !autoTileSizeByZoom.value) return;
-
-  const zoom = map.value.getView().getZoom();
-
-  if (zoom == null) return;
-
-  const size = getTileSizeForZoom(zoom);
-
-  if (size === currentTileSize.value) return;
-
-  currentTileSize.value = size;
-
-  await updateTileGridLayer(size);
-}
-
-const currentTileSize = ref(null);
-
 let latestSingleDangerZones = [];
 let latestVehicleFlowDangerZones = [];
 let latestVehicleQueueDangerZones = [];
-
-async function updateTileGridLayer(tileSize) {
-  let tileGridResult = tileGridCache.value[tileSize];
-
-  if (!tileGridResult) {
-    console.log(`Сетка ${tileSize} м отсутствует в кеше. Загружаем...`);
-
-    tileGridResult = await calculateTileGrid({
-      cityIds: selectedCities.value.map(c => c.id),
-      tileSize,
-      singleDangerZones: latestSingleDangerZones,
-      vehicleFlowDangerZones: latestVehicleFlowDangerZones,
-      trafficLightQueueDangerZones: latestVehicleQueueDangerZones
-    });
-    
-    tileGridCache.value = {
-      ...tileGridCache.value,
-      [tileSize]: tileGridResult
-    };
-  }
-
-  const layer = olLayers.tile;
-  if (!layer) return;
-
-  const source = layer.getSource();
-  if (!source) return;
-
-  source.clear();
-
-  const allTiles = tileGridResult.flatMap(city => city.tiles);
-
-  allTiles.forEach(tileInfo => {
-    const geometry = geoJsonToOlGeometry(tileInfo.tile);
-    if (!geometry) return;
-
-    const feature = new Feature({
-      geometry,
-      color: tileInfo.color,
-      cityId: tileInfo.cityId
-    });
-
-    feature.set('dangerData', tileInfo);
-    source.addFeature(feature);
-  });
-
-  layer.changed();
-}
 
 async function updateLayers() {
   const singleDangerZones = await updateSingleLayer();
