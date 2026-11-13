@@ -189,6 +189,29 @@
         </button>
       </div>
 
+      <div class="area-measure-panel">
+        <button
+          v-if="!isMeasuringArea"
+          @click="startAreaMeasurement"
+        >
+          Измерить площадь
+        </button>
+
+        <button
+          v-if="isMeasuringArea"
+          @click="stopAreaMeasurement"
+        >
+          Выйти из режима площади
+        </button>
+
+        <button
+          v-if="measuredArea !== null && !isMeasuringArea"
+          @click="clearAreaMeasurement"
+        >
+          Очистить область
+        </button>
+      </div>
+
     </div>
 
 
@@ -278,8 +301,10 @@ import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import {LineString, Point, Polygon, MultiPolygon} from 'ol/geom'
 import Feature from 'ol/Feature'
-import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style'
+import {Circle as CircleStyle, Fill, Icon, Stroke, Style, Text} from 'ol/style'
 import Modify from 'ol/interaction/Modify';
+import Draw from 'ol/interaction/Draw';
+import { getArea } from 'ol/sphere';
 
 import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
@@ -299,10 +324,119 @@ import WeatherInfo from "../components/WeatherInfo.vue";
 import SimulationPanel from '../components/SimulationPanel.vue'
 import {asArray} from "ol/color";
 import {altKeyOnly, singleClick} from 'ol/events/condition';
-import Text from 'ol/style/Text.js';
 import {getCityById} from "../api/city.js";
 import Overlay from 'ol/Overlay'
 import XYZ from 'ol/source/XYZ.js';
+
+const isMeasuringArea = ref(false);
+const measuredArea = ref(null);
+
+const measureSource = new VectorSource();
+
+const measureLayer = new VectorLayer({
+  source: measureSource,
+  visible: true,
+  zIndex: 100,
+  style: (feature) => {
+    const geometry = feature.getGeometry();
+    const area = getArea(geometry, {
+      projection: map.value.getView().getProjection()
+    });
+
+    return new Style({
+      fill: new Fill({
+        color: 'rgba(59, 130, 246, 0.2)'
+      }),
+      stroke: new Stroke({
+        color: '#2563eb',
+        width: 3
+      }),
+      text: new Text({
+        text: formatArea(area),
+        font: 'bold 15px Arial',
+        fill: new Fill({
+          color: '#ffffff'
+        }),
+        backgroundFill: new Fill({
+          color: 'rgba(30, 64, 175, 0.9)'
+        }),
+        padding: [6, 10, 6, 10],
+        textAlign: 'center',
+        overflow: true
+      })
+    });
+  }
+});
+
+let drawInteraction = null;
+
+function startAreaMeasurement() {
+  if (!map.value || isMeasuringArea.value) return;
+
+  removeAllDrawInteractions();
+
+  isMeasuringArea.value = true;
+
+  drawInteraction = new Draw({
+    source: measureSource,
+    type: 'Polygon'
+  });
+
+  drawInteraction.on('drawend', (event) => {
+    if (!isMeasuringArea.value) return;
+
+    const geometry = event.feature.getGeometry();
+
+    measuredArea.value = getArea(geometry, {
+      projection: map.value.getView().getProjection()
+    });
+  });
+
+  map.value.addInteraction(drawInteraction);
+}
+
+function removeAllDrawInteractions() {
+  if (!map.value) {
+    drawInteraction = null;
+    return;
+  }
+
+  const interactions = map.value.getInteractions().getArray();
+
+  interactions
+    .filter((interaction) => interaction instanceof Draw)
+    .forEach((interaction) => {
+      interaction.abortDrawing();
+      map.value.removeInteraction(interaction);
+    });
+
+  drawInteraction = null;
+}
+
+function stopAreaMeasurement() {
+  isMeasuringArea.value = false;
+
+  removeAllDrawInteractions();
+
+  if (map.value) {
+    map.value.getTargetElement().style.cursor = '';
+  }
+}
+
+function clearAreaMeasurement() {
+  stopAreaMeasurement();
+
+  measureSource.clear();
+  measuredArea.value = null;
+}
+
+function formatArea(area) {
+  if (area >= 1000000) {
+    return `${(area / 1000000).toFixed(3)} км²`;
+  }
+
+  return `${area.toFixed(2)} м²`;
+}
 
 const mapRoot = ref(null)
 const map = ref(null)
@@ -1542,7 +1676,6 @@ onMounted(async () => {
     layers: [
       baseLayers.osm,
       baseLayers.esri,
-
       baseLayers.cartoVoyager,
       baseLayers.cartoLight,
       baseLayers.cartoDark,
@@ -1552,7 +1685,9 @@ onMounted(async () => {
       vehicleQueueLayer,
       sanitaryAreaLayer,
       tileGridLayer,
-      areaGridLayer
+      areaGridLayer,
+
+      measureLayer
     ],
     view: new View({
       center: fromLonLat(coords),
@@ -1561,7 +1696,7 @@ onMounted(async () => {
     controls: defaultControls({
       zoom: false
     })
-  })
+  });
 
   if (selectedBaseMap.value !== 'osm') {
     await changeBaseMap()
@@ -2425,5 +2560,51 @@ function getHatchPattern(size) {
 .z-index-input::-webkit-outer-spin-button {
   opacity: 0.5;
   cursor: pointer;
+}
+
+.area-measure-panel {
+  grid-column: 2;
+  grid-row: 2;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.96);
+
+  border: 1px solid #e0e0e0;
+  border-radius: 7px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+  font-family: sans-serif;
+  font-size: 14px;
+}
+
+.area-measure-panel button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+
+  background: #4285f4;
+  color: white;
+
+  cursor: pointer;
+}
+
+.area-measure-panel button:hover {
+  background: #2868c7;
+}
+
+.area-measure-panel button.active {
+  background: #16a34a;
+}
+
+.area-result {
+  padding: 8px;
+  background: #f0f4fa;
+  border-radius: 5px;
+  color: #333;
 }
 </style>
