@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EcoPulseBackend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260217084547_ChangeCityPolygonType")]
-    partial class ChangeCityPolygonType
+    [Migration("20261115121301_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
