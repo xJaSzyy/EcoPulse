@@ -4,8 +4,8 @@
       <h3>Параметры моделирования</h3>
       <button class="close-button" @click="emitClose" aria-label="Закрыть панель">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         </svg>
       </button>
     </div>
@@ -13,87 +13,45 @@
     <div class="sliders">
       <div class="slider-row">
         <label>Температура выбрасываемой ГВС:</label>
-        <input
-            v-model.number="formData.ejectedTemp"
-            type="range"
-            min="235"
-            max="265"
-            step="1"
-        />
+        <input v-model.number="formData.ejectedTemp" type="range" min="235" max="265" step="1" />
         <span>{{ formData.ejectedTemp }}°C</span>
       </div>
 
       <div class="slider-row">
         <label>Температура атмосферного воздуха:</label>
-        <input
-            v-model.number="formData.airTemp"
-            type="range"
-            min="-40"
-            max="40"
-            step="1"
-        />
+        <input v-model.number="formData.airTemp" type="range" min="-40" max="40" step="1" />
         <span>{{ formData.airTemp }}°C</span>
       </div>
 
       <div class="slider-row">
         <label>Средняя скорость выхода ГВС:</label>
-        <input
-            v-model.number="formData.avgExitSpeed"
-            type="range"
-            min="15"
-            max="30"
-            step="1"
-        />
+        <input v-model.number="formData.avgExitSpeed" type="range" min="15" max="30" step="1" />
         <span>{{ formData.avgExitSpeed }} м/с</span>
       </div>
 
       <div class="slider-row">
         <label>Высота источника выброса:</label>
-        <input
-            v-model.number="formData.heightSource"
-            type="range"
-            min="15"
-            max="150"
-            step="1"
-        />
+        <input v-model.number="formData.heightSource" type="range" min="15" max="150" step="1" />
         <span>{{ formData.heightSource }} м</span>
       </div>
 
       <div class="slider-row">
         <label>Диаметр устья источника:</label>
-        <input
-            v-model.number="formData.diameterSource"
-            type="range"
-            min="1"
-            max="10"
-            step="1"
-        />
+        <input v-model.number="formData.diameterSource" type="range" min="1" max="10" step="1" />
         <span>{{ formData.diameterSource }} м</span>
       </div>
 
       <div class="slider-row">
         <label>Скорость ветра:</label>
-        <input
-            v-model.number="formData.windSpeed"
-            type="range"
-            min="0"
-            max="30"
-            step="1"
-        />
+        <input v-model.number="formData.windSpeed" type="range" min="0" max="30" step="1" />
         <span>{{ formData.windSpeed }} м/с</span>
       </div>
 
       <div class="wind-direction-row">
         <label>Направление ветра:</label>
         <div class="wind-direction-control">
-          <input
-              v-model.number="formData.windDirection"
-              type="range"
-              min="0"
-              max="360"
-              step="1"
-              class="wind-direction-slider"
-          />
+          <input v-model.number="formData.windDirection" type="range" min="0" max="360" step="1"
+            class="wind-direction-slider" />
           <div class="wind-visual">
             <div class="compass-rose">
               <span class="compass-point north">С</span>
@@ -120,10 +78,7 @@
       <div class="pollution-level">
         <label>Уровень загрязнения - </label>
         <span>{{ data.pollutionLevel }}</span>
-        <span 
-          class="pollution-level-color" 
-          :style="{ 'background-color': data.color }"
-        ></span>
+        <span class="pollution-level-color" :style="{ 'background-color': data.color }"></span>
       </div>
     </div>
   </div>
@@ -175,13 +130,13 @@ const cardinalDirection = computed(() => {
 });
 
 watch(
-    () => props.startData,
-    (newData) => {
-      if (newData) {
-        Object.assign(formData, newData);
-      }
-    },
-    { immediate: true }
+  () => props.startData,
+  (newData) => {
+    if (newData) {
+      Object.assign(formData, newData);
+    }
+  },
+  { immediate: true }
 );
 
 watch(
@@ -195,19 +150,19 @@ watch(
 );
 
 watchDebounced(
-    formData,
-    () => {
-      emit("buildSimulation", {
-        ...formData,
-        heightSource: parseFloat(formData.heightSource),
-        diameterSource: parseFloat(formData.diameterSource),
-      });
-    },
-    {
-      deep: true,
-      debounce: 100,
-      maxWait: 1000,
-    }
+  formData,
+  () => {
+    emit("buildSimulation", {
+      ...formData,
+      heightSource: parseFloat(formData.heightSource),
+      diameterSource: parseFloat(formData.diameterSource),
+    });
+  },
+  {
+    deep: true,
+    debounce: 200,
+    maxWait: 1000,
+  }
 );
 
 const emitClose = () => {
@@ -380,7 +335,8 @@ const emitClose = () => {
   justify-content: center;
 }
 
-.close-button:hover, .close-button:focus {
+.close-button:hover,
+.close-button:focus {
   color: #333;
   background-color: #f0f0f0;
   outline: none;
@@ -443,21 +399,21 @@ const emitClose = () => {
 .pollution-level {
   font-size: 14px;
   color: #444;
-  display: flex;        
-  align-items: center;  
-  gap: 6px;            
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .average-concentration {
   font-size: 14px;
-    color: #444;
+  color: #444;
 }
 
 .pollution-level-color {
-    width: 14px;
-    height: 14px;
-    border-radius: 2px;
-    margin-right: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  margin-right: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 </style>

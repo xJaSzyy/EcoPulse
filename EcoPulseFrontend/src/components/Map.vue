@@ -363,10 +363,20 @@ import { useAreaMeasurement } from '../composables/useAreaMeasurement.js'
 import { useTileGrid } from '../composables/useTileGrid.js'
 import { useMapLayers } from '../composables/useMapLayers.js'
 import { useBaseMap } from '../composables/useBaseMap'
+import { useSingleEmissionSource } from '../composables/useSingleEmissionSource.js'
+import { useDangerLayers } from '../composables/useDangerLayers.js'
+import { useMapPopup } from '../composables/useMapPopup.js'
 import '../styles/map.css';
 
 const mapRoot = ref(null)
 const map = ref(null)
+
+const {
+  singlePopup,
+  currentPopupData,
+  showPopup,
+  hidePopup
+} = useMapPopup(map)
 
 const {
   baseLayers,
@@ -374,157 +384,39 @@ const {
   changeBaseMap
 } = useBaseMap(map)
 
-const createModeSingle = ref(false);
-const showSingleSourceForm = ref(false);
-
-const newSingleSource = ref({
-  location: null,
-  ejectedTemp: 250,
-  avgExitSpeed: 20,
-  heightSource: 30,
-  diameterSource: 3,
-  tempStratificationRatio: null,
-  sedimentationRateRatio: null,
-  cityId: null
-});
-
-const savingSingleSource = ref(false);
-const singleSourceError = ref('');
-
-const singleSourceLimits = {
-  ejectedTemp: {
-    min: 235,
-    max: 265,
-    label: 'Температура выбрасываемых газов'
-  },
-  avgExitSpeed: {
-    min: 15,
-    max: 30,
-    label: 'Средняя скорость выхода'
-  },
-  heightSource: {
-    min: 13,
-    max: 150,
-    label: 'Высота источника'
-  },
-  diameterSource: {
-    min: 1,
-    max: 10,
-    label: 'Диаметр устья источника'
-  }
-};
-
-const singleSourceValidation = computed(() => {
-  const errors = {};
-
-  Object.entries(singleSourceLimits).forEach(([key, limit]) => {
-    const value = Number(newSingleSource.value[key]);
-
-    if (
-      newSingleSource.value[key] === null ||
-      newSingleSource.value[key] === '' ||
-      !Number.isFinite(value)
-    ) {
-      errors[key] = 'Заполните поле';
-    } else if (value < limit.min || value > limit.max) {
-      errors[key] = `Допустимое значение: ${limit.min}–${limit.max}`;
-    }
-  });
-
-  if (newSingleSource.value.tempStratificationRatio == null) {
-    errors.tempStratificationRatio = 'Выберите коэффициент региона';
-  }
-
-  if (newSingleSource.value.sedimentationRateRatio == null) {
-    errors.sedimentationRateRatio = 'Выберите степень очистки';
-  }
-
-  return errors;
-});
-
-const isSingleSourceFormValid = computed(() => {
-  return Object.keys(singleSourceValidation.value).length === 0
-    && !!newSingleSource.value.location
-    && !!newSingleSource.value.cityId;
-});
-
 function startCreateModeSingle() {
-  createModeSingle.value = true;
-  createModeQueue.value = false;
-  createModeFlow.value = false;
+  createModeQueue.value = false
+  createModeFlow.value = false
 
-  singleSourceError.value = '';
+  startSingleSourceCreation()
 }
 
-function cancelCreateModeSingle() {
-  createModeSingle.value = false;
-}
-
-async function submitSingleSource() {
-  singleSourceError.value = '';
-
-  const payload = {
-    location: newSingleSource.value.location,
-    ejectedTemp: Number(newSingleSource.value.ejectedTemp),
-    avgExitSpeed: Number(newSingleSource.value.avgExitSpeed),
-    heightSource: Number(newSingleSource.value.heightSource),
-    diameterSource: Number(newSingleSource.value.diameterSource),
-    tempStratificationRatio:
-      newSingleSource.value.tempStratificationRatio,
-    sedimentationRateRatio:
-      newSingleSource.value.sedimentationRateRatio,
-    cityId: Number(newSingleSource.value.cityId)
-  };
-
-  if (!payload.location) {
-    singleSourceError.value = 'Выберите точку на карте';
-    return;
-  }
-
-  if (
-    payload.tempStratificationRatio == null ||
-    payload.sedimentationRateRatio == null
-  ) {
-    singleSourceError.value = 'Выберите оба коэффициента';
-    return;
-  }
-
-  savingSingleSource.value = true;
-
-  try {
-    await addSingleEmissionSource(payload);
-
-    showSingleSourceForm.value = false;
-
-    latestSingleDangerZones = await updateSingleLayer();
+const {
+  createModeSingle,
+  showSingleSourceForm,
+  savingSingleSource,
+  singleSourceError,
+  newSingleSource,
+  singleSourceValidation,
+  isSingleSourceFormValid,
+  startCreateModeSingle: startSingleSourceCreation,
+  cancelCreateModeSingle,
+  setSingleSourceLocation,
+  submitSingleSource
+} = useSingleEmissionSource({
+  afterSave: async () => {
+    const singleDangerZones = await updateSingleLayer()
 
     await preloadTileGrids(
-      latestSingleDangerZones,
-      latestVehicleFlowDangerZones,
-      latestVehicleQueueDangerZones,
+      singleDangerZones,
+      latestDangerZones.vehicleFlow,
+      latestDangerZones.vehicleQueue,
       true
-    );
+    )
 
-    await refreshTileGrid();
-
-    newSingleSource.value = {
-      location: null,
-      ejectedTemp: 250,
-      avgExitSpeed: 20,
-      heightSource: 30,
-      diameterSource: 3,
-      tempStratificationRatio: null,
-      sedimentationRateRatio: null,
-      cityId: null
-    };
-
-  } catch (error) {
-    console.error('Ошибка добавления источника:', error);
-    singleSourceError.value = error.message || 'Не удалось добавить источник';
-  } finally {
-    savingSingleSource.value = false;
+    await refreshTileGrid()
   }
-}
+})
 
 const {
   isMeasuringArea,
@@ -547,8 +439,6 @@ const modifyFlow = ref(null);
 const showInfo = ref(false);
 const streetName = ref(null);
 
-const singlePopup = ref(null)
-const currentPopupData = ref(null)
 const userPosition = ref(null);
 const currentRecommendation = ref(null)
 
@@ -647,6 +537,21 @@ const {
   boilerIcon
 })
 
+const {
+  updateSingleLayer,
+  updateVehicleFlowLayer,
+  updateVehicleQueueLayer,
+  updateLayers,
+  latestDangerZones,
+  setLatestDangerZones
+} = useDangerLayers({
+  olLayers,
+  selectedCities,
+  weather,
+  createEllipse,
+  updateModifyFlow
+})
+
 const cityDropdownOpen = ref(false)
 const editPanelOpen = ref(false)
 
@@ -722,6 +627,21 @@ const toggleCityDropdown = async () => {
 
     cityDropdownOpen.value = false
     await updateLayers()
+
+    const {
+      singleDangerZones,
+      vehicleFlowDangerZones,
+      vehicleQueueDangerZones
+    } = await updateLayers()
+
+    await preloadTileGrids(
+      singleDangerZones,
+      vehicleFlowDangerZones,
+      vehicleQueueDangerZones,
+      true
+    )
+
+    await refreshTileGrid()
   }
 }
 
@@ -739,102 +659,6 @@ function startCreateModeQueue() {
   createModeQueue.value = true
 }
 
-function showPopup(coordinate, feature, sourceType) {
-  currentPopupData.value = feature.get('dangerData')
-  currentPopupData.value.sourceType = sourceType
-
-  const popupElement = createPopupElement()
-
-  if (!singlePopup.value) {
-    singlePopup.value = new Overlay({
-      element: popupElement,
-      positioning: 'bottom-center',
-      stopEvent: false,
-      insertFirst: false,
-    })
-    map.value.addOverlay(singlePopup.value)
-  } else {
-    singlePopup.value.setElement(popupElement)
-  }
-
-  singlePopup.value.setPosition(coordinate)
-}
-
-function hidePopup() {
-  if (singlePopup.value) {
-    map.value.removeOverlay(singlePopup.value)
-    singlePopup.value = null
-  }
-  currentPopupData.value = null
-}
-
-function createPopupElement() {
-  const popup = document.createElement('div')
-  popup.className = 'popup-element'
-
-  const coalConsumptionHtml =
-    currentPopupData.value.coalConsumption != null
-      ? `
-        <div class="average-concentration" style="margin-top: 12px;">
-          <strong><label>Предполагаемый расход угля: </label></strong>
-          <span>${currentPopupData.value.coalConsumption.toFixed(2)} тонн/час</span>
-        </div>
-      `
-      : ''
-
-  const wateringHtml =
-    currentPopupData.value.chemicalDustVolume != null && currentPopupData.value.waterVolume != null
-      ? `
-          <div style="margin-top: 12px;">
-            <strong>
-              <label style="color: #0D9488;">Требуется для полива:</label>
-            </strong>
-
-            <div class="average-concentration">
-              <strong><label>Объем хим. пылеподавителя: </label></strong>
-              <span>${currentPopupData.value.chemicalDustVolume.toFixed(2)} кг</span>
-            </div>
-
-            <div class="average-concentration">
-              <strong><label>Объем воды: </label></strong>
-              <span>${currentPopupData.value.waterVolume.toFixed(2)} л</span>
-            </div>
-          </div>
-        `
-      : ''
-
-  popup.innerHTML = `
-    <div class="popup-content">
-      <div class="popup-text">
-        <div class="source-type">
-          <strong><label>Тип источника: </label></strong>
-          <span>${currentPopupData.value.sourceType}</span>
-        </div>
-
-        <div class="average-concentration">
-          <strong><label>Концентрация: </label></strong>
-          <span>${currentPopupData.value.averageConcentration.toFixed(2)} мкг/м3</span>
-        </div>
-
-        <div class="legend-item">
-          <strong><label>Уровень загрязнения -&nbsp;</label></strong>
-          <span>${currentPopupData.value.pollutionLevel}&nbsp;</span>
-          <span
-            class="legend-color"
-            style="background-color: ${currentPopupData.value.color}"
-          ></span>
-        </div>
-
-        ${coalConsumptionHtml}
-
-        ${wateringHtml}
-      </div>
-    </div>
-  `
-
-  return popup
-}
-
 async function patchSingleZoneForSource(data) {
   const source = olLayers.single?.getSource();
   if (!source) return;
@@ -850,14 +674,14 @@ async function patchSingleZoneForSource(data) {
   const updatedZone = feature.get('dangerData');
   if (!updatedZone) return;
 
-  const idx = latestSingleDangerZones.findIndex(
+  const idx = latestDangerZones.single.findIndex(
     z => z.emissionSourceId === data.emissionSourceId
   );
 
   if (idx >= 0) {
-    latestSingleDangerZones[idx] = updatedZone;
+    latestDangerZones.single[idx] = updatedZone;
   } else {
-    latestSingleDangerZones.push(updatedZone);
+    latestDangerZones.single.push(updatedZone);
   }
 }
 
@@ -913,13 +737,14 @@ async function handleBuildSimulation(data) {
         windDirection: Number(data.windDirection),
       };
 
-      latestSingleDangerZones = await updateSingleLayer();
+      const singleDangerZones = await updateSingleLayer()
+
       await preloadTileGrids(
-        latestSingleDangerZones,
-        latestVehicleFlowDangerZones,
-        latestVehicleQueueDangerZones,
+        singleDangerZones,
+        latestDangerZones.vehicleFlow,
+        latestDangerZones.vehicleQueue,
         true
-      );
+      )
 
       await refreshTileGrid();
       await buildSimulation(data);
@@ -930,11 +755,11 @@ async function handleBuildSimulation(data) {
     await patchSingleZoneForSource(data);
 
     await preloadTileGrids(
-      latestSingleDangerZones,
-      latestVehicleFlowDangerZones,
-      latestVehicleQueueDangerZones,
+      latestDangerZones.single,
+      latestDangerZones.vehicleFlow,
+      latestDangerZones.vehicleQueue,
       true
-    );
+    )
     await refreshTileGrid();
     return;
   }
@@ -988,130 +813,6 @@ async function buildSimulation(data) {
   }
 }
 
-async function updateSingleLayer() {
-  const singleDangerZones = await calculateSingleDangerZones({
-    pollutant: 2, // solid particles
-    airTemp: weather.value.temperature,
-    windSpeed: weather.value.windSpeed,
-    windDirection: weather.value.windDirection,
-    cityIds: selectedCities.value.map(c => c.id)
-  });
-
-  const layer = olLayers.single;
-  if (!layer) return singleDangerZones;
-
-  const source = layer.getSource();
-  if (!source) return singleDangerZones;
-
-  source.clear();
-
-  singleDangerZones.forEach(async dangerZone => {
-    const ellipse = await createEllipse(dangerZone);
-    ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
-    source.addFeature(ellipse);
-
-    const pointFeature = new Feature({
-      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
-      type: 'boiler'
-    })
-    pointFeature.set('dangerColor', dangerZone.color);
-    pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
-
-    source.addFeature(pointFeature);
-  })
-
-  layer.changed();
-
-  await updateModifyFlow();
-
-  return singleDangerZones;
-}
-
-async function updateVehicleFlowLayer() {
-  const vehicleFlowDangerZones = await calculateVehicleFlowDangerZones({
-    cityIds: selectedCities.value.map(c => c.id)
-  });
-
-  const layer = olLayers.vehicleFlow;
-  if (!layer) return vehicleFlowDangerZones;
-
-  const source = layer.getSource();
-  if (!source) return vehicleFlowDangerZones;
-
-  source.clear();
-
-  vehicleFlowDangerZones.forEach(dz => {
-    const coords = dz.points.coordinates.map(([lon, lat]) => fromLonLat([lon, lat]));
-
-    const lineFeature = new Feature({
-      geometry: new LineString(coords),
-      type: 'flow'
-    });
-
-    lineFeature.set('dangerColor', dz.color);
-    lineFeature.set('emissionSourceId', dz.emissionSourceId);
-
-    source.addFeature(lineFeature);
-  });
-
-  layer.changed();
-
-  await updateModifyFlow();
-
-  return vehicleFlowDangerZones;
-}
-
-async function updateVehicleQueueLayer() {
-  const vehicleQueueDangerZones = await calculateTrafficLightQueueDangerZones({
-    cityIds: selectedCities.value.map(c => c.id)
-  });
-
-  const layer = olLayers.vehicleQueue;
-  if (!layer) return vehicleQueueDangerZones;
-
-  const source = layer.getSource();
-  if (!source) return vehicleQueueDangerZones;
-
-  source.clear();
-
-  vehicleQueueDangerZones.forEach(dangerZone => {
-    const pointFeature = new Feature({
-      geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
-      type: 'queue'
-    })
-    pointFeature.set('dangerColor', dangerZone.color);
-    pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
-
-    source.addFeature(pointFeature)
-  })
-
-  layer.changed();
-
-  return vehicleQueueDangerZones;
-}
-
-let latestSingleDangerZones = [];
-let latestVehicleFlowDangerZones = [];
-let latestVehicleQueueDangerZones = [];
-
-async function updateLayers() {
-  const singleDangerZones = await updateSingleLayer();
-  const vehicleFlowDangerZones = await updateVehicleFlowLayer();
-  const vehicleQueueDangerZones = await updateVehicleQueueLayer();
-
-  latestSingleDangerZones = singleDangerZones;
-  latestVehicleFlowDangerZones = vehicleFlowDangerZones;
-  latestVehicleQueueDangerZones = vehicleQueueDangerZones;
-
-  await preloadTileGrids(
-    singleDangerZones,
-    vehicleFlowDangerZones,
-    vehicleQueueDangerZones
-  );
-
-  await refreshTileGridByZoom();
-}
-
 const weatherBeforeSimulation = ref(null);
 
 async function closeSimulationPanel() {
@@ -1121,13 +822,11 @@ async function closeSimulationPanel() {
 
   const singleDangerZones = await updateSingleLayer();
 
-  latestSingleDangerZones = singleDangerZones;
-
   await preloadTileGrids(
-    latestSingleDangerZones,
-    latestVehicleFlowDangerZones,
-    latestVehicleQueueDangerZones
-  );
+    singleDangerZones,
+    latestDangerZones.vehicleFlow,
+    latestDangerZones.vehicleQueue
+  )
   await refreshTileGrid();
 
   showSimulationPanel.value = false;
@@ -1298,9 +997,11 @@ onMounted(async () => {
     () => calculateTrafficLightQueueDangerZones({ cityIds })
   );
 
-  latestSingleDangerZones = singleDangerZones;
-  latestVehicleFlowDangerZones = vehicleFlowDangerZones;
-  latestVehicleQueueDangerZones = vehicleQueueDangerZones;
+  setLatestDangerZones({
+    single: singleDangerZones,
+    vehicleFlow: vehicleFlowDangerZones,
+    vehicleQueue: vehicleQueueDangerZones
+  })
 
   await preloadTileGrids(
     singleDangerZones,
@@ -1420,23 +1121,15 @@ onMounted(async () => {
     }
 
     if (createModeSingle.value) {
-      const [lon, lat] = toLonLat(evt.coordinate);
+      const [lon, lat] = toLonLat(evt.coordinate)
 
-      newSingleSource.value.location = {
-        type: 'Point',
-        coordinates: [lon, lat]
-      };
+      const cityId = selectedCities.value.length > 0
+        ? selectedCities.value[0].id
+        : null
 
-      newSingleSource.value.cityId =
-        selectedCities.value.length > 0
-          ? selectedCities.value[0].id
-          : null;
+      setSingleSourceLocation([lon, lat], cityId)
 
-      createModeSingle.value = false;
-
-      showSingleSourceForm.value = true;
-
-      return;
+      return
     }
 
     if (createModeQueue.value) {
