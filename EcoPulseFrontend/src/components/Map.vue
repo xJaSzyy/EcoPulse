@@ -15,6 +15,28 @@
       </button>
     </div>
 
+    <div v-if="createModeFlow" class="map-pick-notification">
+
+      <div class="map-pick-notification__icon">🛣️</div>
+
+      <div class="map-pick-notification__content">
+        <strong>Добавление дороги</strong>
+
+        <span v-if="createPoints.length === 0">
+          Нажмите на карту, чтобы указать начало дороги
+        </span>
+
+        <span v-else>
+          Теперь нажмите на карту, чтобы указать конец дороги
+        </span>
+      </div>
+
+      <button class="map-pick-notification__cancel" @click="cancelCreateModeFlow">
+        Отмена
+      </button>
+
+    </div>
+
     <div class="map-controls">
 
       <div class="base-map-selector">
@@ -140,6 +162,9 @@
           <span>Добавить котельную</span>
         </button>
 
+        <button class="add-single-source-btn" @click="startCreateModeFlow">
+          <span>Добавить дорогу</span>
+        </button>
       </div>
 
     </div>
@@ -528,8 +553,7 @@ const {
   olLayers,
   selectedCities,
   weather,
-  createEllipse,
-  updateModifyFlow
+  createEllipse
 })
 
 const {
@@ -629,7 +653,16 @@ const toggleEditPanel = () => {
 }
 
 function startCreateModeFlow() {
+  cancelCreateModeSingle()
+
+  createModeQueue.value = false
+
   createModeFlow.value = true
+  createPoints.value = []
+}
+
+function cancelCreateModeFlow() {
+  createModeFlow.value = false
   createPoints.value = []
 }
 
@@ -651,7 +684,7 @@ async function handleTwoPointsSelected(p1, p2) {
     vehicleType: 1,
     maxTrafficIntensity: 35 / 2,
     averageSpeed: 40 / 2,
-    streetName: streetName.value
+    streetName: "-"
   });
 
   await updateVehicleFlowLayer();
@@ -925,17 +958,26 @@ onMounted(async () => {
     });
 
     if (createModeFlow.value) {
-      const coord3857 = evt.coordinate
-      const [lon, lat] = toLonLat(coord3857)
+      const [lon, lat] = toLonLat(evt.coordinate)
 
       createPoints.value.push([lon, lat])
 
+      if (createPoints.value.length === 1) {
+        console.log('Начало дороги:', [lon, lat])
+        return
+      }
+
       if (createPoints.value.length === 2) {
         const [p1, p2] = createPoints.value
-        await handleTwoPointsSelected(p1, p2)
 
-        createModeFlow.value = false
-        createPoints.value = []
+        try {
+          await handleTwoPointsSelected(p1, p2)
+        } catch (error) {
+          console.error('Ошибка добавления дороги:', error)
+        } finally {
+          createModeFlow.value = false
+          createPoints.value = []
+        }
       }
 
       return
@@ -1000,41 +1042,59 @@ onMounted(async () => {
   });
 
   map.value.on('pointermove', (evt) => {
-    if (evt.dragging || isMeasuringArea.value) return
+    if (createModeFlow.value || createModeSingle.value) {
+      updateMapCursor()
+      hidePopup()
+      return
+    }
 
-    const pixel = map.value.getEventPixel(evt.originalEvent)
+    if (evt.dragging || isMeasuringArea.value) {
+      hidePopup()
+      updateMapCursor()
+      return
+    }
+
+    const pixel = evt.pixel
+
     let popupFeature = null
     let sourceType = null
 
-    map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
-      if (layer === olLayers.single ||
-        layer === olLayers.vehicleFlow ||
-        layer === olLayers.vehicleQueue /*|| 
-          layer === olLayers.tile ||
-          layer === olLayers.area*/) {
+    map.value.forEachFeatureAtPixel(
+      pixel,
+      (feature, layer) => {
+        if (layer === olLayers.single) {
+          popupFeature = feature
+          sourceType = 'котельная'
+          return true
+        }
 
-        popupFeature = feature
-        sourceType = layer === olLayers.single ? 'котельная' : layer === olLayers.vehicleFlow ? 'дорога' : 'перекресток'
+        if (layer === olLayers.vehicleFlow) {
+          popupFeature = feature
+          sourceType = 'дорога'
+          return true
+        }
+
+        if (layer === olLayers.vehicleQueue) {
+          popupFeature = feature
+          sourceType = 'перекресток'
+          return true
+        }
+
         return false
+      },
+      {
+        hitTolerance: 8
       }
-    })
+    )
 
     if (popupFeature) {
-      const coordinate = evt.coordinate
-      showPopup(coordinate, popupFeature, sourceType)
-
-      const mapElement = map.value.getTargetElement()
-      mapElement.style.cursor = 'pointer'
+      showPopup(evt.coordinate, popupFeature, sourceType)
+      map.value.getTargetElement().style.cursor = 'pointer'
     } else {
       hidePopup()
+      map.value.getTargetElement().style.cursor = ''
     }
-
-    const allHit = map.value.hasFeatureAtPixel(pixel)
-    const mapElement = map.value.getTargetElement()
-    mapElement.style.cursor = allHit ? 'pointer' : ''
   })
-
-  await updateModifyFlow();
 })
 
 async function withCache(key, fn, ttl = 5 * 60 * 1000) {
@@ -1066,45 +1126,6 @@ async function withCache(key, fn, ttl = 5 * 60 * 1000) {
   return data;
 }
 
-async function updateModifyFlow() {
-  if (modifyFlow.value) {
-    map.value.removeInteraction(modifyFlow.value);
-  }
-
-  /*const mf = new Modify({
-    source: olLayers.vehicleFlow.getSource(),
-    filter: feature => feature.getGeometry().getType() === 'LineString',
-    deleteCondition: event => altKeyOnly(event) && singleClick(event),
-  });
-
-  mf.on('modifyend', async evt => {
-    const feature = evt.features.item(0);
-    if (!feature) return;
-
-    const geom = feature.getGeometry();
-    const coords3857 = geom.getCoordinates();
-
-    const emissionSourceId = feature.get('emissionSourceId');
-    const coords4326 = coords3857.map(([x, y]) => toLonLat([x, y]));
-
-    await updateVehicleFlowEmissionSource({
-      id: emissionSourceId,
-      points: {
-        type: "LineString",
-        coordinates: coords4326
-      },
-      streetName: streetName.value
-    });
-
-    feature.changed();
-  });
-
-  map.value.addInteraction(mf);
-  modifyFlow.value = mf;*/
-
-  //modifyFlow.value.setActive(layersState.vehicleFlow.visible);
-}
-
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -1127,4 +1148,15 @@ function getHatchPattern(size) {
   return context.createPattern(canvas, 'repeat');
 }
 
+function updateMapCursor() {
+  if (!map.value) return
+
+  const element = map.value.getTargetElement()
+
+  if (createModeFlow.value || createModeSingle.value) {
+    element.style.cursor = 'crosshair'
+  } else {
+    element.style.cursor = ''
+  }
+}
 </script>

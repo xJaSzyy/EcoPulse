@@ -2,63 +2,63 @@ import { ref } from 'vue'
 import Overlay from 'ol/Overlay'
 
 export function useMapPopup(map) {
-    const singlePopup = ref(null)
-    const currentPopupData = ref(null)
+  const singlePopup = ref(null)
+  const currentPopupData = ref(null)
 
-    function showPopup(coordinate, feature, sourceType) {
-        currentPopupData.value = {
-            ...feature.get('dangerData'),
-            sourceType
-        }
-
-        if (!currentPopupData.value) return
-
-        const popupElement = createPopupElement()
-
-        if (!singlePopup.value) {
-            singlePopup.value = new Overlay({
-                element: popupElement,
-                positioning: 'bottom-center',
-                stopEvent: false,
-                insertFirst: false
-            })
-
-            map.value.addOverlay(singlePopup.value)
-        } else {
-            singlePopup.value.setElement(popupElement)
-        }
-
-        singlePopup.value.setPosition(coordinate)
+  function showPopup(coordinate, feature, sourceType) {
+    currentPopupData.value = {
+      ...feature.get('dangerData'),
+      sourceType
     }
 
-    function hidePopup() {
-        if (singlePopup.value) {
-            map.value.removeOverlay(singlePopup.value)
-            singlePopup.value = null
-        }
+    if (!currentPopupData.value) return
 
-        currentPopupData.value = null
+    const popupElement = createPopupElement()
+
+    if (!singlePopup.value) {
+      singlePopup.value = new Overlay({
+        element: popupElement,
+        positioning: 'bottom-center',
+        stopEvent: false,
+        insertFirst: false
+      })
+
+      map.value.addOverlay(singlePopup.value)
+    } else {
+      singlePopup.value.setElement(popupElement)
     }
 
-    function createPopupElement() {
-        const data = currentPopupData.value
+    singlePopup.value.setPosition(coordinate)
+  }
 
-        const popup = document.createElement('div')
-        popup.className = 'popup-element'
+  function hidePopup() {
+    if (singlePopup.value) {
+      map.value.removeOverlay(singlePopup.value)
+      singlePopup.value = null
+    }
 
-        const coalConsumptionHtml =
-            data.coalConsumption != null
-                ? `
+    currentPopupData.value = null
+  }
+
+  function createPopupElement() {
+    const data = currentPopupData.value
+
+    const popup = document.createElement('div')
+    popup.className = 'popup-element'
+
+    const coalConsumptionHtml =
+      data.coalConsumption != null
+        ? `
           <div class="average-concentration" style="margin-top: 12px;">
             <strong><label>Предполагаемый расход угля: </label></strong>
             <span>${data.coalConsumption.toFixed(2)} тонн/час</span>
           </div>
         `
-                : ''
+        : ''
 
-        const wateringHtml =
-            data.chemicalDustVolume != null && data.waterVolume != null
-                ? `
+    const wateringHtml =
+      data.chemicalDustVolume != null && data.waterVolume != null
+        ? `
           <div style="margin-top: 12px;">
             <strong>
               <label style="color: #0D9488;">Требуется для полива:</label>
@@ -75,9 +75,9 @@ export function useMapPopup(map) {
             </div>
           </div>
         `
-                : ''
+        : ''
 
-        popup.innerHTML = `
+    popup.innerHTML = `
       <div class="popup-content">
         <div class="popup-text">
           <div class="source-type">
@@ -105,13 +105,13 @@ export function useMapPopup(map) {
       </div>
     `
 
-        return popup
-    }
+    return popup
+  }
 
-    return {
-        singlePopup,
-        currentPopupData,
-        showPopup,
-        hidePopup
-    }
+  return {
+    singlePopup,
+    currentPopupData,
+    showPopup,
+    hidePopup
+  }
 }

@@ -23,16 +23,19 @@
   font-size: 14px;
 }
 
-.layer-panel h3, .tileLayer-panel h3 {
+.layer-panel h3,
+.tileLayer-panel h3 {
   margin: 0 0 4px;
   font-size: 14px;
 }
 
-.layer-panel label, .tileLayer-panel label {
+.layer-panel label,
+.tileLayer-panel label {
   display: block;
 }
 
-.layer-panel .create-btn, .tileLayer-panel .create-btn {
+.layer-panel .create-btn,
+.tileLayer-panel .create-btn {
   margin-top: 8px;
   width: 100%;
   padding: 6px 8px;
@@ -75,17 +78,17 @@
 .pollution-level {
   font-size: 14px;
   color: #444;
-  display: flex;        
-  align-items: center;  
-  gap: 6px;            
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .pollution-level-color {
-    width: 14px;
-    height: 14px;
-    border-radius: 2px;
-    margin-right: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  margin-right: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .legend-popup {
@@ -213,7 +216,7 @@
 }
 
 .tile-size-control {
-  
+
   grid-column: 1;
   grid-row: 4;
 

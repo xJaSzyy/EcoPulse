@@ -13,8 +13,7 @@ export function useDangerLayers({
   olLayers,
   selectedCities,
   weather,
-  createEllipse,
-  updateModifyFlow
+  createEllipse
 }) {
   const latestDangerZones = reactive({
     single: [],
@@ -57,7 +56,6 @@ export function useDangerLayers({
     }
 
     layer.changed()
-    await updateModifyFlow()
 
     return zones
   }
@@ -88,12 +86,12 @@ export function useDangerLayers({
 
       feature.set('dangerColor', zone.color)
       feature.set('emissionSourceId', zone.emissionSourceId)
+      feature.set('dangerData', zone)
 
       source.addFeature(feature)
     }
 
     layer.changed()
-    await updateModifyFlow()
 
     return zones
   }
