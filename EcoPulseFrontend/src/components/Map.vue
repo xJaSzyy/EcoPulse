@@ -407,10 +407,43 @@ const {
 } = useBaseMap(map)
 
 function startCreateModeSingle() {
-  createModeQueue.value = false
-  createModeFlow.value = false
+  if (!map.value) return
 
-  startSingleSourceCreation()
+  cancelCreateModeFlow()
+  cancelCreateModeSingle()
+
+  createModeQueue.value = false
+  createModeSingle.value = true
+
+  const drawSource = new VectorSource()
+
+  const drawInteraction = new Draw({
+    source: drawSource,
+    type: 'Point'
+  })
+
+  map.value.addInteraction(drawInteraction)
+
+  drawInteraction.once('drawend', (event) => {
+    const coordinates = toLonLat(
+      event.feature.getGeometry().getCoordinates()
+    )
+
+    const cityId = selectedCities.value.length > 0
+      ? selectedCities.value[0].id
+      : null
+
+    createModeSingle.value = false
+
+    removeAllDrawInteractions()
+
+    setSingleSourceLocation(coordinates, cityId)
+  })
+}
+
+function cancelCreateModeSingle() {
+  removeAllDrawInteractions()
+  createModeSingle.value = false
 }
 
 const {
@@ -421,8 +454,6 @@ const {
   newSingleSource,
   singleSourceValidation,
   isSingleSourceFormValid,
-  startCreateModeSingle: startSingleSourceCreation,
-  cancelCreateModeSingle,
   setSingleSourceLocation,
   submitSingleSource
 } = useSingleEmissionSource({
@@ -903,18 +934,6 @@ onMounted(async () => {
 
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
 
-  //const userPos = await getUserPosition();
-
-  /*const recommendationResult = await getRecommendations({
-    tiles: tileGridResult.flatMap(result => result.tiles),
-    userLocation: userPosition.value
-  });
-
-  currentRecommendation.value = {
-    recommendationLevel: recommendationResult.recommendationLevel,
-    recommendationText: recommendationResult.recommendationText
-  };*/
-
   const {
     singleLayer,
     vehicleFlowLayer,
@@ -980,18 +999,6 @@ onMounted(async () => {
         }
       }
     });
-
-    if (createModeSingle.value) {
-      const [lon, lat] = toLonLat(evt.coordinate)
-
-      const cityId = selectedCities.value.length > 0
-        ? selectedCities.value[0].id
-        : null
-
-      setSingleSourceLocation([lon, lat], cityId)
-
-      return
-    }
 
     if (createModeQueue.value) {
       const coord3857 = evt.coordinate

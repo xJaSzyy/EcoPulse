@@ -84,15 +84,6 @@ export function useSingleEmissionSource({ afterSave }) {
     }
   }
 
-  function startCreateModeSingle() {
-    createModeSingle.value = true
-    singleSourceError.value = ''
-  }
-
-  function cancelCreateModeSingle() {
-    createModeSingle.value = false
-  }
-
   function setSingleSourceLocation(coordinates, cityId) {
     newSingleSource.value.location = {
       type: 'Point',
@@ -153,8 +144,6 @@ export function useSingleEmissionSource({ afterSave }) {
     newSingleSource,
     singleSourceValidation,
     isSingleSourceFormValid,
-    startCreateModeSingle,
-    cancelCreateModeSingle,
     setSingleSourceLocation,
     submitSingleSource
   }
