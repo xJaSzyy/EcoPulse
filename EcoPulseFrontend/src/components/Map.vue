@@ -16,25 +16,20 @@
     </div>
 
     <div v-if="createModeFlow" class="map-pick-notification">
-
       <div class="map-pick-notification__icon">🛣️</div>
 
       <div class="map-pick-notification__content">
         <strong>Добавление дороги</strong>
 
-        <span v-if="createPoints.length === 0">
-          Нажмите на карту, чтобы указать начало дороги
-        </span>
-
-        <span v-else>
-          Теперь нажмите на карту, чтобы указать конец дороги
+        <span>
+          Нажимайте на карту, чтобы добавлять точки маршрута.
+          Дважды щёлкните, чтобы завершить рисование.
         </span>
       </div>
 
       <button class="map-pick-notification__cancel" @click="cancelCreateModeFlow">
         Отмена
       </button>
-
     </div>
 
     <div class="map-controls">
@@ -653,15 +648,44 @@ const toggleEditPanel = () => {
 }
 
 function startCreateModeFlow() {
+  if (!map.value) return
+
   cancelCreateModeSingle()
+  cancelCreateModeFlow()
 
   createModeQueue.value = false
-
   createModeFlow.value = true
-  createPoints.value = []
+
+  const drawSource = new VectorSource()
+
+  const drawInteraction = new Draw({
+    source: drawSource,
+    type: 'LineString'
+  })
+
+  map.value.addInteraction(drawInteraction)
+
+  drawInteraction.on('drawend', async (event) => {
+    const coordinates = event.feature
+      .getGeometry()
+      .getCoordinates()
+      .map(coord => toLonLat(coord))
+
+    createModeFlow.value = false
+
+    removeAllDrawInteractions()
+
+    try {
+      await saveVehicleFlow(coordinates)
+    } catch (error) {
+      console.error('Ошибка добавления дороги:', error)
+    }
+  })
 }
 
 function cancelCreateModeFlow() {
+  removeAllDrawInteractions()
+
   createModeFlow.value = false
   createPoints.value = []
 }
@@ -670,24 +694,24 @@ function startCreateModeQueue() {
   createModeQueue.value = true
 }
 
-async function handleTwoPointsSelected(p1, p2) {
+async function saveVehicleFlow(coordinates) {
   const selectedCityId = selectedCities.value.length > 0
     ? selectedCities.value[0].id
-    : null;
+    : null
 
   await addVehicleFlowEmissionSource({
     cityId: selectedCityId,
     points: {
       type: "LineString",
-      coordinates: [p1, p2]
+      coordinates
     },
     vehicleType: 1,
     maxTrafficIntensity: 35 / 2,
     averageSpeed: 40 / 2,
     streetName: "-"
-  });
+  })
 
-  await updateVehicleFlowLayer();
+  await updateVehicleFlowLayer()
 }
 
 function geoJsonToOlGeometry(geometry) {
@@ -957,32 +981,6 @@ onMounted(async () => {
       }
     });
 
-    if (createModeFlow.value) {
-      const [lon, lat] = toLonLat(evt.coordinate)
-
-      createPoints.value.push([lon, lat])
-
-      if (createPoints.value.length === 1) {
-        console.log('Начало дороги:', [lon, lat])
-        return
-      }
-
-      if (createPoints.value.length === 2) {
-        const [p1, p2] = createPoints.value
-
-        try {
-          await handleTwoPointsSelected(p1, p2)
-        } catch (error) {
-          console.error('Ошибка добавления дороги:', error)
-        } finally {
-          createModeFlow.value = false
-          createPoints.value = []
-        }
-      }
-
-      return
-    }
-
     if (createModeSingle.value) {
       const [lon, lat] = toLonLat(evt.coordinate)
 
@@ -1043,14 +1041,12 @@ onMounted(async () => {
 
   map.value.on('pointermove', (evt) => {
     if (createModeFlow.value || createModeSingle.value) {
-      updateMapCursor()
       hidePopup()
       return
     }
 
     if (evt.dragging || isMeasuringArea.value) {
       hidePopup()
-      updateMapCursor()
       return
     }
 
@@ -1148,15 +1144,17 @@ function getHatchPattern(size) {
   return context.createPattern(canvas, 'repeat');
 }
 
-function updateMapCursor() {
+function removeAllDrawInteractions() {
   if (!map.value) return
 
-  const element = map.value.getTargetElement()
+  const interactions = map.value.getInteractions().getArray()
 
-  if (createModeFlow.value || createModeSingle.value) {
-    element.style.cursor = 'crosshair'
-  } else {
-    element.style.cursor = ''
-  }
+  interactions
+    .filter(interaction => interaction instanceof Draw)
+    .forEach(interaction => {
+      interaction.abortDrawing()
+      map.value.removeInteraction(interaction)
+    })
 }
+
 </script>
