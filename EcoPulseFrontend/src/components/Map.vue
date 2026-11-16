@@ -2,6 +2,22 @@
   <div class="map-wrapper">
     <div ref="mapRoot" class="fullscreen-map"></div>
 
+    <div v-if="createModeSingle" class="map-pick-notification">
+      <div class="map-pick-notification__icon">📍</div>
+
+      <div class="map-pick-notification__content">
+        <strong>Выбор местоположения</strong>
+        <span>Нажмите на карту, чтобы указать точку размещения источника</span>
+      </div>
+
+      <button
+        class="map-pick-notification__cancel"
+        @click="cancelCreateModeSingle"
+      >
+        Отмена
+      </button>
+    </div>
+
     <div class="map-controls">
 
       <div class="base-map-selector">
@@ -212,31 +228,18 @@
         </button>
       </div>
 
-    </div>
-
-
-    <!--<div class="edit-tool-panel">
-      <span class="edit-tool__label" @click="toggleEditPanel">
-        Изменить
-      </span>
-
-      <div v-if="editPanelOpen" class="edit-tool-panel__body">
-        <button class="edit-tool-panel__body__item" @click="startCreateModeFlow">
-          Создать линию
-        </button>
-        <button class="edit-tool-panel__body__item" @click="startCreateModeQueue">
-          Создать точку
+      <div class="edit-tool-panel">
+          
+        <button
+          class="add-single-source-btn"
+          @click="startCreateModeSingle"
+        >
+          <span>Добавить котельную</span>
         </button>
 
-        <input
-            type="text"
-            v-model="streetName"
-        />
       </div>
 
-    </div>-->
-
-    
+    </div>
 
     <div class="legend">
       <div class="legend-title">Уровни загрязнения</div>
@@ -265,9 +268,9 @@
       </div>
     </div>
 
-    <div v-if="currentRecommendation?.recommendationLevel" class="recommendation-title">
+    <!-- <div v-if="currentRecommendation?.recommendationLevel" class="recommendation-title">
       {{ currentRecommendation.recommendationLevel }}: {{ currentRecommendation.recommendationText }}
-    </div>
+    </div>-->
   </div>
 
   <WeatherInfo
@@ -284,11 +287,206 @@
     v-if="showSimulationPanel"
     @buildSimulation="handleBuildSimulation"
     @close="closeSimulationPanel"
-/>
+  />
+
+<Teleport to="body">
+  <div
+    v-if="showSingleSourceForm"
+    class="single-source-overlay"
+  >
+    <div class="single-source-modal">
+
+      <div class="single-source-modal__header">
+        <div>
+          <h2>Новый источник выброса</h2>
+          <p>Укажите параметры точечного источника</p>
+        </div>
+      </div>
+
+      <div class="single-source-modal__body">
+
+        <div class="single-source-modal__section">
+          <h3>Параметры выброса</h3>
+
+          <label class="single-source-field">
+            <span>Температура выбрасываемых газов, К</span>
+            <input
+              type="number"
+              v-model.number="newSingleSource.ejectedTemp"
+              min="235"
+              max="265"
+            />
+            <small
+              :class="{ 'field-error': singleSourceValidation.ejectedTemp }"
+            >
+              {{ singleSourceValidation.ejectedTemp || 'Допустимое значение: 235–265' }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Средняя скорость выхода, м/с</span>
+            <input
+              type="number"
+              v-model.number="newSingleSource.avgExitSpeed"
+              min="15"
+              max="30"
+            />
+            <small
+              :class="{ 'field-error': singleSourceValidation.avgExitSpeed }"
+            >
+              {{ singleSourceValidation.avgExitSpeed || 'Допустимое значение: 15-30' }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Высота источника, м</span>
+            <input
+              type="number"
+              v-model.number="newSingleSource.heightSource"
+              min="13"
+              max="150"
+            />
+            <small
+              :class="{ 'field-error': singleSourceValidation.heightSource }"
+            >
+              {{ singleSourceValidation.heightSource || 'Допустимое значение: 13-150' }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Диаметр устья источника, м</span>
+            <input
+              type="number"
+              v-model.number="newSingleSource.diameterSource"
+              min="1"
+              max="10"
+            />
+            <small
+              :class="{ 'field-error': singleSourceValidation.diameterSource }"
+            >
+              {{ singleSourceValidation.diameterSource || 'Допустимое значение: 1-10' }}
+            </small>
+          </label>
+        </div>
+
+        <div class="single-source-modal__section">
+          <h3>Коэффициенты</h3>
+
+          <label class="single-source-field">
+            <span>Коэффициент региона</span>
+
+            <select
+              v-model.number="newSingleSource.tempStratificationRatio"
+            >
+              <option :value="null" disabled>
+                Выберите регион
+              </option>
+
+              <option :value="140">
+                Южная часть — 140
+              </option>
+
+              <option :value="160">
+                Средняя зона — 160
+              </option>
+
+              <option :value="180">
+                Северная часть — 180
+              </option>
+
+              <option :value="200">
+                Центральные регионы — 200
+              </option>
+
+              <option :value="250">
+                Бурятия или Забайкальский край — 250
+              </option>
+            </select>
+
+            <small
+              v-if="singleSourceValidation.tempStratificationRatio"
+              class="field-error"
+            >
+              {{ singleSourceValidation.tempStratificationRatio }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Коэффициент степени очистки</span>
+
+            <select
+              v-model.number="newSingleSource.sedimentationRateRatio"
+            >
+              <option :value="null" disabled>
+                Выберите степень очистки
+              </option>
+
+              <option :value="1">
+                Высокая — свыше 90%
+              </option>
+
+              <option :value="2">
+                Средняя — от 75% до 90%
+              </option>
+
+              <option :value="3">
+                Низкая — менее 75% или отсутствует
+              </option>
+            </select>
+
+            <small
+              v-if="singleSourceValidation.sedimentationRateRatio"
+              class="field-error"
+            >
+              {{ singleSourceValidation.sedimentationRateRatio }}
+            </small>
+          </label>
+        </div>
+
+        <div class="single-source-location">
+          <span class="single-source-location__icon">📍</span>
+
+          <div>
+            <strong>Местоположение выбрано</strong>
+            <p>
+              {{ newSingleSource.location?.coordinates?.[1]?.toFixed(5) }},
+              {{ newSingleSource.location?.coordinates?.[0]?.toFixed(5) }}
+            </p>
+          </div>
+        </div>
+
+        <div v-if="singleSourceError" class="single-source-error">
+          {{ singleSourceError }}
+        </div>
+
+      </div>
+
+      <div class="single-source-modal__footer">
+        <button
+          class="single-source-button single-source-button--cancel"
+          @click="showSingleSourceForm = false"
+          :disabled="savingSingleSource"
+        >
+          Отмена
+        </button>
+
+        <button
+          class="single-source-button single-source-button--submit"
+          @click="submitSingleSource"
+          :disabled="savingSingleSource || !isSingleSourceFormValid"
+        >
+          {{ savingSingleSource ? 'Сохранение...' : 'Добавить источник' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</Teleport>
+
 </template>
 
 <script setup>
-import {onMounted, reactive, ref} from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import 'ol/ol.css'
 import {defaults as defaultControls} from 'ol/control'
 import Map from 'ol/Map'
@@ -317,7 +515,7 @@ import {getCurrentWeather} from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
   addVehicleFlowEmissionSource,
-  getSingleEmissionSourceById, updateVehicleFlowEmissionSource, getVehicleFlowEmissionSourceById
+  getSingleEmissionSourceById, addSingleEmissionSource, updateVehicleFlowEmissionSource, getVehicleFlowEmissionSourceById
 } from '../api/emissionSource.js';
 import boilerIcon from '../icons/boiler.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
@@ -339,6 +537,158 @@ const CARTO_KEY = import.meta.env.VITE_CARTO_KEY
 const selectedBaseMap = ref(
   localStorage.getItem('selectedBaseMap') || 'osm'
 )
+
+const createModeSingle = ref(false);
+const showSingleSourceForm = ref(false);
+
+const newSingleSource = ref({
+  location: null,
+  ejectedTemp: 250,
+  avgExitSpeed: 20,
+  heightSource: 30,
+  diameterSource: 3,
+  tempStratificationRatio: null,
+  sedimentationRateRatio: null,
+  cityId: null
+});
+
+const savingSingleSource = ref(false);
+const singleSourceError = ref('');
+
+const singleSourceLimits = {
+  ejectedTemp: {
+    min: 235,
+    max: 265,
+    label: 'Температура выбрасываемых газов'
+  },
+  avgExitSpeed: {
+    min: 15,
+    max: 30,
+    label: 'Средняя скорость выхода'
+  },
+  heightSource: {
+    min: 13,
+    max: 150,
+    label: 'Высота источника'
+  },
+  diameterSource: {
+    min: 1,
+    max: 10,
+    label: 'Диаметр устья источника'
+  }
+};
+
+const singleSourceValidation = computed(() => {
+  const errors = {};
+
+  Object.entries(singleSourceLimits).forEach(([key, limit]) => {
+    const value = Number(newSingleSource.value[key]);
+
+    if (
+      newSingleSource.value[key] === null ||
+      newSingleSource.value[key] === '' ||
+      !Number.isFinite(value)
+    ) {
+      errors[key] = 'Заполните поле';
+    } else if (value < limit.min || value > limit.max) {
+      errors[key] = `Допустимое значение: ${limit.min}–${limit.max}`;
+    }
+  });
+
+  if (newSingleSource.value.tempStratificationRatio == null) {
+    errors.tempStratificationRatio = 'Выберите коэффициент региона';
+  }
+
+  if (newSingleSource.value.sedimentationRateRatio == null) {
+    errors.sedimentationRateRatio = 'Выберите степень очистки';
+  }
+
+  return errors;
+});
+
+const isSingleSourceFormValid = computed(() => {
+  return Object.keys(singleSourceValidation.value).length === 0
+    && !!newSingleSource.value.location
+    && !!newSingleSource.value.cityId;
+});
+
+function startCreateModeSingle() {
+  createModeSingle.value = true;
+  createModeQueue.value = false;
+  createModeFlow.value = false;
+
+  singleSourceError.value = '';
+}
+
+function cancelCreateModeSingle() {
+  createModeSingle.value = false;
+}
+
+async function submitSingleSource() {
+  singleSourceError.value = '';
+
+  const payload = {
+    location: newSingleSource.value.location,
+    ejectedTemp: Number(newSingleSource.value.ejectedTemp),
+    avgExitSpeed: Number(newSingleSource.value.avgExitSpeed),
+    heightSource: Number(newSingleSource.value.heightSource),
+    diameterSource: Number(newSingleSource.value.diameterSource),
+    tempStratificationRatio:
+      newSingleSource.value.tempStratificationRatio,
+    sedimentationRateRatio:
+      newSingleSource.value.sedimentationRateRatio,
+    cityId: Number(newSingleSource.value.cityId)
+  };
+
+  if (!payload.location) {
+    singleSourceError.value = 'Выберите точку на карте';
+    return;
+  }
+
+  if (
+    payload.tempStratificationRatio == null ||
+    payload.sedimentationRateRatio == null
+  ) {
+    singleSourceError.value = 'Выберите оба коэффициента';
+    return;
+  }
+
+  savingSingleSource.value = true;
+
+  try {
+    await addSingleEmissionSource(payload);
+
+    showSingleSourceForm.value = false;
+
+    latestSingleDangerZones = await updateSingleLayer();
+
+    await preloadTileGrids(
+      latestSingleDangerZones,
+      latestVehicleFlowDangerZones,
+      latestVehicleQueueDangerZones,
+      true
+    );
+
+    await refreshTileGrid();
+
+    newSingleSource.value = {
+      location: null,
+      ejectedTemp: 250,
+      avgExitSpeed: 20,
+      heightSource: 30,
+      diameterSource: 3,
+      tempStratificationRatio: null,
+      sedimentationRateRatio: null,
+      cityId: null
+    };
+
+  } catch (error) {
+    console.error('Ошибка добавления источника:', error);
+    singleSourceError.value = error.message || 'Не удалось добавить источник';
+  } finally {
+    savingSingleSource.value = false;
+  }
+}
 
 const {
   isMeasuringArea,
@@ -1185,9 +1535,9 @@ onMounted(async () => {
 
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
 
-  const userPos = await getUserPosition();
+  //const userPos = await getUserPosition();
   
-  const recommendationResult = await getRecommendations({
+  /*const recommendationResult = await getRecommendations({
     tiles: tileGridResult.flatMap(result => result.tiles),
     userLocation: userPosition.value
   });
@@ -1195,7 +1545,7 @@ onMounted(async () => {
   currentRecommendation.value = {
     recommendationLevel: recommendationResult.recommendationLevel,
     recommendationText: recommendationResult.recommendationText
-  };
+  };*/
 
   const {
     singleLayer,
@@ -1278,6 +1628,26 @@ onMounted(async () => {
       }
 
       return
+    }
+
+    if (createModeSingle.value) {
+      const [lon, lat] = toLonLat(evt.coordinate);
+
+      newSingleSource.value.location = {
+        type: 'Point',
+        coordinates: [lon, lat]
+      };
+
+      newSingleSource.value.cityId =
+        selectedCities.value.length > 0
+          ? selectedCities.value[0].id
+          : null;
+
+      createModeSingle.value = false;
+
+      showSingleSourceForm.value = true;
+
+      return;
     }
 
     if (createModeQueue.value) {
@@ -1714,23 +2084,6 @@ function getHatchPattern(size) {
   margin: 0;
 }
 
-.edit-tool-panel {
-  position: absolute;
-  top: 24px;
-  left: 256px;
-  font-family: sans-serif;
-  font-size: 14px;
-}
-
-.edit-tool-panel {
-  display: inline-block;
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-}
-
 .edit-tool-panel__body {
   position: absolute;
   margin-top: 12px;
@@ -2108,8 +2461,8 @@ function getHatchPattern(size) {
 }
 
 .area-measure-panel {
-  grid-column: 2;
-  grid-row: 2;
+  grid-column: 1;
+  grid-row: 3;
 
   display: flex;
   flex-direction: column;
@@ -2152,4 +2505,351 @@ function getHatchPattern(size) {
   border-radius: 5px;
   color: #333;
 }
+
+.single-source-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  box-sizing: border-box;
+
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.single-source-modal {
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #fff;
+  border-radius: 14px;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+
+  overflow: hidden;
+
+  font-family: sans-serif;
+  color: #263238;
+}
+
+.single-source-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  padding: 22px 24px;
+
+  border-bottom: 1px solid #e8edf2;
+}
+
+.single-source-modal__header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.single-source-modal__header p {
+  margin: 6px 0 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+.single-source-modal__close {
+  border: none;
+  background: transparent;
+
+  color: #718096;
+  font-size: 28px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.single-source-modal__close:hover {
+  color: #e53935;
+}
+
+.single-source-modal__body {
+  padding: 20px 24px;
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.single-source-modal__section {
+  margin-bottom: 24px;
+}
+
+.single-source-modal__section h3 {
+  margin: 0 0 16px;
+
+  font-size: 15px;
+  font-weight: 700;
+  color: #344054;
+}
+
+.single-source-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  margin-bottom: 16px;
+}
+
+.single-source-field span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475467;
+}
+
+.single-source-field input,
+.single-source-field select {
+  width: 100%;
+  height: 42px;
+
+  padding: 0 12px;
+  box-sizing: border-box;
+
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+
+  background: #fff;
+
+  font-size: 14px;
+  color: #344054;
+
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.single-source-field input:focus,
+.single-source-field select:focus {
+  border-color: #3984d6;
+  box-shadow: 0 0 0 3px rgba(57, 132, 214, 0.12);
+}
+
+.single-source-field small {
+  font-size: 11px;
+  color: #98a2b3;
+}
+
+.single-source-location {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 14px;
+
+  border: 1px solid #d6e8fb;
+  border-radius: 8px;
+
+  background: #f0f7ff;
+}
+
+.single-source-location__icon {
+  font-size: 23px;
+}
+
+.single-source-location strong {
+  font-size: 13px;
+  color: #245b91;
+}
+
+.single-source-location p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.single-source-error {
+  margin-top: 14px;
+  padding: 11px 13px;
+
+  border-radius: 7px;
+
+  background: #fef2f2;
+  color: #dc2626;
+
+  font-size: 13px;
+}
+
+.single-source-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  padding: 18px 24px;
+
+  border-top: 1px solid #e8edf2;
+  background: #fafbfc;
+}
+
+.single-source-button {
+  min-height: 40px;
+
+  padding: 0 18px;
+
+  border-radius: 7px;
+  border: none;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.single-source-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.single-source-button--cancel {
+  background: #eef1f5;
+  color: #475467;
+}
+
+.single-source-button--cancel:hover {
+  background: #e2e7ed;
+}
+
+.single-source-button--submit {
+  background: #2878c7;
+  color: #fff;
+}
+
+.single-source-button--submit:hover {
+  background: #1e65aa;
+}
+
+.edit-tool-panel {
+  grid-column: 1;
+  grid-row: 4;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 12px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.add-single-source-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  padding: 8px 12px;
+
+  border: none;
+  border-radius: 5px;
+  background: #4285f4;
+  color: #ffffff;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-single-source-btn:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.add-single-source-btn:active {
+  transform: translateY(0);
+}
+
+.map-pick-notification {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  width: max-content;
+  max-width: calc(100% - 40px);
+  padding: 14px 18px;
+
+  background: #fff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+  font-family: sans-serif;
+}
+
+.map-pick-notification__icon {
+  font-size: 26px;
+}
+
+.map-pick-notification__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-pick-notification__content strong {
+  font-size: 14px;
+  color: #1e40af;
+}
+
+.map-pick-notification__content span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.map-pick-notification__cancel {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 6px;
+
+  background: #fee2e2;
+  color: #dc2626;
+
+  cursor: pointer;
+}
+
+.single-source-field small.field-error {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.single-source-field input:has(+ small.field-error) {
+  border-color: #dc2626;
+}
+
+.single-source-button--submit:disabled {
+  background: #94a3b8;
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 </style>

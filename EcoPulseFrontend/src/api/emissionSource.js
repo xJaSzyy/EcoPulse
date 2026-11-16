@@ -15,6 +15,21 @@ export async function getSingleEmissionSourceById(id) {
     return await response.json();
 }
 
+export async function addSingleEmissionSource(payload) {
+    const response = await fetch(API_BASE_URL + '/emission-source/single', {
+        method: 'POST', headers: {
+            'Content-Type': 'application/json', 'Accept': 'application/json'
+        }, body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Request failed: ${response.status} ${errorText}`);
+    }
+
+    return await response.json();
+}
+
 export async function getVehicleFlowEmissionSourceById(id) {
     const response = await fetch(API_BASE_URL + '/emission-source/vehicle-flow/' + id, {
         method: 'GET', headers: {
