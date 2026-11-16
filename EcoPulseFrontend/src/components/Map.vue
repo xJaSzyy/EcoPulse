@@ -120,7 +120,7 @@
         </button>
       </div>
 
-      <div class="area-measure-panel">
+      <div v-if="!layersState.tileGrid.visible" class="area-measure-panel">
         <button v-if="!isMeasuringArea" @click="startAreaMeasurement">
           Измерить площадь
         </button>
@@ -134,7 +134,7 @@
         </button>
       </div>
 
-      <div class="edit-tool-panel">
+      <div v-if="!layersState.tileGrid.visible" class="edit-tool-panel">
 
         <button class="add-single-source-btn" @click="startCreateModeSingle">
           <span>Добавить котельную</span>
@@ -366,6 +366,8 @@ import { useBaseMap } from '../composables/useBaseMap'
 import { useSingleEmissionSource } from '../composables/useSingleEmissionSource.js'
 import { useDangerLayers } from '../composables/useDangerLayers.js'
 import { useMapPopup } from '../composables/useMapPopup.js'
+import { useLayerSettings } from '../composables/useLayerSettings.js'
+import { useSimulation } from '../composables/useSimulation.js'
 import '../styles/map.css';
 
 const mapRoot = ref(null)
@@ -428,9 +430,6 @@ const {
 } = useAreaMeasurement(map)
 
 const weather = ref(null)
-const showSimulationPanel = ref(false)
-const simulationStartData = ref(null)
-const simulationData = ref(null)
 
 const createModeFlow = ref(false)
 const createModeQueue = ref(false)
@@ -441,8 +440,6 @@ const streetName = ref(null);
 
 const userPosition = ref(null);
 const currentRecommendation = ref(null)
-
-const selectedGridLayer = ref('tile')
 
 const tileSize = ref(750);
 const autoTileSizeByZoom = ref(true);
@@ -457,34 +454,17 @@ const olLayers = reactive({
   area: null,
 })
 
-const layersState = reactive({
-  single: {
-    visible: false,
-    zIndex: 2
-  },
-  vehicleFlow: {
-    visible: false,
-    zIndex: 1
-  },
-  vehicleQueue: {
-    visible: false,
-    zIndex: 3
-  },
-  sanitaryArea: {
-    visible: false,
-    zIndex: 5
-  },
-  tileGrid: {
-    visible: false,
-    zIndex: 4
-  },
-  tile: {
-    visible: false
-  },
-  area: {
-    visible: false
-  }
-});
+const {
+  layersState,
+  selectedGridLayer,
+  initLayersState,
+  toggleLayer,
+  updateLayerZIndex,
+  saveLayersState
+} = useLayerSettings({
+  olLayers,
+  modifyFlow
+})
 
 const levels = [
   { max: 9.0, color: 'rgba(171, 209, 98, 1)', label: 'Очень низкий' },
@@ -552,31 +532,29 @@ const {
   updateModifyFlow
 })
 
+const {
+  showSimulationPanel,
+  simulationStartData,
+  simulationData,
+  previousSimulationData,
+  weatherBeforeSimulation,
+  handleBuildSimulation,
+  buildSimulation,
+  closeSimulationPanel,
+  openSimulationPanel
+} = useSimulation({
+  map,
+  olLayers,
+  weather,
+  updateSingleLayer,
+  preloadTileGrids,
+  refreshTileGrid,
+  latestDangerZones,
+  createEllipse
+})
+
 const cityDropdownOpen = ref(false)
 const editPanelOpen = ref(false)
-
-const updateLayerZIndex = (layerName) => {
-  let layer;
-
-  if (layerName === 'tileGrid') {
-    layer = olLayers[selectedGridLayer.value];
-  } else {
-    layer = olLayers[layerName];
-  }
-
-  if (!layer) {
-    console.warn('Слой не найден:', layerName);
-    return;
-  }
-
-  const zIndex = Number(layersState[layerName].zIndex);
-
-  if (!Number.isFinite(zIndex)) return;
-
-  layer.setZIndex(zIndex);
-
-  saveLayersState();
-};
 
 const getUserPosition = () => {
   return new Promise((resolve) => {
@@ -659,32 +637,6 @@ function startCreateModeQueue() {
   createModeQueue.value = true
 }
 
-async function patchSingleZoneForSource(data) {
-  const source = olLayers.single?.getSource();
-  if (!source) return;
-
-  const feature = source.getFeatures().find(
-    f =>
-      f.get('emissionSourceId') === data.emissionSourceId &&
-      f.getGeometry().getType() === 'Polygon'
-  );
-
-  if (!feature) return;
-
-  const updatedZone = feature.get('dangerData');
-  if (!updatedZone) return;
-
-  const idx = latestDangerZones.single.findIndex(
-    z => z.emissionSourceId === data.emissionSourceId
-  );
-
-  if (idx >= 0) {
-    latestDangerZones.single[idx] = updatedZone;
-  } else {
-    latestDangerZones.single.push(updatedZone);
-  }
-}
-
 async function handleTwoPointsSelected(p1, p2) {
   const selectedCityId = selectedCities.value.length > 0
     ? selectedCities.value[0].id
@@ -703,137 +655,6 @@ async function handleTwoPointsSelected(p1, p2) {
   });
 
   await updateVehicleFlowLayer();
-}
-
-const previousSimulationData = ref(null);
-
-async function handleBuildSimulation(data) {
-  const previous = previousSimulationData.value;
-  previousSimulationData.value = { ...data };
-
-  if (!previous) {
-    await buildSimulation(data);
-    return;
-  }
-
-  const windChanged =
-    Number(data.windSpeed) !== Number(previous.windSpeed) ||
-    Number(data.windDirection) !== Number(previous.windDirection);
-
-  const sourceChanged =
-    Number(data.ejectedTemp) !== Number(previous.ejectedTemp) ||
-    Number(data.airTemp) !== Number(previous.airTemp) ||
-    Number(data.avgExitSpeed) !== Number(previous.avgExitSpeed) ||
-    Number(data.heightSource) !== Number(previous.heightSource) ||
-    Number(data.diameterSource) !== Number(previous.diameterSource) ||
-    Number(data.tempStratificationRatio) !== Number(previous.tempStratificationRatio) ||
-    Number(data.sedimentationRateRatio) !== Number(previous.sedimentationRateRatio);
-
-  if (windChanged || sourceChanged) {
-    if (windChanged) {
-      weather.value = {
-        ...weather.value,
-        windSpeed: Number(data.windSpeed),
-        windDirection: Number(data.windDirection),
-      };
-
-      const singleDangerZones = await updateSingleLayer()
-
-      await preloadTileGrids(
-        singleDangerZones,
-        latestDangerZones.vehicleFlow,
-        latestDangerZones.vehicleQueue,
-        true
-      )
-
-      await refreshTileGrid();
-      await buildSimulation(data);
-      return;
-    }
-
-    await buildSimulation(data);
-    await patchSingleZoneForSource(data);
-
-    await preloadTileGrids(
-      latestDangerZones.single,
-      latestDangerZones.vehicleFlow,
-      latestDangerZones.vehicleQueue,
-      true
-    )
-    await refreshTileGrid();
-    return;
-  }
-
-  await buildSimulation(data);
-}
-
-async function buildSimulation(data) {
-  const dangerZone = await calculateSingleDangerZone({
-    pollutant: 2,
-    ejectedTemp: data.ejectedTemp,
-    airTemp: data.airTemp,
-    avgExitSpeed: data.avgExitSpeed,
-    heightSource: data.heightSource,
-    diameterSource: data.diameterSource,
-    tempStratificationRatio: data.tempStratificationRatio,
-    sedimentationRateRatio: data.sedimentationRateRatio,
-    windSpeed: data.windSpeed,
-    windDirection: data.windDirection,
-    distance: 10000,
-    sourceLocation: data.location
-  });
-
-  dangerZone.emissionSourceId = data.emissionSourceId;
-  dangerZone.location = data.location;
-
-  const singleLayer = olLayers.single;
-  const source = singleLayer.getSource();
-
-  const featuresToRemove = source.getFeatures().filter(f => {
-    return f.get('emissionSourceId') === dangerZone.emissionSourceId;
-  });
-
-  source.removeFeatures(featuresToRemove);
-
-  const ellipse = await createEllipse(dangerZone);
-  ellipse.set('emissionSourceId', dangerZone.emissionSourceId);
-  source.addFeature(ellipse);
-
-  const pointFeature = new Feature({
-    geometry: new Point(fromLonLat(dangerZone.location.coordinates)),
-    type: 'boiler'
-  });
-  pointFeature.set('emissionSourceId', dangerZone.emissionSourceId);
-  source.addFeature(pointFeature);
-
-  simulationData.value = {
-    averageConcentration: dangerZone.averageConcentration,
-    pollutionLevel: dangerZone.pollutionLevel,
-    color: dangerZone.color
-  }
-}
-
-const weatherBeforeSimulation = ref(null);
-
-async function closeSimulationPanel() {
-  if (weatherBeforeSimulation.value) {
-    weather.value = { ...weatherBeforeSimulation.value };
-  }
-
-  const singleDangerZones = await updateSingleLayer();
-
-  await preloadTileGrids(
-    singleDangerZones,
-    latestDangerZones.vehicleFlow,
-    latestDangerZones.vehicleQueue
-  )
-  await refreshTileGrid();
-
-  showSimulationPanel.value = false;
-  simulationStartData.value = null;
-  simulationData.value = null;
-  previousSimulationData.value = null;
-  weatherBeforeSimulation.value = null;
 }
 
 function geoJsonToOlGeometry(geometry) {
@@ -1170,31 +991,11 @@ onMounted(async () => {
         await closeSimulationPanel();
       }
 
-      showSimulationPanel.value = true;
+      const emissionSource = await getSingleEmissionSourceById(
+        found.emissionSourceId
+      )
 
-      weatherBeforeSimulation.value = { ...weather.value };
-
-      const emissionSource = await getSingleEmissionSourceById(found.emissionSourceId);
-
-      simulationStartData.value = {
-        emissionSourceId: emissionSource.id,
-        location: emissionSource.location,
-        ejectedTemp: emissionSource.ejectedTemp,
-        airTemp: weather.value.temperature,
-        avgExitSpeed: emissionSource.avgExitSpeed,
-        heightSource: emissionSource.heightSource,
-        diameterSource: emissionSource.diameterSource,
-        windSpeed: weather.value.windSpeed,
-        windDirection: weather.value.windDirection,
-        tempStratificationRatio: emissionSource.tempStratificationRatio,
-        sedimentationRateRatio: emissionSource.sedimentationRateRatio,
-      }
-
-      simulationData.value = {
-        averageConcentration: found.averageConcentration,
-        pollutionLevel: found.pollutionLevel,
-        color: found.color
-      }
+      openSimulationPanel(emissionSource, found)
     }
   });
 
@@ -1307,88 +1108,6 @@ async function updateModifyFlow() {
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
-const initLayersState = () => {
-  const savedState = localStorage.getItem('layersState');
-
-  if (savedState) {
-    const parsedState = JSON.parse(savedState);
-
-    Object.keys(layersState).forEach(key => {
-      if (parsedState[key]) {
-        layersState[key].visible =
-          parsedState[key].visible ?? layersState[key].visible;
-
-        if (layersState[key].zIndex !== undefined) {
-          layersState[key].zIndex =
-            parsedState[key].zIndex ?? layersState[key].zIndex;
-        }
-      }
-    });
-  }
-
-  selectedGridLayer.value =
-    localStorage.getItem('selectedGridLayer') || 'tile';
-
-  Object.keys(olLayers).forEach(key => {
-    if (olLayers[key]) {
-      olLayers[key].setVisible(layersState[key].visible);
-    }
-  });
-
-  updateLayerZIndex('single');
-  updateLayerZIndex('vehicleFlow');
-  updateLayerZIndex('vehicleQueue');
-  updateLayerZIndex('sanitaryArea');
-  updateLayerZIndex('tileGrid');
-};
-
-const toggleLayer = key => {
-  if (key === 'tile' || key === 'area') {
-    const oppositeKey = key === 'tile' ? 'area' : 'tile';
-    layersState[oppositeKey].visible = false;
-    olLayers[oppositeKey].setVisible(false);
-
-    layersState[key].visible = true;
-    olLayers[key].setVisible(true);
-    olLayers[key].setZIndex(Number(layersState.tileGrid.zIndex));
-  } else if (key === 'tileGrid') {
-    const visible = layersState[key].visible;
-
-    const oppositeKey = selectedGridLayer.value === 'tile' ? 'area' : 'tile';
-
-    layersState[selectedGridLayer.value].visible = visible;
-    olLayers[selectedGridLayer.value].setVisible(visible);
-
-    layersState[oppositeKey].visible = false;
-    olLayers[oppositeKey].setVisible(false);
-  }
-  else {
-    const visible = layersState[key].visible;
-    olLayers[key].setVisible(visible);
-  }
-
-  saveLayersState();
-
-  if (key === 'vehicleFlow' && modifyFlow.value) {
-    modifyFlow.value.setActive(visible);
-  }
-};
-
-const saveLayersState = () => {
-  const stateToSave = {};
-
-  Object.keys(layersState).forEach(key => {
-    stateToSave[key] = {
-      visible: layersState[key].visible,
-      zIndex: layersState[key].zIndex
-    };
-  });
-
-  localStorage.setItem('layersState', JSON.stringify(stateToSave));
-
-  localStorage.setItem('selectedGridLayer', selectedGridLayer.value);
-};
 
 function getHatchPattern(size) {
   const canvas = document.createElement('canvas');
