@@ -10,10 +10,7 @@
         <span>Нажмите на карту, чтобы указать точку размещения источника</span>
       </div>
 
-      <button
-        class="map-pick-notification__cancel"
-        @click="cancelCreateModeSingle"
-      >
+      <button class="map-pick-notification__cancel" @click="cancelCreateModeSingle">
         Отмена
       </button>
     </div>
@@ -36,105 +33,49 @@
         <h3>Слои</h3>
 
         <label>
-          <input
-            type="checkbox"
-            v-model="layersState.single.visible"
-            @change="toggleLayer('single')"
-          />
+          <input type="checkbox" v-model="layersState.single.visible" @change="toggleLayer('single')" />
           <span>Котельные</span>
-          <input
-            class="z-index-input"
-            type="number"
-            min="0"
-            v-model.number="layersState.single.zIndex"
-            @change="updateLayerZIndex('single')"
-          />
+          <input class="z-index-input" type="number" min="0" v-model.number="layersState.single.zIndex"
+            @change="updateLayerZIndex('single')" />
         </label>
 
         <label>
-          <input
-            type="checkbox"
-            v-model="layersState.vehicleFlow.visible"
-            @change="toggleLayer('vehicleFlow')"
-          />
+          <input type="checkbox" v-model="layersState.vehicleFlow.visible" @change="toggleLayer('vehicleFlow')" />
           <span>Дороги</span>
-          <input
-            class="z-index-input"
-            type="number"
-            min="0"
-            v-model.number="layersState.vehicleFlow.zIndex"
-            @change="updateLayerZIndex('vehicleFlow')"
-          />
+          <input class="z-index-input" type="number" min="0" v-model.number="layersState.vehicleFlow.zIndex"
+            @change="updateLayerZIndex('vehicleFlow')" />
         </label>
 
         <label>
-          <input
-            type="checkbox"
-            v-model="layersState.vehicleQueue.visible"
-            @change="toggleLayer('vehicleQueue')"
-          />
+          <input type="checkbox" v-model="layersState.vehicleQueue.visible" @change="toggleLayer('vehicleQueue')" />
           <span>Перекрестки</span>
-          <input
-            class="z-index-input"
-            type="number"
-            min="0"
-            v-model.number="layersState.vehicleQueue.zIndex"
-            @change="updateLayerZIndex('vehicleQueue')"
-          />
+          <input class="z-index-input" type="number" min="0" v-model.number="layersState.vehicleQueue.zIndex"
+            @change="updateLayerZIndex('vehicleQueue')" />
         </label>
 
         <label>
-          <input
-            type="checkbox"
-            v-model="layersState.tileGrid.visible"
-            @change="toggleLayer('tileGrid')"
-          />
+          <input type="checkbox" v-model="layersState.tileGrid.visible" @change="toggleLayer('tileGrid')" />
           <span>Сетка</span>
-          <input
-            class="z-index-input"
-            type="number"
-            min="0"
-            v-model.number="layersState.tileGrid.zIndex"
-            @change="updateLayerZIndex('tileGrid')"
-          />
+          <input class="z-index-input" type="number" min="0" v-model.number="layersState.tileGrid.zIndex"
+            @change="updateLayerZIndex('tileGrid')" />
         </label>
 
         <label>
-          <input
-            type="checkbox"
-            v-model="layersState.sanitaryArea.visible"
-            @change="toggleLayer('sanitaryArea')"
-          />
+          <input type="checkbox" v-model="layersState.sanitaryArea.visible" @change="toggleLayer('sanitaryArea')" />
           <span>СЗЗ</span>
-          <input
-            class="z-index-input"
-            type="number"
-            min="0"
-            v-model.number="layersState.sanitaryArea.zIndex"
-            @change="updateLayerZIndex('sanitaryArea')"
-          />
+          <input class="z-index-input" type="number" min="0" v-model.number="layersState.sanitaryArea.zIndex"
+            @change="updateLayerZIndex('sanitaryArea')" />
         </label>
       </div>
 
       <div class="city-select">
         <span class="city-select__label" @click="toggleCityDropdown">
-          {{ selectedCities.length ? selectedCities.map(c => c.name).join(', ') : 'Выберите города' }}
+          {{selectedCities.length ? selectedCities.map(c => c.name).join(', ') : 'Выберите города'}}
         </span>
 
-        <div
-            v-if="cityDropdownOpen"
-            class="city-select-dropdown"
-        >
-          <label
-              v-for="city in cities"
-              :key="city.id"
-              class="city-select-dropdown__item"
-          >
-            <input
-                type="checkbox"
-                :value="city"
-                v-model="selectedCities"
-            />
+        <div v-if="cityDropdownOpen" class="city-select-dropdown">
+          <label v-for="city in cities" :key="city.id" class="city-select-dropdown__item">
+            <input type="checkbox" :value="city" v-model="selectedCities" />
             <span>{{ city.name }}</span>
           </label>
         </div>
@@ -142,32 +83,18 @@
 
       <div class="tileLayer-panel" v-if="layersState.tileGrid.visible">
         <label>
-          <input
-              type="radio"
-              v-model="selectedGridLayer"
-              value="tile"
-              @change="toggleLayer('tile')"
-          />
+          <input type="radio" v-model="selectedGridLayer" value="tile" @change="toggleLayer('tile')" />
           Ячейки
         </label>
         <label>
-          <input
-              type="radio"
-              v-model="selectedGridLayer"
-              value="area"
-              @change="toggleLayer('area')"
-          />
+          <input type="radio" v-model="selectedGridLayer" value="area" @change="toggleLayer('area')" />
           Районы
         </label>
       </div>
 
       <div v-if="layersState.tileGrid.visible" class="tile-size-control">
         <label class="tile-size-auto">
-          <input
-            type="checkbox"
-            v-model="autoTileSizeByZoom"
-            @change="onAutoTileSizeChange"
-          />
+          <input type="checkbox" v-model="autoTileSizeByZoom" @change="onAutoTileSizeChange" />
           Автоматически
         </label>
 
@@ -179,61 +106,37 @@
           </div>
         </div>
 
-        <input
-          id="tileSize"
-          :value="autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize"
-          class="tile-size-slider"
-          type="range"
-          min="100"
-          max="3000"
-          step="25"
-          :disabled="autoTileSizeByZoom"
-          @input="tileSize = Number($event.target.value)"
-        />
+        <input id="tileSize" :value="autoTileSizeByZoom ? (currentTileSize ?? tileSize) : tileSize"
+          class="tile-size-slider" type="range" min="100" max="3000" step="25" :disabled="autoTileSizeByZoom"
+          @input="tileSize = Number($event.target.value)" />
 
         <div class="tile-size-range">
           <span>100 м</span>
           <span>3000 м</span>
         </div>
 
-        <button
-          v-if="!autoTileSizeByZoom"
-          class="tile-size-apply"
-          @click="applyTileSize"
-        >
+        <button v-if="!autoTileSizeByZoom" class="tile-size-apply" @click="applyTileSize">
           Применить
         </button>
       </div>
 
       <div class="area-measure-panel">
-        <button
-          v-if="!isMeasuringArea"
-          @click="startAreaMeasurement"
-        >
+        <button v-if="!isMeasuringArea" @click="startAreaMeasurement">
           Измерить площадь
         </button>
 
-        <button
-          v-if="isMeasuringArea"
-          @click="stopAreaMeasurement"
-        >
+        <button v-if="isMeasuringArea" @click="stopAreaMeasurement">
           Выйти из режима площади
         </button>
 
-        <button
-          v-if="measuredArea !== null && !isMeasuringArea"
-          @click="clearAreaMeasurement"
-        >
+        <button v-if="measuredArea !== null && !isMeasuringArea" @click="clearAreaMeasurement">
           Очистить область
         </button>
       </div>
 
       <div class="edit-tool-panel">
-          
-        <button
-          class="add-single-source-btn"
-          @click="startCreateModeSingle"
-        >
+
+        <button class="add-single-source-btn" @click="startCreateModeSingle">
           <span>Добавить котельную</span>
         </button>
 
@@ -244,26 +147,14 @@
     <div class="legend">
       <div class="legend-title">Уровни загрязнения</div>
 
-      <div
-          v-for="level in levels"
-          :key="level.label"
-          class="legend-item"
-          @click="showInfo = true"
-      >
-    <span
-        class="legend-color"
-        :style="{ backgroundColor: level.color }"
-    />
+      <div v-for="level in levels" :key="level.label" class="legend-item" @click="showInfo = true">
+        <span class="legend-color" :style="{ backgroundColor: level.color }" />
         <span class="legend-label">{{ level.label }}</span>
       </div>
 
-      <div
-          v-if="showInfo"
-          class="legend-popup"
-          @click.self="showInfo = false"
-      >
+      <div v-if="showInfo" class="legend-popup" @click.self="showInfo = false">
         <div class="legend-popup-content">
-          <img src="../assets/info.png" alt="Фото загрязнения"/>
+          <img src="../assets/info.png" alt="Фото загрязнения" />
         </div>
       </div>
     </div>
@@ -273,233 +164,176 @@
     </div>-->
   </div>
 
-  <WeatherInfo
-      v-if="weather"
-      :temperature="weather.temperature"
-      :icon-class="weather.iconClass"
-      :wind-speed="weather.windSpeed"
-      :wind-direction="weather.windDirection"
-  />
+  <WeatherInfo v-if="weather" :temperature="weather.temperature" :icon-class="weather.iconClass"
+    :wind-speed="weather.windSpeed" :wind-direction="weather.windDirection" />
 
-  <SimulationPanel
-    v-model:data="simulationData"
-    :start-data="simulationStartData"
-    v-if="showSimulationPanel"
-    @buildSimulation="handleBuildSimulation"
-    @close="closeSimulationPanel"
-  />
+  <SimulationPanel v-model:data="simulationData" :start-data="simulationStartData" v-if="showSimulationPanel"
+    @buildSimulation="handleBuildSimulation" @close="closeSimulationPanel" />
 
-<Teleport to="body">
-  <div
-    v-if="showSingleSourceForm"
-    class="single-source-overlay"
-  >
-    <div class="single-source-modal">
+  <Teleport to="body">
+    <div v-if="showSingleSourceForm" class="single-source-overlay">
+      <div class="single-source-modal">
 
-      <div class="single-source-modal__header">
-        <div>
-          <h2>Новый источник выброса</h2>
-          <p>Укажите параметры точечного источника</p>
-        </div>
-      </div>
-
-      <div class="single-source-modal__body">
-
-        <div class="single-source-modal__section">
-          <h3>Параметры выброса</h3>
-
-          <label class="single-source-field">
-            <span>Температура выбрасываемых газов, К</span>
-            <input
-              type="number"
-              v-model.number="newSingleSource.ejectedTemp"
-              min="235"
-              max="265"
-            />
-            <small
-              :class="{ 'field-error': singleSourceValidation.ejectedTemp }"
-            >
-              {{ singleSourceValidation.ejectedTemp || 'Допустимое значение: 235–265' }}
-            </small>
-          </label>
-
-          <label class="single-source-field">
-            <span>Средняя скорость выхода, м/с</span>
-            <input
-              type="number"
-              v-model.number="newSingleSource.avgExitSpeed"
-              min="15"
-              max="30"
-            />
-            <small
-              :class="{ 'field-error': singleSourceValidation.avgExitSpeed }"
-            >
-              {{ singleSourceValidation.avgExitSpeed || 'Допустимое значение: 15-30' }}
-            </small>
-          </label>
-
-          <label class="single-source-field">
-            <span>Высота источника, м</span>
-            <input
-              type="number"
-              v-model.number="newSingleSource.heightSource"
-              min="13"
-              max="150"
-            />
-            <small
-              :class="{ 'field-error': singleSourceValidation.heightSource }"
-            >
-              {{ singleSourceValidation.heightSource || 'Допустимое значение: 13-150' }}
-            </small>
-          </label>
-
-          <label class="single-source-field">
-            <span>Диаметр устья источника, м</span>
-            <input
-              type="number"
-              v-model.number="newSingleSource.diameterSource"
-              min="1"
-              max="10"
-            />
-            <small
-              :class="{ 'field-error': singleSourceValidation.diameterSource }"
-            >
-              {{ singleSourceValidation.diameterSource || 'Допустимое значение: 1-10' }}
-            </small>
-          </label>
-        </div>
-
-        <div class="single-source-modal__section">
-          <h3>Коэффициенты</h3>
-
-          <label class="single-source-field">
-            <span>Коэффициент региона</span>
-
-            <select
-              v-model.number="newSingleSource.tempStratificationRatio"
-            >
-              <option :value="null" disabled>
-                Выберите регион
-              </option>
-
-              <option :value="140">
-                Южная часть — 140
-              </option>
-
-              <option :value="160">
-                Средняя зона — 160
-              </option>
-
-              <option :value="180">
-                Северная часть — 180
-              </option>
-
-              <option :value="200">
-                Центральные регионы — 200
-              </option>
-
-              <option :value="250">
-                Бурятия или Забайкальский край — 250
-              </option>
-            </select>
-
-            <small
-              v-if="singleSourceValidation.tempStratificationRatio"
-              class="field-error"
-            >
-              {{ singleSourceValidation.tempStratificationRatio }}
-            </small>
-          </label>
-
-          <label class="single-source-field">
-            <span>Коэффициент степени очистки</span>
-
-            <select
-              v-model.number="newSingleSource.sedimentationRateRatio"
-            >
-              <option :value="null" disabled>
-                Выберите степень очистки
-              </option>
-
-              <option :value="1">
-                Высокая — свыше 90%
-              </option>
-
-              <option :value="2">
-                Средняя — от 75% до 90%
-              </option>
-
-              <option :value="3">
-                Низкая — менее 75% или отсутствует
-              </option>
-            </select>
-
-            <small
-              v-if="singleSourceValidation.sedimentationRateRatio"
-              class="field-error"
-            >
-              {{ singleSourceValidation.sedimentationRateRatio }}
-            </small>
-          </label>
-        </div>
-
-        <div class="single-source-location">
-          <span class="single-source-location__icon">📍</span>
-
+        <div class="single-source-modal__header">
           <div>
-            <strong>Местоположение выбрано</strong>
-            <p>
-              {{ newSingleSource.location?.coordinates?.[1]?.toFixed(5) }},
-              {{ newSingleSource.location?.coordinates?.[0]?.toFixed(5) }}
-            </p>
+            <h2>Новый источник выброса</h2>
+            <p>Укажите параметры точечного источника</p>
           </div>
         </div>
 
-        <div v-if="singleSourceError" class="single-source-error">
-          {{ singleSourceError }}
+        <div class="single-source-modal__body">
+
+          <div class="single-source-modal__section">
+            <h3>Параметры выброса</h3>
+
+            <label class="single-source-field">
+              <span>Температура выбрасываемых газов, К</span>
+              <input type="number" v-model.number="newSingleSource.ejectedTemp" min="235" max="265" />
+              <small :class="{ 'field-error': singleSourceValidation.ejectedTemp }">
+                {{ singleSourceValidation.ejectedTemp || 'Допустимое значение: 235–265' }}
+              </small>
+            </label>
+
+            <label class="single-source-field">
+              <span>Средняя скорость выхода, м/с</span>
+              <input type="number" v-model.number="newSingleSource.avgExitSpeed" min="15" max="30" />
+              <small :class="{ 'field-error': singleSourceValidation.avgExitSpeed }">
+                {{ singleSourceValidation.avgExitSpeed || 'Допустимое значение: 15-30' }}
+              </small>
+            </label>
+
+            <label class="single-source-field">
+              <span>Высота источника, м</span>
+              <input type="number" v-model.number="newSingleSource.heightSource" min="13" max="150" />
+              <small :class="{ 'field-error': singleSourceValidation.heightSource }">
+                {{ singleSourceValidation.heightSource || 'Допустимое значение: 13-150' }}
+              </small>
+            </label>
+
+            <label class="single-source-field">
+              <span>Диаметр устья источника, м</span>
+              <input type="number" v-model.number="newSingleSource.diameterSource" min="1" max="10" />
+              <small :class="{ 'field-error': singleSourceValidation.diameterSource }">
+                {{ singleSourceValidation.diameterSource || 'Допустимое значение: 1-10' }}
+              </small>
+            </label>
+          </div>
+
+          <div class="single-source-modal__section">
+            <h3>Коэффициенты</h3>
+
+            <label class="single-source-field">
+              <span>Коэффициент региона</span>
+
+              <select v-model.number="newSingleSource.tempStratificationRatio">
+                <option :value="null" disabled>
+                  Выберите регион
+                </option>
+
+                <option :value="140">
+                  Южная часть — 140
+                </option>
+
+                <option :value="160">
+                  Средняя зона — 160
+                </option>
+
+                <option :value="180">
+                  Северная часть — 180
+                </option>
+
+                <option :value="200">
+                  Центральные регионы — 200
+                </option>
+
+                <option :value="250">
+                  Бурятия или Забайкальский край — 250
+                </option>
+              </select>
+
+              <small v-if="singleSourceValidation.tempStratificationRatio" class="field-error">
+                {{ singleSourceValidation.tempStratificationRatio }}
+              </small>
+            </label>
+
+            <label class="single-source-field">
+              <span>Коэффициент степени очистки</span>
+
+              <select v-model.number="newSingleSource.sedimentationRateRatio">
+                <option :value="null" disabled>
+                  Выберите степень очистки
+                </option>
+
+                <option :value="1">
+                  Высокая — свыше 90%
+                </option>
+
+                <option :value="2">
+                  Средняя — от 75% до 90%
+                </option>
+
+                <option :value="3">
+                  Низкая — менее 75% или отсутствует
+                </option>
+              </select>
+
+              <small v-if="singleSourceValidation.sedimentationRateRatio" class="field-error">
+                {{ singleSourceValidation.sedimentationRateRatio }}
+              </small>
+            </label>
+          </div>
+
+          <div class="single-source-location">
+            <span class="single-source-location__icon">📍</span>
+
+            <div>
+              <strong>Местоположение выбрано</strong>
+              <p>
+                {{ newSingleSource.location?.coordinates?.[1]?.toFixed(5) }},
+                {{ newSingleSource.location?.coordinates?.[0]?.toFixed(5) }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="singleSourceError" class="single-source-error">
+            {{ singleSourceError }}
+          </div>
+
+        </div>
+
+        <div class="single-source-modal__footer">
+          <button class="single-source-button single-source-button--cancel" @click="showSingleSourceForm = false"
+            :disabled="savingSingleSource">
+            Отмена
+          </button>
+
+          <button class="single-source-button single-source-button--submit" @click="submitSingleSource"
+            :disabled="savingSingleSource || !isSingleSourceFormValid">
+            {{ savingSingleSource ? 'Сохранение...' : 'Добавить источник' }}
+          </button>
         </div>
 
       </div>
-
-      <div class="single-source-modal__footer">
-        <button
-          class="single-source-button single-source-button--cancel"
-          @click="showSingleSourceForm = false"
-          :disabled="savingSingleSource"
-        >
-          Отмена
-        </button>
-
-        <button
-          class="single-source-button single-source-button--submit"
-          @click="submitSingleSource"
-          :disabled="savingSingleSource || !isSingleSourceFormValid"
-        >
-          {{ savingSingleSource ? 'Сохранение...' : 'Добавить источник' }}
-        </button>
-      </div>
-
     </div>
-  </div>
-</Teleport>
+  </Teleport>
 
 </template>
 
 <script setup>
 import { onMounted, reactive, ref, computed } from 'vue'
 import 'ol/ol.css'
-import {defaults as defaultControls} from 'ol/control'
+import { defaults as defaultControls } from 'ol/control'
 import Map from 'ol/Map'
-import {fromLonLat, toLonLat} from 'ol/proj'
+import { fromLonLat, toLonLat } from 'ol/proj'
 import View from 'ol/View'
 import TileLayer from 'ol/layer/Tile'
 import OSM from 'ol/source/OSM'
 
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
-import {LineString, Point, Polygon, MultiPolygon} from 'ol/geom'
+import { LineString, Point, Polygon, MultiPolygon } from 'ol/geom'
 import Feature from 'ol/Feature'
-import {Circle as CircleStyle, Fill, Icon, Stroke, Style, Text} from 'ol/style'
+import { Circle as CircleStyle, Fill, Icon, Stroke, Style, Text } from 'ol/style'
 import Modify from 'ol/interaction/Modify';
 import Draw from 'ol/interaction/Draw';
 import { getArea } from 'ol/sphere';
@@ -511,7 +345,7 @@ import {
 import { calculateTileGrid, calculateTileArea } from '../api/grid.js';
 import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
 import { getRecommendations } from '../api/recommendation.js';
-import {getCurrentWeather} from '../api/weather.js';
+import { getCurrentWeather } from '../api/weather.js';
 import {
   addTrafficLightQueueEmissionSource,
   addVehicleFlowEmissionSource,
@@ -520,23 +354,25 @@ import {
 import boilerIcon from '../icons/boiler.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
 import SimulationPanel from '../components/SimulationPanel.vue'
-import {asArray} from "ol/color";
-import {altKeyOnly, singleClick} from 'ol/events/condition';
-import {getCityById} from "../api/city.js";
+import { asArray } from "ol/color";
+import { altKeyOnly, singleClick } from 'ol/events/condition';
+import { getCityById } from "../api/city.js";
 import Overlay from 'ol/Overlay'
 import XYZ from 'ol/source/XYZ.js';
 import { useAreaMeasurement } from '../composables/useAreaMeasurement.js'
 import { useTileGrid } from '../composables/useTileGrid.js'
 import { useMapLayers } from '../composables/useMapLayers.js'
+import { useBaseMap } from '../composables/useBaseMap'
+import '../styles/map.css';
 
 const mapRoot = ref(null)
 const map = ref(null)
 
-const CARTO_KEY = import.meta.env.VITE_CARTO_KEY
-
-const selectedBaseMap = ref(
-  localStorage.getItem('selectedBaseMap') || 'osm'
-)
+const {
+  baseLayers,
+  selectedBaseMap,
+  changeBaseMap
+} = useBaseMap(map)
 
 const createModeSingle = ref(false);
 const showSingleSourceForm = ref(false);
@@ -699,53 +535,6 @@ const {
   clearAreaMeasurement
 } = useAreaMeasurement(map)
 
-const baseLayers = {
-  osm: new TileLayer({
-    source: new OSM(),
-    visible: true
-  }),
-
-  esri: new TileLayer({
-    source: new XYZ({
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attributions: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
-    }),
-    visible: false
-  }),
-
-  cartoVoyager: new TileLayer({
-    source: new XYZ({
-      url: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_KEY}`,
-      attributions: '© CARTO © OpenStreetMap contributors'
-    }),
-    visible: false
-  }),
-
-  cartoLight: new TileLayer({
-    source: new XYZ({
-      url: `https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png?key=${CARTO_KEY}`,
-      attributions: '© CARTO © OpenStreetMap contributors'
-    }),
-    visible: false
-  }),
-
-  cartoDark: new TileLayer({
-    source: new XYZ({
-      url: `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_KEY}`,
-      attributions: '© CARTO © OpenStreetMap contributors'
-    }),
-    visible: false
-  }),
-}
-
-function changeBaseMap() {
-  Object.entries(baseLayers).forEach(([key, layer]) => {
-    layer.setVisible(key === selectedBaseMap.value)
-  })
-
-  localStorage.setItem('selectedBaseMap', selectedBaseMap.value)
-}
-
 const weather = ref(null)
 const showSimulationPanel = ref(false)
 const simulationStartData = ref(null)
@@ -808,19 +597,19 @@ const layersState = reactive({
 });
 
 const levels = [
-  {max: 9.0, color: 'rgba(171, 209, 98, 1)', label: 'Очень низкий'},
-  {max: 35.4, color: 'rgba(248, 212, 97, 1)', label: 'Низкий'},
-  {max: 55.4, color: 'rgba(251, 153, 86, 1)', label: 'Средний'},
-  {max: 125.4, color: 'rgba(246, 104, 106, 1)', label: 'Высокий'},
-  {max: 225.4, color: 'rgba(164, 125, 184, 1)', label: 'Очень высокий'},
-  {max: 9999, color: 'rgba(138, 79, 163, 1)', label: 'Экстремальный'}
+  { max: 9.0, color: 'rgba(171, 209, 98, 1)', label: 'Очень низкий' },
+  { max: 35.4, color: 'rgba(248, 212, 97, 1)', label: 'Низкий' },
+  { max: 55.4, color: 'rgba(251, 153, 86, 1)', label: 'Средний' },
+  { max: 125.4, color: 'rgba(246, 104, 106, 1)', label: 'Высокий' },
+  { max: 225.4, color: 'rgba(164, 125, 184, 1)', label: 'Очень высокий' },
+  { max: 9999, color: 'rgba(138, 79, 163, 1)', label: 'Экстремальный' }
 ]
 
 const cities = ref([
-  {id: 1, name: 'Кемерово'},
-  {id: 2, name: 'Новокузнецк'},
-  {id: 3, name: 'Прокопьевск'},
-  {id: 4, name: 'Киселевск'},
+  { id: 1, name: 'Кемерово' },
+  { id: 2, name: 'Новокузнецк' },
+  { id: 3, name: 'Прокопьевск' },
+  { id: 4, name: 'Киселевск' },
 ])
 
 const selectedCities = ref(JSON.parse(localStorage.getItem("selectedCities") || 'null') ?? [cities.value[0]])
@@ -885,36 +674,36 @@ const updateLayerZIndex = (layerName) => {
 };
 
 const getUserPosition = () => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        userPosition.value =
+        {
+          "type": "Point",
+          "coordinates": [position.coords.longitude, position.coords.latitude]
+        };
+        resolve(userPosition.value);
+      },
+      (error) => {
         resolve(null);
-        return;
-      }
-      
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          userPosition.value = 
-          {
-            "type": "Point", 
-            "coordinates": [position.coords.longitude, position.coords.latitude]
-          };
-          resolve(userPosition.value);
-        },
-        (error) => {
-          resolve(null);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    });
-  };
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+};
 
 const toggleCityDropdown = async () => {
   if (!cityDropdownOpen.value) {
     cityDropdownOpen.value = true
     return
   }
-  
-  if (cityDropdownOpen.value) {  
+
+  if (cityDropdownOpen.value) {
     const lastCities = JSON.parse(localStorage.getItem("selectedCities") || '[]')
     localStorage.setItem("selectedCities", JSON.stringify(selectedCities.value))
 
@@ -930,7 +719,7 @@ const toggleCityDropdown = async () => {
         console.error('Ошибка загрузки города:', error)
       }
     }
-    
+
     cityDropdownOpen.value = false
     await updateLayers()
   }
@@ -953,9 +742,9 @@ function startCreateModeQueue() {
 function showPopup(coordinate, feature, sourceType) {
   currentPopupData.value = feature.get('dangerData')
   currentPopupData.value.sourceType = sourceType
-  
+
   const popupElement = createPopupElement()
-  
+
   if (!singlePopup.value) {
     singlePopup.value = new Overlay({
       element: popupElement,
@@ -967,7 +756,7 @@ function showPopup(coordinate, feature, sourceType) {
   } else {
     singlePopup.value.setElement(popupElement)
   }
-  
+
   singlePopup.value.setPosition(coordinate)
 }
 
@@ -995,7 +784,7 @@ function createPopupElement() {
 
   const wateringHtml =
     currentPopupData.value.chemicalDustVolume != null && currentPopupData.value.waterVolume != null
-        ? `
+      ? `
           <div style="margin-top: 12px;">
             <strong>
               <label style="color: #0D9488;">Требуется для полива:</label>
@@ -1012,7 +801,7 @@ function createPopupElement() {
             </div>
           </div>
         `
-        : ''
+      : ''
 
   popup.innerHTML = `
     <div class="popup-content">
@@ -1074,8 +863,8 @@ async function patchSingleZoneForSource(data) {
 
 async function handleTwoPointsSelected(p1, p2) {
   const selectedCityId = selectedCities.value.length > 0
-      ? selectedCities.value[0].id
-      : null;
+    ? selectedCities.value[0].id
+    : null;
 
   await addVehicleFlowEmissionSource({
     cityId: selectedCityId,
@@ -1132,21 +921,21 @@ async function handleBuildSimulation(data) {
         true
       );
 
-      await refreshTileGrid();   
+      await refreshTileGrid();
       await buildSimulation(data);
       return;
     }
 
-    await buildSimulation(data);          
-    await patchSingleZoneForSource(data); 
+    await buildSimulation(data);
+    await patchSingleZoneForSource(data);
 
     await preloadTileGrids(
-        latestSingleDangerZones,
-        latestVehicleFlowDangerZones,
-        latestVehicleQueueDangerZones,
-        true
-      );
-    await refreshTileGrid();             
+      latestSingleDangerZones,
+      latestVehicleFlowDangerZones,
+      latestVehicleQueueDangerZones,
+      true
+    );
+    await refreshTileGrid();
     return;
   }
 
@@ -1335,10 +1124,10 @@ async function closeSimulationPanel() {
   latestSingleDangerZones = singleDangerZones;
 
   await preloadTileGrids(
-        latestSingleDangerZones,
-        latestVehicleFlowDangerZones,
-        latestVehicleQueueDangerZones
-      );
+    latestSingleDangerZones,
+    latestVehicleFlowDangerZones,
+    latestVehicleQueueDangerZones
+  );
   await refreshTileGrid();
 
   showSimulationPanel.value = false;
@@ -1389,10 +1178,10 @@ function toPolygons(geom) {
 
 async function createEllipse(dangerZone) {
   const polygonCoords = dangerZone.polygon.coordinates[0];
-  const coords = polygonCoords.map(coord => 
+  const coords = polygonCoords.map(coord =>
     fromLonLat(coord)
   );
-  
+
   const ellipseFeature = new Feature({
     geometry: new Polygon([coords])
   });
@@ -1409,7 +1198,7 @@ async function createEllipse(dangerZone) {
   ellipseFeature.set('dangerData', dangerZone);
   ellipseFeature.set('emissionSourceId', dangerZone.emissionSourceId);
   ellipseFeature.set('dangerColor', dangerZone.color);
-  ellipseFeature.set('averageConcentration', dangerZone.averageConcentration || 'N/A'); 
+  ellipseFeature.set('averageConcentration', dangerZone.averageConcentration || 'N/A');
 
   return ellipseFeature;
 }
@@ -1420,8 +1209,8 @@ function getColorWithAlpha(baseColor, alpha = 0.75) {
   }
 
   return Array.isArray(baseColor)
-      ? [baseColor[0], baseColor[1], baseColor[2], alpha]
-      : asArray(baseColor).slice(0, 3).concat(alpha);
+    ? [baseColor[0], baseColor[1], baseColor[2], alpha]
+    : asArray(baseColor).slice(0, 3).concat(alpha);
 }
 
 function createTileGridLayer(tileGridResult) {
@@ -1450,7 +1239,7 @@ function createTileGridLayer(tileGridResult) {
     style: feature => {
       const color = getColorWithAlpha(feature.get('color'), 0.6)
       return new Style({
-        fill: new Fill({color}),
+        fill: new Fill({ color }),
         stroke: new Stroke({
           color: 'black',
           width: 0.1
@@ -1475,7 +1264,7 @@ function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDan
   olLayers.tile = tileGridLayer;
   olLayers.area = areaGridLayer;
 
-  return {singleLayer, vehicleFlowLayer, vehicleQueueLayer, sanitaryAreaLayer, tileGridLayer, areaGridLayer};
+  return { singleLayer, vehicleFlowLayer, vehicleQueueLayer, sanitaryAreaLayer, tileGridLayer, areaGridLayer };
 }
 
 onMounted(async () => {
@@ -1489,12 +1278,12 @@ onMounted(async () => {
     windDirection: currentWeather.windDirection,
   }
 
-  const singleDangerZones = await calculateSingleDangerZones({ 
+  const singleDangerZones = await calculateSingleDangerZones({
     pollutant: 2, // solid particles 
-    airTemp: currentWeather.temperature, 
+    airTemp: currentWeather.temperature,
     windSpeed: currentWeather.windSpeed,
-    windDirection: currentWeather.windDirection, 
-    cityIds: selectedCities.value.map(c => c.id) 
+    windDirection: currentWeather.windDirection,
+    cityIds: selectedCities.value.map(c => c.id)
   });
 
   const cityIds = selectedCities.value.map(c => c.id);
@@ -1536,7 +1325,7 @@ onMounted(async () => {
   const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
 
   //const userPos = await getUserPosition();
-  
+
   /*const recommendationResult = await getRecommendations({
     tiles: tileGridResult.flatMap(result => result.tiles),
     userLocation: userPosition.value
@@ -1655,8 +1444,8 @@ onMounted(async () => {
       const [lon, lat] = toLonLat(coord3857)
 
       const selectedCityId = selectedCities.value.length > 0
-      ? selectedCities.value[0].id
-      : null;
+        ? selectedCities.value[0].id
+        : null;
 
       await addTrafficLightQueueEmissionSource({
         location: {
@@ -1718,15 +1507,15 @@ onMounted(async () => {
 
   map.value.on('pointermove', (evt) => {
     if (evt.dragging || isMeasuringArea.value) return
-    
+
     const pixel = map.value.getEventPixel(evt.originalEvent)
     let popupFeature = null
     let sourceType = null
-    
+
     map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
-      if (layer === olLayers.single || 
-          layer === olLayers.vehicleFlow || 
-          layer === olLayers.vehicleQueue /*|| 
+      if (layer === olLayers.single ||
+        layer === olLayers.vehicleFlow ||
+        layer === olLayers.vehicleQueue /*|| 
           layer === olLayers.tile ||
           layer === olLayers.area*/) {
 
@@ -1739,7 +1528,7 @@ onMounted(async () => {
     if (popupFeature) {
       const coordinate = evt.coordinate
       showPopup(coordinate, popupFeature, sourceType)
-      
+
       const mapElement = map.value.getTargetElement()
       mapElement.style.cursor = 'pointer'
     } else {
@@ -1871,20 +1660,20 @@ const toggleLayer = key => {
     olLayers[key].setVisible(true);
     olLayers[key].setZIndex(Number(layersState.tileGrid.zIndex));
   } else if (key === 'tileGrid') {
-      const visible = layersState[key].visible;
+    const visible = layersState[key].visible;
 
-      const oppositeKey = selectedGridLayer.value === 'tile' ? 'area' : 'tile';
+    const oppositeKey = selectedGridLayer.value === 'tile' ? 'area' : 'tile';
 
-      layersState[selectedGridLayer.value].visible = visible;
-      olLayers[selectedGridLayer.value].setVisible(visible);
+    layersState[selectedGridLayer.value].visible = visible;
+    olLayers[selectedGridLayer.value].setVisible(visible);
 
-      layersState[oppositeKey].visible = false;
-      olLayers[oppositeKey].setVisible(false);
-    }
-    else {
-      const visible = layersState[key].visible;
-      olLayers[key].setVisible(visible);
-    }
+    layersState[oppositeKey].visible = false;
+    olLayers[oppositeKey].setVisible(false);
+  }
+  else {
+    const visible = layersState[key].visible;
+    olLayers[key].setVisible(visible);
+  }
 
   saveLayersState();
 
@@ -1911,945 +1700,19 @@ const saveLayersState = () => {
 function getHatchPattern(size) {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
-  
+
   canvas.width = size;
   canvas.height = size;
-    
+
   context.strokeStyle = 'black';
   context.lineWidth = 1.5;
-    
+
   context.beginPath();
   context.moveTo(0, size);
   context.lineTo(size, 0);
   context.stroke();
-    
+
   return context.createPattern(canvas, 'repeat');
 }
 
 </script>
-
-<style>
-.map-wrapper {
-  position: relative;
-}
-
-.fullscreen-map {
-  width: 100%;
-  height: 100vh;
-}
-
-.layer-panel {
-  padding: 8px 12px;
-  background: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  font-size: 14px;
-}
-
-.tileLayer-panel {
-  padding: 8px 12px;
-  background: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  font-size: 14px;
-}
-
-.layer-panel h3, .tileLayer-panel h3 {
-  margin: 0 0 4px;
-  font-size: 14px;
-}
-
-.layer-panel label, .tileLayer-panel label {
-  display: block;
-}
-
-.layer-panel .create-btn, .tileLayer-panel .create-btn {
-  margin-top: 8px;
-  width: 100%;
-  padding: 6px 8px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.legend {
-  position: absolute;
-  left: 24px;
-  bottom: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 8px 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  font-size: 12px;
-  z-index: 10;
-}
-
-.legend-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  margin: 2px 0;
-  cursor: pointer;
-}
-
-.legend-color {
-  width: 14px;
-  height: 14px;
-  border-radius: 2px;
-  margin-right: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-.pollution-level {
-  font-size: 14px;
-  color: #444;
-  display: flex;        
-  align-items: center;  
-  gap: 6px;            
-}
-
-.pollution-level-color {
-    width: 14px;
-    height: 14px;
-    border-radius: 2px;
-    margin-right: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-.legend-popup {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.legend-popup-content {
-  background: #fff;
-  padding: 12px 16px;
-  border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  max-width: 80vw;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.legend-popup-content img {
-  max-width: 100%;
-  max-height: 70vh;
-  display: block;
-  z-index: 1000;
-}
-
-.city-select {
-  font-family: sans-serif;
-  font-size: 14px;
-}
-
-.city-select__label {
-  display: inline-block;
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.city-select-dropdown {
-  position: absolute;
-  margin-top: 4px;
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-}
-
-.city-select-dropdown__item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.city-select-dropdown__item input[type="checkbox"] {
-  margin: 0;
-}
-
-.edit-tool-panel__body {
-  position: absolute;
-  margin-top: 12px;
-  left: 0;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-}
-
-.edit-tool-panel__body__item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.popup-element {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  padding: 8px;
-  font-size: 12px;
-  pointer-events: none;
-}
-
-.popup-content {
-  line-height: 1.4;
-}
-
-.popup-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: #333;
-}
-
-.popup-text {
-  color: #555;
-}
-
-.recommendation-title {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  font-size: 14px;
-  z-index: 8;
-  white-space: nowrap;
-  max-width: 90vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tile-size-control {
-  
-  grid-column: 1;
-  grid-row: 4;
-
-  z-index: 20;
-
-  width: 250px;
-  padding: 14px;
-  box-sizing: border-box;
-
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-
-  font-family: sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
-  color: #333;
-}
-
-.tile-size-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.tile-size-header label {
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: #333;
-}
-
-.tile-size-value {
-  padding: 4px 7px;
-  border-radius: 5px;
-
-  background: #f0f4fa;
-  color: #2563eb;
-
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-.tile-size-slider {
-  width: 100%;
-  height: 5px;
-  margin: 2px 0;
-
-  appearance: none;
-  -webkit-appearance: none;
-
-  background: #d9e0ea;
-  border-radius: 5px;
-  outline: none;
-  cursor: pointer;
-}
-
-.tile-size-slider::-webkit-slider-thumb {
-  appearance: none;
-  -webkit-appearance: none;
-
-  width: 16px;
-  height: 16px;
-
-  background: #4285f4;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
-
-  cursor: pointer;
-}
-
-.tile-size-slider::-moz-range-thumb {
-  width: 13px;
-  height: 13px;
-
-  background: #4285f4;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
-
-  cursor: pointer;
-}
-
-.tile-size-slider:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.tile-size-range {
-  display: flex;
-  justify-content: space-between;
-  margin-top: -8px;
-
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1.4;
-  color: #777;
-}
-
-.tile-size-apply {
-  width: 100%;
-  margin-top: 2px;
-  padding: 8px;
-  box-sizing: border-box;
-
-  background: #4285f4;
-  color: #fff;
-
-  border: none;
-  border-radius: 5px;
-
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.tile-size-apply:hover {
-  background: #2868c7;
-}
-
-.tile-size-auto {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-
-  font-family: sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.4;
-  color: #333;
-
-  cursor: pointer;
-}
-
-.tile-size-auto input {
-  margin: 2px 0 0;
-  flex-shrink: 0;
-}
-
-.map-controls {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  z-index: 1000;
-
-  display: grid;
-  grid-template-columns: max-content max-content;
-  grid-template-rows: auto auto auto;
-  align-items: start;
-  gap: 8px 8px;
-
-  font-family: sans-serif;
-  font-size: 14px;
-}
-
-.base-map-selector,
-.layer-panel,
-.tileLayer-panel,
-.city-select {
-  position: relative;
-  top: auto;
-  left: auto;
-  right: auto;
-
-  box-sizing: border-box;
-  padding: 12px 10px;
-
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #e0e0e0;
-  border-radius: 7px;
-
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-
-  font-family: sans-serif;
-  font-size: 14px;
-  color: #333;
-}
-
-.base-map-selector {
-  grid-column: 1;
-  grid-row: 1;
-
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.layer-panel {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.city-select {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.tileLayer-panel {
-  grid-column: 1;
-  grid-row: 3;
-}
-
-.layer-panel h3,
-.tileLayer-panel h3 {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.base-map-selector select,
-.city-select select {
-  padding: 8px 6px;
-  width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 13px;
-  color: #333;
-  cursor: pointer;
-  outline: none;
-}
-
-.base-map-selector select:focus,
-.city-select select:focus {
-  border-color: #4285f4;
-}
-
-.layer-panel label,
-.tileLayer-panel label {
-  display: block;
-  margin: 6px 0;
-  cursor: pointer;
-}
-
-.layer-panel .create-btn,
-.tileLayer-panel .create-btn {
-  margin-top: 8px;
-  width: 100%;
-  padding: 8px 6px;
-
-  border: none;
-  border-radius: 6px;
-
-  background: #4285f4;
-  color: white;
-
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.layer-panel .create-btn:hover,
-.tileLayer-panel .create-btn:hover {
-  background: #2868c7;
-}
-
-.layer-panel label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.z-index-input {
-  width: 64px;
-  margin-left: auto;
-  padding: 5px 7px;
-
-  color: #334155;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-
-  outline: none;
-  transition: all 0.2s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.z-index-input:hover {
-  border-color: #94a3b8;
-  background: #ffffff;
-}
-
-.z-index-input:focus {
-  background: #ffffff;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-.z-index-input::-webkit-inner-spin-button,
-.z-index-input::-webkit-outer-spin-button {
-  opacity: 0.5;
-  cursor: pointer;
-}
-
-.area-measure-panel {
-  grid-column: 1;
-  grid-row: 3;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.96);
-
-  border: 1px solid #e0e0e0;
-  border-radius: 7px;
-
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-
-  font-family: sans-serif;
-  font-size: 14px;
-}
-
-.area-measure-panel button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 5px;
-
-  background: #4285f4;
-  color: white;
-
-  cursor: pointer;
-}
-
-.area-measure-panel button:hover {
-  background: #2868c7;
-}
-
-.area-measure-panel button.active {
-  background: #16a34a;
-}
-
-.area-result {
-  padding: 8px;
-  background: #f0f4fa;
-  border-radius: 5px;
-  color: #333;
-}
-
-.single-source-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 20px;
-  box-sizing: border-box;
-
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(3px);
-}
-
-.single-source-modal {
-  width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
-
-  display: flex;
-  flex-direction: column;
-
-  background: #fff;
-  border-radius: 14px;
-
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-
-  overflow: hidden;
-
-  font-family: sans-serif;
-  color: #263238;
-}
-
-.single-source-modal__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-
-  padding: 22px 24px;
-
-  border-bottom: 1px solid #e8edf2;
-}
-
-.single-source-modal__header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.single-source-modal__header p {
-  margin: 6px 0 0;
-  color: #718096;
-  font-size: 13px;
-}
-
-.single-source-modal__close {
-  border: none;
-  background: transparent;
-
-  color: #718096;
-  font-size: 28px;
-  line-height: 1;
-
-  cursor: pointer;
-}
-
-.single-source-modal__close:hover {
-  color: #e53935;
-}
-
-.single-source-modal__body {
-  padding: 20px 24px;
-
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.single-source-modal__section {
-  margin-bottom: 24px;
-}
-
-.single-source-modal__section h3 {
-  margin: 0 0 16px;
-
-  font-size: 15px;
-  font-weight: 700;
-  color: #344054;
-}
-
-.single-source-field {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-
-  margin-bottom: 16px;
-}
-
-.single-source-field span {
-  font-size: 13px;
-  font-weight: 600;
-  color: #475467;
-}
-
-.single-source-field input,
-.single-source-field select {
-  width: 100%;
-  height: 42px;
-
-  padding: 0 12px;
-  box-sizing: border-box;
-
-  border: 1px solid #d0d5dd;
-  border-radius: 7px;
-
-  background: #fff;
-
-  font-size: 14px;
-  color: #344054;
-
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.single-source-field input:focus,
-.single-source-field select:focus {
-  border-color: #3984d6;
-  box-shadow: 0 0 0 3px rgba(57, 132, 214, 0.12);
-}
-
-.single-source-field small {
-  font-size: 11px;
-  color: #98a2b3;
-}
-
-.single-source-location {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  padding: 14px;
-
-  border: 1px solid #d6e8fb;
-  border-radius: 8px;
-
-  background: #f0f7ff;
-}
-
-.single-source-location__icon {
-  font-size: 23px;
-}
-
-.single-source-location strong {
-  font-size: 13px;
-  color: #245b91;
-}
-
-.single-source-location p {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.single-source-error {
-  margin-top: 14px;
-  padding: 11px 13px;
-
-  border-radius: 7px;
-
-  background: #fef2f2;
-  color: #dc2626;
-
-  font-size: 13px;
-}
-
-.single-source-modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-
-  padding: 18px 24px;
-
-  border-top: 1px solid #e8edf2;
-  background: #fafbfc;
-}
-
-.single-source-button {
-  min-height: 40px;
-
-  padding: 0 18px;
-
-  border-radius: 7px;
-  border: none;
-
-  font-size: 13px;
-  font-weight: 600;
-
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.single-source-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.single-source-button--cancel {
-  background: #eef1f5;
-  color: #475467;
-}
-
-.single-source-button--cancel:hover {
-  background: #e2e7ed;
-}
-
-.single-source-button--submit {
-  background: #2878c7;
-  color: #fff;
-}
-
-.single-source-button--submit:hover {
-  background: #1e65aa;
-}
-
-.edit-tool-panel {
-  grid-column: 1;
-  grid-row: 4;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  z-index: 1000;
-
-  display: flex;
-  flex-direction: column;
-
-  padding: 12px;
-
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.15);
-  backdrop-filter: blur(8px);
-}
-
-.add-single-source-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  padding: 8px 12px;
-
-  border: none;
-  border-radius: 5px;
-  background: #4285f4;
-  color: #ffffff;
-
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.add-single-source-btn:hover {
-  background: #1d4ed8;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
-  transform: translateY(-1px);
-}
-
-.add-single-source-btn:active {
-  transform: translateY(0);
-}
-
-.map-pick-notification {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2000;
-
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  width: max-content;
-  max-width: calc(100% - 40px);
-  padding: 14px 18px;
-
-  background: #fff;
-  border: 1px solid #bfdbfe;
-  border-radius: 10px;
-
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-
-  font-family: sans-serif;
-}
-
-.map-pick-notification__icon {
-  font-size: 26px;
-}
-
-.map-pick-notification__content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.map-pick-notification__content strong {
-  font-size: 14px;
-  color: #1e40af;
-}
-
-.map-pick-notification__content span {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.map-pick-notification__cancel {
-  padding: 7px 12px;
-  border: none;
-  border-radius: 6px;
-
-  background: #fee2e2;
-  color: #dc2626;
-
-  cursor: pointer;
-}
-
-.single-source-field small.field-error {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.single-source-field input:has(+ small.field-error) {
-  border-color: #dc2626;
-}
-
-.single-source-button--submit:disabled {
-  background: #94a3b8;
-  opacity: 0.65;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-</style>
