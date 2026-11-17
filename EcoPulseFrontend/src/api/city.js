@@ -16,3 +16,20 @@ export async function getCityById(id) {
 
     return await response.json();
 }
+
+export async function getAllCities() {
+    const response = await fetch(API_BASE_URL + '/city', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Request failed: ${response.status} ${errorText}`);
+    }
+
+    return await response.json();
+}

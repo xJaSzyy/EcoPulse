@@ -339,6 +339,108 @@
 
       </div>
     </div>
+
+    <div v-if="showVehicleFlowForm" class="single-source-overlay">
+      <div class="single-source-modal">
+
+        <div class="single-source-modal__header">
+          <div>
+            <h2>Новая дорога</h2>
+            <p>Укажите параметры транспортного потока</p>
+          </div>
+        </div>
+
+        <div class="single-source-modal__body">
+
+          <div class="single-source-field">
+            <span>Город</span>
+
+            <div v-if="loadingCities" class="form-hint">
+              Загрузка городов...
+            </div>
+
+            <div v-else-if="citiesError" class="field-error">
+              {{ citiesError }}
+
+              <button type="button" @click="loadCities">
+                Повторить
+              </button>
+            </div>
+
+            <select v-else v-model.number="newVehicleFlow.cityId">
+              <option :value="null" disabled>
+                Выберите город
+              </option>
+
+              <option v-for="city in vehicleFlowCities" :key="city.id" :value="city.id">
+                {{ city.name }}
+              </option>
+            </select>
+
+            <small v-if="vehicleFlowValidation.cityId" class="field-error">
+              {{ vehicleFlowValidation.cityId }}
+            </small>
+          </div>
+
+          <label class="single-source-field">
+            <span>Тип транспортного средства</span>
+
+            <select v-model.number="newVehicleFlow.vehicleType">
+              <option v-for="type in vehicleTypes" :key="type.value" :value="type.value">
+                {{ type.label }}
+              </option>
+            </select>
+
+            <small v-if="vehicleFlowValidation.vehicleType" class="field-error">
+              {{ vehicleFlowValidation.vehicleType }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Название улицы</span>
+
+            <input type="text" v-model="newVehicleFlow.streetName" placeholder="Например, проспект Ленина"
+              maxlength="150" />
+
+            <small v-if="vehicleFlowValidation.streetName" class="field-error">
+              {{ vehicleFlowValidation.streetName }}
+            </small>
+          </label>
+
+          <div class="single-source-location">
+            <span class="single-source-location__icon">🛣️</span>
+
+            <div>
+              <strong>Маршрут выбран</strong>
+              <p>
+                Количество точек:
+                {{ newVehicleFlow.points?.coordinates?.length || 0 }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="vehicleFlowError" class="single-source-error">
+            {{ vehicleFlowError }}
+          </div>
+
+        </div>
+
+        <div class="single-source-modal__footer">
+
+          <button class="single-source-button single-source-button--cancel" @click="closeVehicleFlowForm"
+            :disabled="savingVehicleFlow">
+            Отмена
+          </button>
+
+          <button class="single-source-button single-source-button--submit" @click="submitVehicleFlow"
+            :disabled="savingVehicleFlow || !isVehicleFlowFormValid">
+            {{ savingVehicleFlow ? 'Сохранение...' : 'Добавить дорогу' }}
+          </button>
+
+        </div>
+
+      </div>
+    </div>
   </Teleport>
 
 </template>
@@ -372,6 +474,7 @@ import { calculateTileGrid, calculateTileArea } from '../api/grid.js';
 import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
 import { getRecommendations } from '../api/recommendation.js';
 import { getCurrentWeather } from '../api/weather.js';
+import { getCityById, getAllCities } from "../api/city.js";
 import {
   addTrafficLightQueueEmissionSource, addVehicleFlowEmissionSource, getSingleEmissionSourceById,
   addSingleEmissionSource, updateVehicleFlowEmissionSource, getVehicleFlowEmissionSourceById,
@@ -382,7 +485,6 @@ import WeatherInfo from "../components/WeatherInfo.vue";
 import SimulationPanel from '../components/SimulationPanel.vue'
 import { asArray } from "ol/color";
 import { altKeyOnly, singleClick } from 'ol/events/condition';
-import { getCityById } from "../api/city.js";
 import Overlay from 'ol/Overlay'
 import XYZ from 'ol/source/XYZ.js';
 import { useAreaMeasurement } from '../composables/useAreaMeasurement.js'
@@ -394,6 +496,7 @@ import { useDangerLayers } from '../composables/useDangerLayers.js'
 import { useMapPopup } from '../composables/useMapPopup.js'
 import { useLayerSettings } from '../composables/useLayerSettings.js'
 import { useSimulation } from '../composables/useSimulation.js'
+import { useVehicleFlowSource } from '../composables/useVehicleFlowSource.js'
 import '../styles/map.css';
 
 const mapRoot = ref(null)
@@ -646,6 +749,36 @@ const {
 })
 
 const {
+  showVehicleFlowForm,
+  savingVehicleFlow,
+  vehicleFlowError,
+  newVehicleFlow,
+  vehicleTypes,
+  vehicleFlowValidation,
+  isVehicleFlowFormValid,
+  setVehicleFlowData,
+  submitVehicleFlow,
+  closeVehicleFlowForm,
+  cities: vehicleFlowCities,
+  loadingCities,
+  citiesError,
+  loadCities
+} = useVehicleFlowSource({
+  afterSave: async () => {
+    const vehicleFlowDangerZones = await updateVehicleFlowLayer()
+
+    await preloadTileGrids(
+      latestDangerZones.single,
+      vehicleFlowDangerZones,
+      latestDangerZones.vehicleQueue,
+      true
+    )
+
+    await refreshTileGrid()
+  }
+})
+
+const {
   isMeasuringArea,
   measuredArea,
   measureLayer,
@@ -700,14 +833,31 @@ const levels = [
   { max: 9999, color: 'rgba(138, 79, 163, 1)', label: 'Экстремальный' }
 ]
 
-const cities = ref([
-  { id: 1, name: 'Кемерово' },
-  { id: 2, name: 'Новокузнецк' },
-  { id: 3, name: 'Прокопьевск' },
-  { id: 4, name: 'Киселевск' },
-])
+const cities = ref([])
+const selectedCities = ref([])
 
-const selectedCities = ref(JSON.parse(localStorage.getItem("selectedCities") || 'null') ?? [cities.value[0]])
+async function loadMapCities() {
+  try {
+    cities.value = await getAllCities()
+
+    const savedCities = JSON.parse(
+      localStorage.getItem('selectedCities') || 'null'
+    )
+
+    const validSavedCities = Array.isArray(savedCities)
+      ? savedCities
+        .map(saved => cities.value.find(city => city.id === saved.id))
+        .filter(Boolean)
+      : []
+
+    selectedCities.value = validSavedCities.length
+      ? validSavedCities
+      : (cities.value.length ? [cities.value[0]] : [])
+
+  } catch (error) {
+    console.error('Ошибка загрузки городов:', error)
+  }
+}
 
 const {
   tileGridCache,
@@ -857,6 +1007,7 @@ function startCreateModeFlow() {
 
   cancelCreateModeSingle()
   cancelCreateModeFlow()
+  stopDeleteMode()
 
   createModeQueue.value = false
   createModeFlow.value = true
@@ -870,21 +1021,21 @@ function startCreateModeFlow() {
 
   map.value.addInteraction(drawInteraction)
 
-  drawInteraction.on('drawend', async (event) => {
+  drawInteraction.once('drawend', (event) => {
     const coordinates = event.feature
       .getGeometry()
       .getCoordinates()
       .map(coord => toLonLat(coord))
 
+    const selectedCityId = selectedCities.value.length > 0
+      ? selectedCities.value[0].id
+      : null
+
     createModeFlow.value = false
 
     removeAllDrawInteractions()
 
-    try {
-      await saveVehicleFlow(coordinates)
-    } catch (error) {
-      console.error('Ошибка добавления дороги:', error)
-    }
+    setVehicleFlowData(coordinates, selectedCityId)
   })
 }
 
@@ -897,45 +1048,6 @@ function cancelCreateModeFlow() {
 
 function startCreateModeQueue() {
   createModeQueue.value = true
-}
-
-async function saveVehicleFlow(coordinates) {
-  const selectedCityId = selectedCities.value.length > 0
-    ? selectedCities.value[0].id
-    : null;
-
-  await addVehicleFlowEmissionSource({
-    cityId: selectedCityId,
-    points: {
-      type: "LineString",
-      coordinates
-    },
-    vehicleType: 1,
-    maxTrafficIntensity: 35 / 2,
-    averageSpeed: 40 / 2,
-    streetName: "-"
-  });
-
-  const cityIds = selectedCities.value.map(c => c.id);
-  const cacheKey = `vehicleFlow_${cityIds.join('_')}`;
-
-  localStorage.removeItem(cacheKey);
-
-  await updateVehicleFlowLayer();
-
-  const vehicleFlowDangerZones = await withCache(
-    cacheKey,
-    () => calculateVehicleFlowDangerZones({ cityIds })
-  );
-
-  await preloadTileGrids(
-    latestDangerZones.single,
-    vehicleFlowDangerZones,
-    latestDangerZones.vehicleQueue,
-    true
-  )
-
-  await refreshTileGrid()
 }
 
 function geoJsonToOlGeometry(geometry) {
@@ -1069,6 +1181,8 @@ function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDan
 }
 
 onMounted(async () => {
+  await loadMapCities()
+
   const baseLayer = baseLayers.osm
 
   const currentWeather = await getCurrentWeather();

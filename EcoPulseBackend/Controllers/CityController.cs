@@ -27,6 +27,14 @@ public class CityController : ControllerBase
 
         return Ok(city);
     }
+    
+    [HttpGet("city")]
+    public IActionResult GetAllCities()
+    {
+        var city = _dbContext.Cities.ToList();
+
+        return Ok(city);
+    }
 
     [HttpPost("city")]
     public async Task<IActionResult> CreateCity([FromBody] CityAddModel model)
