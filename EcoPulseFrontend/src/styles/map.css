@@ -826,7 +826,7 @@
   backdrop-filter: blur(8px);
 }
 
-.add-single-source-btn {
+.add-source-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -843,13 +843,41 @@
   transition: all 0.2s ease;
 }
 
-.add-single-source-btn:hover {
+.add-source-btn:hover {
   background: #1d4ed8;
   box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
   transform: translateY(-1px);
 }
 
-.add-single-source-btn:active {
+.add-source-btn:active {
+  transform: translateY(0);
+}
+
+.delete-source-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  padding: 8px 12px;
+
+  border: none;
+  border-radius: 5px;
+  background: #f44249;
+  color: #ffffff;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+
+.delete-source-btn:hover {
+  background: #d83439;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.delete-source-btn:active {
   transform: translateY(0);
 }
 

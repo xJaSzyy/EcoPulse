@@ -1,4 +1,4 @@
-import {API_BASE_URL} from "./config.js";
+import { API_BASE_URL } from "./config.js";
 
 export async function getSingleEmissionSourceById(id) {
     const response = await fetch(API_BASE_URL + '/emission-source/single/' + id, {
@@ -88,4 +88,55 @@ export async function updateVehicleFlowEmissionSource(payload) {
     }
 
     return await response.json();
+}
+
+export async function deleteSingleEmissionSource(id) {
+    const response = await fetch(API_BASE_URL + '/emission-source/single/' + id, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Request failed: ${response.status} ${errorText}`);
+    }
+
+    return response.status === 204 ? null : await response.json();
+}
+
+export async function deleteVehicleFlowEmissionSource(id) {
+    const response = await fetch(API_BASE_URL + '/emission-source/vehicle-flow/' + id, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Request failed: ${response.status} ${errorText}`);
+    }
+
+    return response.status === 204 ? null : await response.json();
+}
+
+export async function deleteTrafficLightQueueEmissionSource(id) {
+    const response = await fetch(API_BASE_URL + '/emission-source/traffic-light-queue/' + id, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Request failed: ${response.status} ${errorText}`);
+    }
+
+    return response.status === 204 ? null : await response.json();
 }

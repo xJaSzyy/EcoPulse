@@ -153,12 +153,16 @@
 
       <div v-if="!layersState.tileGrid.visible" class="edit-tool-panel">
 
-        <button class="add-single-source-btn" @click="startCreateModeSingle">
+        <button class="add-source-btn" @click="startCreateModeSingle">
           <span>Добавить котельную</span>
         </button>
 
-        <button class="add-single-source-btn" @click="startCreateModeFlow">
+        <button class="add-source-btn" @click="startCreateModeFlow">
           <span>Добавить дорогу</span>
+        </button>
+
+        <button class="delete-source-btn" @click="toggleDeleteMode">
+          <span>{{ isDeleteMode ? 'Отменить удаление' : 'Удалить объект' }}</span>
         </button>
       </div>
 
@@ -340,7 +344,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, computed } from 'vue'
+import { onMounted, reactive, ref, computed, toRaw } from 'vue'
 import 'ol/ol.css'
 import { defaults as defaultControls } from 'ol/control'
 import Map from 'ol/Map'
@@ -357,6 +361,8 @@ import { Circle as CircleStyle, Fill, Icon, Stroke, Style, Text } from 'ol/style
 import Modify from 'ol/interaction/Modify';
 import Draw from 'ol/interaction/Draw';
 import { getArea } from 'ol/sphere';
+import Select from 'ol/interaction/Select'
+import { click } from 'ol/events/condition'
 
 import {
   calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
@@ -367,9 +373,9 @@ import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
 import { getRecommendations } from '../api/recommendation.js';
 import { getCurrentWeather } from '../api/weather.js';
 import {
-  addTrafficLightQueueEmissionSource,
-  addVehicleFlowEmissionSource,
-  getSingleEmissionSourceById, addSingleEmissionSource, updateVehicleFlowEmissionSource, getVehicleFlowEmissionSourceById
+  addTrafficLightQueueEmissionSource, addVehicleFlowEmissionSource, getSingleEmissionSourceById,
+  addSingleEmissionSource, updateVehicleFlowEmissionSource, getVehicleFlowEmissionSourceById,
+  deleteSingleEmissionSource, deleteVehicleFlowEmissionSource, deleteTrafficLightQueueEmissionSource
 } from '../api/emissionSource.js';
 import boilerIcon from '../icons/boiler.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
@@ -392,6 +398,174 @@ import '../styles/map.css';
 
 const mapRoot = ref(null)
 const map = ref(null)
+
+const isDeleteMode = ref(false)
+const selectInteraction = ref(null)
+const selectedFeature = ref(null)
+const deleting = ref(false)
+
+function toggleDeleteMode() {
+  if (isDeleteMode.value) {
+    stopDeleteMode()
+  } else {
+    startDeleteMode()
+  }
+}
+
+let deleteClickHandler = null
+
+function startDeleteMode() {
+  if (!map.value) {
+    console.error('Карта ещё не инициализирована')
+    return
+  }
+
+  cancelCreateModeSingle()
+  cancelCreateModeFlow()
+  stopDeleteMode()
+
+  isDeleteMode.value = true
+
+  deleteClickHandler = async (event) => {
+    let selectedFeature = null
+    let selectedLayer = null
+
+    map.value.forEachFeatureAtPixel(
+      event.pixel,
+      (feature, layer) => {
+        if (
+          toRaw(layer) === toRaw(olLayers.single) ||
+          toRaw(layer) === toRaw(olLayers.vehicleFlow) ||
+          toRaw(layer) === toRaw(olLayers.vehicleQueue)
+        ) {
+          selectedFeature = feature
+          selectedLayer = layer
+          return true
+        }
+
+        return false
+      },
+      {
+        hitTolerance: 10
+      }
+    )
+
+    if (!selectedFeature) {
+      return
+    }
+
+    await deleteSelectedFeature(selectedFeature, selectedLayer)
+  }
+
+  map.value.on('singleclick', deleteClickHandler)
+}
+
+function stopDeleteMode() {
+  if (map.value && deleteClickHandler) {
+    map.value.un('singleclick', deleteClickHandler)
+    deleteClickHandler = null
+  }
+
+  selectInteraction.value = null
+  selectedFeature.value = null
+  isDeleteMode.value = false
+}
+
+async function deleteSelectedFeature(feature, layer) {
+  if (deleting.value) return
+
+  if (!layer) {
+    console.error('Слой объекта не определён')
+    return
+  }
+
+  let sourceType = null
+
+  if (layer === olLayers.single) {
+    sourceType = 'single'
+  } else if (layer === olLayers.vehicleFlow) {
+    sourceType = 'vehicleFlow'
+  } else if (layer === olLayers.vehicleQueue) {
+    sourceType = 'vehicleQueue'
+  }
+
+  if (!sourceType) {
+    console.error('Неизвестный тип слоя:', layer)
+    return
+  }
+
+  const sourceId =
+    feature.get('emissionSourceId') ??
+    feature.get('dangerData')?.emissionSourceId ??
+    feature.getId()
+
+  console.log('Удаление объекта:', {
+    sourceType,
+    sourceId,
+    properties: feature.getProperties()
+  })
+
+  if (sourceId == null) {
+    console.error('Не найден ID источника!', feature.getProperties())
+    return
+  }
+
+  const objectName = {
+    single: 'котельную',
+    vehicleFlow: 'дорогу',
+    vehicleQueue: 'перекрёсток'
+  }[sourceType]
+
+  if (!confirm(`Вы действительно хотите удалить ${objectName}?`)) {
+    return
+  }
+
+  try {
+    deleting.value = true
+
+    switch (sourceType) {
+      case 'single':
+        await deleteSingleEmissionSource(sourceId)
+        break
+
+      case 'vehicleFlow':
+        await deleteVehicleFlowEmissionSource(sourceId)
+
+        const cityIds = selectedCities.value.map(c => c.id);
+        const cacheKey = `vehicleFlow_${cityIds.join('_')}`;
+
+        localStorage.removeItem(cacheKey);
+
+        break
+
+      case 'vehicleQueue':
+        await deleteTrafficLightQueueEmissionSource(sourceId)
+        break
+    }
+
+    const {
+      singleDangerZones,
+      vehicleFlowDangerZones,
+      vehicleQueueDangerZones
+    } = await updateLayers()
+
+    stopDeleteMode()
+
+    await preloadTileGrids(
+      singleDangerZones,
+      vehicleFlowDangerZones,
+      vehicleQueueDangerZones,
+      true
+    )
+
+    await refreshTileGrid()
+
+  } catch (error) {
+    console.error('Ошибка удаления:', error)
+  } finally {
+    deleting.value = false
+  }
+}
 
 const {
   singlePopup,
@@ -728,7 +902,7 @@ function startCreateModeQueue() {
 async function saveVehicleFlow(coordinates) {
   const selectedCityId = selectedCities.value.length > 0
     ? selectedCities.value[0].id
-    : null
+    : null;
 
   await addVehicleFlowEmissionSource({
     cityId: selectedCityId,
@@ -740,9 +914,14 @@ async function saveVehicleFlow(coordinates) {
     maxTrafficIntensity: 35 / 2,
     averageSpeed: 40 / 2,
     streetName: "-"
-  })
+  });
 
-  await updateVehicleFlowLayer()
+  const cityIds = selectedCities.value.map(c => c.id);
+  const cacheKey = `vehicleFlow_${cityIds.join('_')}`;
+
+  localStorage.removeItem(cacheKey);
+
+  await updateVehicleFlowLayer();
 }
 
 function geoJsonToOlGeometry(geometry) {
@@ -987,6 +1166,8 @@ onMounted(async () => {
   await refreshTileGridByZoom();
 
   map.value.on('singleclick', async (evt) => {
+    if (isDeleteMode.value) return
+
     const pixel = evt.pixel;
 
     let found = null;

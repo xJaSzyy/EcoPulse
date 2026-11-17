@@ -1,11 +1,9 @@
 using EcoPulseBackend.Contexts;
-using EcoPulseBackend.Models;
 using EcoPulseBackend.Models.SingleEmissionSource;
 using EcoPulseBackend.Models.TrafficLightQueueEmissionSource;
 using EcoPulseBackend.Models.VehicleFlowEmissionSource;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 
 namespace EcoPulseBackend.Controllers;
 
@@ -103,7 +101,8 @@ public class EmissionSourceController : ControllerBase
             VehicleType = model.VehicleType,
             MaxTrafficIntensity = model.MaxTrafficIntensity,
             AverageSpeed = model.AverageSpeed,
-            StreetName = model.StreetName
+            StreetName = model.StreetName,
+            UpdatedAt = DateTime.UtcNow
         };
 
         _dbContext.VehicleFlowEmissionSources.Add(emissionSource);
@@ -155,6 +154,22 @@ public class EmissionSourceController : ControllerBase
 
         return Ok(emissionSource);
     }
+    
+    [HttpDelete("/emission-source/vehicle-flow/{id:int}")]
+    public async Task<IActionResult> DeleteVehicleFlowEmissionSource(int id)
+    {
+        var emissionSource = _dbContext.VehicleFlowEmissionSources.FirstOrDefault(s => s.Id == id);
+
+        if (emissionSource == null)
+        {
+            return NotFound();
+        }
+
+        _dbContext.VehicleFlowEmissionSources.Remove(emissionSource);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(emissionSource);
+    }
 
     [HttpPost("/emission-source/traffic-light-queue")]
     public async Task<IActionResult> AddTrafficLightQueueEmissionSource([FromBody] TrafficLightQueueEmissionSourceAddModel model)
@@ -182,5 +197,21 @@ public class EmissionSourceController : ControllerBase
             .ToList();
 
         return Ok(sources);
+    }
+    
+    [HttpDelete("/emission-source/traffic-light-queue/{id:int}")]
+    public async Task<IActionResult> DeleteTrafficLightQueueEmissionSource(int id)
+    {
+        var emissionSource = _dbContext.TrafficLightQueueEmissionSources.FirstOrDefault(s => s.Id == id);
+
+        if (emissionSource == null)
+        {
+            return NotFound();
+        }
+
+        _dbContext.TrafficLightQueueEmissionSources.Remove(emissionSource);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(emissionSource);
     }
 }
