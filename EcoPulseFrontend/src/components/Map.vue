@@ -922,6 +922,20 @@ async function saveVehicleFlow(coordinates) {
   localStorage.removeItem(cacheKey);
 
   await updateVehicleFlowLayer();
+
+  const vehicleFlowDangerZones = await withCache(
+    cacheKey,
+    () => calculateVehicleFlowDangerZones({ cityIds })
+  );
+
+  await preloadTileGrids(
+    latestDangerZones.single,
+    vehicleFlowDangerZones,
+    latestDangerZones.vehicleQueue,
+    true
+  )
+
+  await refreshTileGrid()
 }
 
 function geoJsonToOlGeometry(geometry) {

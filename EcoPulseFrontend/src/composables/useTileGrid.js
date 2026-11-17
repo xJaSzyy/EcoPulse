@@ -14,7 +14,7 @@ export function useTileGrid({
   geoJsonToOlGeometry
 }) {
   const tileGridCache = ref({})
-  const currentTileSize = ref(null)
+  const currentTileSize = ref(750)
 
   const TILE_SIZES = [3000, 1500, 1000, 750, 400, 200, 100]
 
@@ -28,35 +28,50 @@ export function useTileGrid({
     vehicleQueueDangerZones,
     forceRecalculate = false
   ) {
-    latestSingleDangerZones = singleDangerZones
-    latestVehicleFlowDangerZones = vehicleFlowDangerZones
-    latestVehicleQueueDangerZones = vehicleQueueDangerZones
+    latestSingleDangerZones = singleDangerZones;
+    latestVehicleFlowDangerZones = vehicleFlowDangerZones;
+    latestVehicleQueueDangerZones = vehicleQueueDangerZones;
 
     const cityIds = selectedCities.value
       .map(city => city.id)
-      .sort((a, b) => a - b)
+      .sort((a, b) => a - b);
 
-    const results = await Promise.all(
-      TILE_SIZES.map(async size => {
-        const cacheKey = `tileGrid_${cityIds.join('_')}_${size}`
+    const calculateSize = async (size) => {
+      const cacheKey = `tileGrid_${cityIds.join('_')}_${size}`;
 
-        const calculate = () => calculateTileGrid({
-          cityIds,
-          tileSize: size,
-          singleDangerZones,
-          vehicleFlowDangerZones,
-          trafficLightQueueDangerZones: vehicleQueueDangerZones
+      const calculate = () => calculateTileGrid({
+        cityIds,
+        tileSize: size,
+        singleDangerZones,
+        vehicleFlowDangerZones,
+        trafficLightQueueDangerZones: vehicleQueueDangerZones
+      });
+
+      const result = forceRecalculate
+        ? await calculate()
+        : await withCache(cacheKey, calculate);
+
+      tileGridCache.value = {
+        ...tileGridCache.value,
+        [size]: result
+      };
+
+      return result;
+    };
+
+    const currentSize = currentTileSize.value;
+
+    await calculateSize(currentSize);
+
+    const otherSizes = TILE_SIZES.filter(size => size !== currentSize);
+
+    Promise.all(
+      otherSizes.map(size =>
+        calculateSize(size).catch(error => {
+          console.error(`Ошибка расчёта тайла ${size}:`, error);
         })
-
-        const result = forceRecalculate
-          ? await calculate()
-          : await withCache(cacheKey, calculate)
-
-        return [size, result]
-      })
-    )
-
-    tileGridCache.value = Object.fromEntries(results)
+      )
+    );
   }
 
   function getTileSizeForZoom(zoom) {
