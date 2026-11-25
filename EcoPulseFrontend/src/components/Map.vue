@@ -461,108 +461,97 @@
     </div>
 
     <div v-if="showTrafficLightQueueForm" class="single-source-overlay">
-      <div class="single-source-modal">
+      <div class="single-source-modal tlq-modal">
 
         <div class="single-source-modal__header">
           <div>
             <h2>Новый перекресток</h2>
-            <p>Укажите параметры регулируемого перекрестка</p>
+            <p>Укажите точку на карте и параметры очереди</p>
           </div>
         </div>
 
         <div class="single-source-modal__body">
 
-          <div class="single-source-field">
-            <span>Город</span>
-
-            <select v-model.number="newTrafficLightQueue.cityId">
-              <option :value="null" disabled>
-                Выберите город
-              </option>
-              <option v-for="city in cities" :key="city.id" :value="city.id">
-                {{ city.name }}
-              </option>
-            </select>
-
-            <small v-if="trafficLightQueueValidation.cityId" class="field-error">
-              {{ trafficLightQueueValidation.cityId }}
-            </small>
+          <div class="tlq-location">
+            📍
+            {{ newTrafficLightQueue.location?.coordinates?.[1]?.toFixed(5) }},
+            {{ newTrafficLightQueue.location?.coordinates?.[0]?.toFixed(5) }}
           </div>
 
-          <div class="vehicle-groups">
+          <div class="tlq-groups">
             <div
               v-for="(group, index) in newTrafficLightQueue.vehicleGroups"
               :key="index"
-              class="vehicle-group"
+              class="tlq-group"
             >
-              <label class="single-source-field">
-                <span>Тип транспортного средства</span>
+              <select v-model.number="group.vehicleType" class="tlq-group__type">
+                <option v-for="type in vehicleTypes" :key="type.value" :value="type.value">
+                  {{ type.label }}
+                </option>
+              </select>
 
-                <select v-model.number="group.vehicleType">
-                  <option v-for="type in vehicleTypes" :key="type.value" :value="type.value">
-                    {{ type.label }}
-                  </option>
-                </select>
+              <input
+                type="number"
+                v-model.number="group.vehiclesCount"
+                min="1"
+                placeholder="Количество"
+                class="tlq-group__count"
+                :class="{ 'field-error': trafficLightQueueValidation.groups?.[index]?.vehiclesCount }"
+              />
 
-                <small v-if="trafficLightQueueValidation.groups?.[index]?.vehicleType" class="field-error">
-                  {{ trafficLightQueueValidation.groups[index].vehicleType }}
-                </small>
-              </label>
+              <button type="button" class="tlq-group__remove" @click="removeVehicleGroup(index)">×</button>
 
-              <label class="single-source-field">
-                <span>Количество машин</span>
-
-                <input type="number" v-model.number="group.vehiclesCount" min="1" />
-
-                <small :class="{ 'field-error': trafficLightQueueValidation.groups?.[index]?.vehiclesCount }">
-                  {{ trafficLightQueueValidation.groups?.[index]?.vehiclesCount || 'Допустимое значение: 1 и более' }}
-                </small>
-              </label>
-
-              <button type="button" class="remove-group-btn" @click="removeVehicleGroup(index)">
-                Убрать
-              </button>
+              <small v-if="trafficLightQueueValidation.groups?.[index]?.vehicleType" class="field-error tlq-group__error">
+                {{ trafficLightQueueValidation.groups[index].vehicleType }}
+              </small>
             </div>
 
-            <div v-if="!newTrafficLightQueue.vehicleGroups.length" class="field-error">
+            <button type="button" class="tlq-group__add" @click="addVehicleGroup">+ Добавить группу</button>
+
+            <small v-if="!newTrafficLightQueue.vehicleGroups.length" class="field-error">
               Добавьте группу транспортных средств
-            </div>
-
-            <button type="button" class="add-group-btn" @click="addVehicleGroup">
-              Добавить группу
-            </button>
+            </small>
           </div>
 
-          <label class="single-source-field">
-            <span>Количество циклов за 20 минут</span>
+          <div class="tlq-fields">
+            <label class="tlq-field">
+              <span>Город</span>
 
-            <input type="number" v-model.number="newTrafficLightQueue.trafficLightCycles" min="1" />
+              <select v-model.number="newTrafficLightQueue.cityId" class="tlq-field__control">
+                <option :value="null" disabled>Выберите</option>
+                <option v-for="city in cities" :key="city.id" :value="city.id">
+                  {{ city.name }}
+                </option>
+              </select>
 
-            <small :class="{ 'field-error': trafficLightQueueValidation.trafficLightCycles }">
-              {{ trafficLightQueueValidation.trafficLightCycles || 'Допустимое значение: 1 и более' }}
-            </small>
-          </label>
+              <small v-if="trafficLightQueueValidation.cityId" class="field-error">
+                {{ trafficLightQueueValidation.cityId }}
+              </small>
+            </label>
 
-          <label class="single-source-field">
-            <span>Длительность запрещающего сигнала, с</span>
+            <label class="tlq-field">
+              <span>Циклы</span>
 
-            <input type="number" v-model.number="newTrafficLightQueue.trafficLightStopTime" min="1" />
+              <input type="number" v-model.number="newTrafficLightQueue.trafficLightCycles" min="1"
+                class="tlq-field__control"
+                :class="{ 'field-error': trafficLightQueueValidation.trafficLightCycles }" />
 
-            <small :class="{ 'field-error': trafficLightQueueValidation.trafficLightStopTime }">
-              {{ trafficLightQueueValidation.trafficLightStopTime || 'Допустимое значение: 1 и более' }}
-            </small>
-          </label>
+              <small v-if="trafficLightQueueValidation.trafficLightCycles" class="field-error">
+                {{ trafficLightQueueValidation.trafficLightCycles }}
+              </small>
+            </label>
 
-          <div class="single-source-location">
-            <span class="single-source-location__icon">🚦</span>
+            <label class="tlq-field">
+              <span>Сигнал, с</span>
 
-            <div>
-              <strong>Местоположение выбрано</strong>
-              <p>
-                {{ newTrafficLightQueue.location?.coordinates?.[1]?.toFixed(5) }},
-                {{ newTrafficLightQueue.location?.coordinates?.[0]?.toFixed(5) }}
-              </p>
-            </div>
+              <input type="number" v-model.number="newTrafficLightQueue.trafficLightStopTime" min="1"
+                class="tlq-field__control"
+                :class="{ 'field-error': trafficLightQueueValidation.trafficLightStopTime }" />
+
+              <small v-if="trafficLightQueueValidation.trafficLightStopTime" class="field-error">
+                {{ trafficLightQueueValidation.trafficLightStopTime }}
+              </small>
+            </label>
           </div>
 
           <div v-if="trafficLightQueueError" class="single-source-error">
