@@ -489,29 +489,49 @@
             </small>
           </div>
 
-          <label class="single-source-field">
-            <span>Тип транспортного средства</span>
+          <div class="vehicle-groups">
+            <div
+              v-for="(group, index) in newTrafficLightQueue.vehicleGroups"
+              :key="index"
+              class="vehicle-group"
+            >
+              <label class="single-source-field">
+                <span>Тип транспортного средства</span>
 
-            <select v-model.number="newTrafficLightQueue.vehicleType">
-              <option v-for="type in vehicleTypes" :key="type.value" :value="type.value">
-                {{ type.label }}
-              </option>
-            </select>
+                <select v-model.number="group.vehicleType">
+                  <option v-for="type in vehicleTypes" :key="type.value" :value="type.value">
+                    {{ type.label }}
+                  </option>
+                </select>
 
-            <small v-if="trafficLightQueueValidation.vehicleType" class="field-error">
-              {{ trafficLightQueueValidation.vehicleType }}
-            </small>
-          </label>
+                <small v-if="trafficLightQueueValidation.groups?.[index]?.vehicleType" class="field-error">
+                  {{ trafficLightQueueValidation.groups[index].vehicleType }}
+                </small>
+              </label>
 
-          <label class="single-source-field">
-            <span>Количество машин в очереди</span>
+              <label class="single-source-field">
+                <span>Количество машин</span>
 
-            <input type="number" v-model.number="newTrafficLightQueue.vehiclesCount" min="1" />
+                <input type="number" v-model.number="group.vehiclesCount" min="1" />
 
-            <small :class="{ 'field-error': trafficLightQueueValidation.vehiclesCount }">
-              {{ trafficLightQueueValidation.vehiclesCount || 'Допустимое значение: 1 и более' }}
-            </small>
-          </label>
+                <small :class="{ 'field-error': trafficLightQueueValidation.groups?.[index]?.vehiclesCount }">
+                  {{ trafficLightQueueValidation.groups?.[index]?.vehiclesCount || 'Допустимое значение: 1 и более' }}
+                </small>
+              </label>
+
+              <button type="button" class="remove-group-btn" @click="removeVehicleGroup(index)">
+                Убрать
+              </button>
+            </div>
+
+            <div v-if="!newTrafficLightQueue.vehicleGroups.length" class="field-error">
+              Добавьте группу транспортных средств
+            </div>
+
+            <button type="button" class="add-group-btn" @click="addVehicleGroup">
+              Добавить группу
+            </button>
+          </div>
 
           <label class="single-source-field">
             <span>Количество циклов за 20 минут</span>
@@ -802,6 +822,8 @@ const {
   trafficLightQueueValidation,
   isTrafficLightQueueFormValid,
   setTrafficLightQueueLocation,
+  addVehicleGroup,
+  removeVehicleGroup,
   submitTrafficLightQueue,
   closeTrafficLightQueueForm
 } = useTrafficLightQueueSource({
