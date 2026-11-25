@@ -32,6 +32,20 @@
       </button>
     </div>
 
+    <div v-if="createModeQueue" class="map-pick-notification">
+      <div class="map-pick-notification__icon">🚦</div>
+
+      <div class="map-pick-notification__content">
+        <strong>Добавление перекрестка</strong>
+
+        <span>Выберите точку на карте, откроется форма для заполнения параметров.</span>
+      </div>
+
+      <button class="map-pick-notification__cancel" @click="cancelCreateModeQueue">
+        Отмена
+      </button>
+    </div>
+
     <div class="map-controls">
 
       <div class="base-map-selector">
@@ -159,6 +173,10 @@
 
         <button class="add-source-btn" @click="startCreateModeFlow">
           <span>Добавить дорогу</span>
+        </button>
+
+        <button class="add-source-btn" @click="startCreateModeQueue">
+          <span>Добавить перекресток</span>
         </button>
 
         <button class="delete-source-btn" @click="toggleDeleteMode">
@@ -441,366 +459,146 @@
 
       </div>
     </div>
+
+    <div v-if="showTrafficLightQueueForm" class="single-source-overlay">
+      <div class="single-source-modal">
+
+        <div class="single-source-modal__header">
+          <div>
+            <h2>Новый перекресток</h2>
+            <p>Укажите параметры регулируемого перекрестка</p>
+          </div>
+        </div>
+
+        <div class="single-source-modal__body">
+
+          <div class="single-source-field">
+            <span>Город</span>
+
+            <select v-model.number="newTrafficLightQueue.cityId">
+              <option :value="null" disabled>
+                Выберите город
+              </option>
+              <option v-for="city in cities" :key="city.id" :value="city.id">
+                {{ city.name }}
+              </option>
+            </select>
+
+            <small v-if="trafficLightQueueValidation.cityId" class="field-error">
+              {{ trafficLightQueueValidation.cityId }}
+            </small>
+          </div>
+
+          <label class="single-source-field">
+            <span>Тип транспортного средства</span>
+
+            <select v-model.number="newTrafficLightQueue.vehicleType">
+              <option v-for="type in vehicleTypes" :key="type.value" :value="type.value">
+                {{ type.label }}
+              </option>
+            </select>
+
+            <small v-if="trafficLightQueueValidation.vehicleType" class="field-error">
+              {{ trafficLightQueueValidation.vehicleType }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Количество машин в очереди</span>
+
+            <input type="number" v-model.number="newTrafficLightQueue.vehiclesCount" min="1" />
+
+            <small :class="{ 'field-error': trafficLightQueueValidation.vehiclesCount }">
+              {{ trafficLightQueueValidation.vehiclesCount || 'Допустимое значение: 1 и более' }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Количество циклов за 20 минут</span>
+
+            <input type="number" v-model.number="newTrafficLightQueue.trafficLightCycles" min="1" />
+
+            <small :class="{ 'field-error': trafficLightQueueValidation.trafficLightCycles }">
+              {{ trafficLightQueueValidation.trafficLightCycles || 'Допустимое значение: 1 и более' }}
+            </small>
+          </label>
+
+          <label class="single-source-field">
+            <span>Длительность запрещающего сигнала, с</span>
+
+            <input type="number" v-model.number="newTrafficLightQueue.trafficLightStopTime" min="1" />
+
+            <small :class="{ 'field-error': trafficLightQueueValidation.trafficLightStopTime }">
+              {{ trafficLightQueueValidation.trafficLightStopTime || 'Допустимое значение: 1 и более' }}
+            </small>
+          </label>
+
+          <div class="single-source-location">
+            <span class="single-source-location__icon">🚦</span>
+
+            <div>
+              <strong>Местоположение выбрано</strong>
+              <p>
+                {{ newTrafficLightQueue.location?.coordinates?.[1]?.toFixed(5) }},
+                {{ newTrafficLightQueue.location?.coordinates?.[0]?.toFixed(5) }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="trafficLightQueueError" class="single-source-error">
+            {{ trafficLightQueueError }}
+          </div>
+
+        </div>
+
+        <div class="single-source-modal__footer">
+          <button class="single-source-button single-source-button--cancel"
+            @click="closeTrafficLightQueueForm" :disabled="savingTrafficLightQueue">
+            Отмена
+          </button>
+
+          <button class="single-source-button single-source-button--submit" @click="submitTrafficLightQueue"
+            :disabled="savingTrafficLightQueue || !isTrafficLightQueueFormValid">
+            {{ savingTrafficLightQueue ? 'Сохранение...' : 'Добавить перекресток' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
   </Teleport>
 
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, computed, toRaw } from 'vue'
+import { reactive, ref } from 'vue'
 import 'ol/ol.css'
-import { defaults as defaultControls } from 'ol/control'
-import Map from 'ol/Map'
-import { fromLonLat, toLonLat } from 'ol/proj'
-import View from 'ol/View'
-import TileLayer from 'ol/layer/Tile'
-import OSM from 'ol/source/OSM'
+import { fromLonLat } from 'ol/proj'
 
-import VectorLayer from 'ol/layer/Vector'
-import VectorSource from 'ol/source/Vector'
-import { LineString, Point, Polygon, MultiPolygon } from 'ol/geom'
-import Feature from 'ol/Feature'
-import { Circle as CircleStyle, Fill, Icon, Stroke, Style, Text } from 'ol/style'
-import Modify from 'ol/interaction/Modify';
-import Draw from 'ol/interaction/Draw';
-import { getArea } from 'ol/sphere';
-import Select from 'ol/interaction/Select'
-import { click } from 'ol/events/condition'
-
-import {
-  calculateSingleDangerZones, calculateSingleDangerZone, calculateVehicleFlowDangerZones,
-  calculateTrafficLightQueueDangerZones
-} from '../api/dangerZone.js';
-import { calculateTileGrid, calculateTileArea } from '../api/grid.js';
-import { getAllEnterpriseSanitaryAreas } from '../api/enterprise.js';
-import { getRecommendations } from '../api/recommendation.js';
-import { getCurrentWeather } from '../api/weather.js';
-import { getCityById, getAllCities } from "../api/city.js";
-import {
-  addTrafficLightQueueEmissionSource, addVehicleFlowEmissionSource, getSingleEmissionSourceById,
-  addSingleEmissionSource, updateVehicleFlowEmissionSource, getVehicleFlowEmissionSourceById,
-  deleteSingleEmissionSource, deleteVehicleFlowEmissionSource, deleteTrafficLightQueueEmissionSource
-} from '../api/emissionSource.js';
 import boilerIcon from '../icons/boiler.png';
 import WeatherInfo from "../components/WeatherInfo.vue";
 import SimulationPanel from '../components/SimulationPanel.vue'
-import { asArray } from "ol/color";
-import { altKeyOnly, singleClick } from 'ol/events/condition';
-import Overlay from 'ol/Overlay'
-import XYZ from 'ol/source/XYZ.js';
+
 import { useAreaMeasurement } from '../composables/useAreaMeasurement.js'
-import { useTileGrid } from '../composables/useTileGrid.js'
-import { useMapLayers } from '../composables/useMapLayers.js'
-import { useBaseMap } from '../composables/useBaseMap'
-import { useSingleEmissionSource } from '../composables/useSingleEmissionSource.js'
+import { useBaseMap } from '../composables/useBaseMap.js'
 import { useDangerLayers } from '../composables/useDangerLayers.js'
-import { useMapPopup } from '../composables/useMapPopup.js'
 import { useLayerSettings } from '../composables/useLayerSettings.js'
+import { useMapCities } from '../composables/useMapCities.js'
+import { useMapControls } from '../composables/useMapControls.js'
+import { useMapCreateModes } from '../composables/useMapCreateModes.js'
+import { useMapDelete } from '../composables/useMapDelete.js'
+import { useMapHelpers } from '../composables/useMapHelpers.js'
+import { useMapLayers } from '../composables/useMapLayers.js'
+import { useMapPopup } from '../composables/useMapPopup.js'
+import { useMapSetup } from '../composables/useMapSetup.js'
 import { useSimulation } from '../composables/useSimulation.js'
+import { useSingleEmissionSource } from '../composables/useSingleEmissionSource.js'
+import { useTileGrid } from '../composables/useTileGrid.js'
+import { useTrafficLightQueueSource } from '../composables/useTrafficLightQueueSource.js'
 import { useVehicleFlowSource } from '../composables/useVehicleFlowSource.js'
 import '../styles/map.css';
 
 const mapRoot = ref(null)
 const map = ref(null)
-
-const isDeleteMode = ref(false)
-const selectInteraction = ref(null)
-const selectedFeature = ref(null)
-const deleting = ref(false)
-
-function toggleDeleteMode() {
-  if (isDeleteMode.value) {
-    stopDeleteMode()
-  } else {
-    startDeleteMode()
-  }
-}
-
-let deleteClickHandler = null
-
-function startDeleteMode() {
-  if (!map.value) {
-    console.error('Карта ещё не инициализирована')
-    return
-  }
-
-  cancelCreateModeSingle()
-  cancelCreateModeFlow()
-  stopDeleteMode()
-
-  isDeleteMode.value = true
-
-  deleteClickHandler = async (event) => {
-    let selectedFeature = null
-    let selectedLayer = null
-
-    map.value.forEachFeatureAtPixel(
-      event.pixel,
-      (feature, layer) => {
-        if (
-          toRaw(layer) === toRaw(olLayers.single) ||
-          toRaw(layer) === toRaw(olLayers.vehicleFlow) ||
-          toRaw(layer) === toRaw(olLayers.vehicleQueue)
-        ) {
-          selectedFeature = feature
-          selectedLayer = layer
-          return true
-        }
-
-        return false
-      },
-      {
-        hitTolerance: 10
-      }
-    )
-
-    if (!selectedFeature) {
-      return
-    }
-
-    await deleteSelectedFeature(selectedFeature, selectedLayer)
-  }
-
-  map.value.on('singleclick', deleteClickHandler)
-}
-
-function stopDeleteMode() {
-  if (map.value && deleteClickHandler) {
-    map.value.un('singleclick', deleteClickHandler)
-    deleteClickHandler = null
-  }
-
-  selectInteraction.value = null
-  selectedFeature.value = null
-  isDeleteMode.value = false
-}
-
-async function deleteSelectedFeature(feature, layer) {
-  if (deleting.value) return
-
-  if (!layer) {
-    console.error('Слой объекта не определён')
-    return
-  }
-
-  let sourceType = null
-
-  if (layer === olLayers.single) {
-    sourceType = 'single'
-  } else if (layer === olLayers.vehicleFlow) {
-    sourceType = 'vehicleFlow'
-  } else if (layer === olLayers.vehicleQueue) {
-    sourceType = 'vehicleQueue'
-  }
-
-  if (!sourceType) {
-    console.error('Неизвестный тип слоя:', layer)
-    return
-  }
-
-  const sourceId =
-    feature.get('emissionSourceId') ??
-    feature.get('dangerData')?.emissionSourceId ??
-    feature.getId()
-
-  console.log('Удаление объекта:', {
-    sourceType,
-    sourceId,
-    properties: feature.getProperties()
-  })
-
-  if (sourceId == null) {
-    console.error('Не найден ID источника!', feature.getProperties())
-    return
-  }
-
-  const objectName = {
-    single: 'котельную',
-    vehicleFlow: 'дорогу',
-    vehicleQueue: 'перекрёсток'
-  }[sourceType]
-
-  if (!confirm(`Вы действительно хотите удалить ${objectName}?`)) {
-    return
-  }
-
-  try {
-    deleting.value = true
-
-    switch (sourceType) {
-      case 'single':
-        await deleteSingleEmissionSource(sourceId)
-        break
-
-      case 'vehicleFlow':
-        await deleteVehicleFlowEmissionSource(sourceId)
-
-        const cityIds = selectedCities.value.map(c => c.id);
-        const cacheKey = `vehicleFlow_${cityIds.join('_')}`;
-
-        localStorage.removeItem(cacheKey);
-
-        break
-
-      case 'vehicleQueue':
-        await deleteTrafficLightQueueEmissionSource(sourceId)
-        break
-    }
-
-    const {
-      singleDangerZones,
-      vehicleFlowDangerZones,
-      vehicleQueueDangerZones
-    } = await updateLayers()
-
-    stopDeleteMode()
-
-    await preloadTileGrids(
-      singleDangerZones,
-      vehicleFlowDangerZones,
-      vehicleQueueDangerZones,
-      true
-    )
-
-    await refreshTileGrid()
-
-  } catch (error) {
-    console.error('Ошибка удаления:', error)
-  } finally {
-    deleting.value = false
-  }
-}
-
-const {
-  singlePopup,
-  currentPopupData,
-  showPopup,
-  hidePopup
-} = useMapPopup(map)
-
-const {
-  baseLayers,
-  selectedBaseMap,
-  changeBaseMap
-} = useBaseMap(map)
-
-function startCreateModeSingle() {
-  if (!map.value) return
-
-  cancelCreateModeFlow()
-  cancelCreateModeSingle()
-
-  createModeQueue.value = false
-  createModeSingle.value = true
-
-  const drawSource = new VectorSource()
-
-  const drawInteraction = new Draw({
-    source: drawSource,
-    type: 'Point'
-  })
-
-  map.value.addInteraction(drawInteraction)
-
-  drawInteraction.once('drawend', (event) => {
-    const coordinates = toLonLat(
-      event.feature.getGeometry().getCoordinates()
-    )
-
-    const cityId = selectedCities.value.length > 0
-      ? selectedCities.value[0].id
-      : null
-
-    createModeSingle.value = false
-
-    removeAllDrawInteractions()
-
-    setSingleSourceLocation(coordinates, cityId)
-  })
-}
-
-function cancelCreateModeSingle() {
-  removeAllDrawInteractions()
-  createModeSingle.value = false
-}
-
-const {
-  createModeSingle,
-  showSingleSourceForm,
-  savingSingleSource,
-  singleSourceError,
-  newSingleSource,
-  singleSourceValidation,
-  isSingleSourceFormValid,
-  setSingleSourceLocation,
-  submitSingleSource
-} = useSingleEmissionSource({
-  afterSave: async () => {
-    const singleDangerZones = await updateSingleLayer()
-
-    await preloadTileGrids(
-      singleDangerZones,
-      latestDangerZones.vehicleFlow,
-      latestDangerZones.vehicleQueue,
-      true
-    )
-
-    await refreshTileGrid()
-  }
-})
-
-const {
-  showVehicleFlowForm,
-  savingVehicleFlow,
-  vehicleFlowError,
-  newVehicleFlow,
-  vehicleTypes,
-  vehicleFlowValidation,
-  isVehicleFlowFormValid,
-  setVehicleFlowData,
-  submitVehicleFlow,
-  closeVehicleFlowForm,
-  cities: vehicleFlowCities,
-  loadingCities,
-  citiesError,
-  loadCities
-} = useVehicleFlowSource({
-  afterSave: async () => {
-    const vehicleFlowDangerZones = await updateVehicleFlowLayer()
-
-    await preloadTileGrids(
-      latestDangerZones.single,
-      vehicleFlowDangerZones,
-      latestDangerZones.vehicleQueue,
-      true
-    )
-
-    await refreshTileGrid()
-  }
-})
-
-const {
-  isMeasuringArea,
-  measuredArea,
-  measureLayer,
-  startAreaMeasurement,
-  stopAreaMeasurement,
-  clearAreaMeasurement
-} = useAreaMeasurement(map)
-
-const weather = ref(null)
-
-const createModeFlow = ref(false)
-const createModeQueue = ref(false)
-const createPoints = ref([])
-const modifyFlow = ref(null);
-const showInfo = ref(false);
-const streetName = ref(null);
-
-const userPosition = ref(null);
-const currentRecommendation = ref(null)
-
-const tileSize = ref(750);
-const autoTileSizeByZoom = ref(true);
 
 const olLayers = reactive({
   single: null,
@@ -812,18 +610,13 @@ const olLayers = reactive({
   area: null,
 })
 
-const {
-  layersState,
-  selectedGridLayer,
-  initLayersState,
-  toggleLayer,
-  updateLayerZIndex,
-  saveLayersState
-} = useLayerSettings({
-  olLayers,
-  modifyFlow
-})
+const weather = ref(null)
 
+const tileSize = ref(750);
+const autoTileSizeByZoom = ref(true);
+const currentRecommendation = ref(null)
+const modifyFlow = ref(null)
+const showInfo = ref(false);
 const levels = [
   { max: 9.0, color: 'rgba(171, 209, 98, 1)', label: 'Очень низкий' },
   { max: 35.4, color: 'rgba(248, 212, 97, 1)', label: 'Низкий' },
@@ -833,42 +626,43 @@ const levels = [
   { max: 9999, color: 'rgba(138, 79, 163, 1)', label: 'Экстремальный' }
 ]
 
-const cities = ref([])
-const selectedCities = ref([])
+const { baseLayers, selectedBaseMap, changeBaseMap } = useBaseMap(map)
 
-async function loadMapCities() {
-  try {
-    cities.value = await getAllCities()
+const {
+  measureLayer,
+  isMeasuringArea,
+  startAreaMeasurement,
+  stopAreaMeasurement,
+  clearAreaMeasurement
+} = useAreaMeasurement(map)
 
-    const savedCities = JSON.parse(
-      localStorage.getItem('selectedCities') || 'null'
-    )
+const { cities, selectedCities, loadMapCities } = useMapCities()
 
-    const validSavedCities = Array.isArray(savedCities)
-      ? savedCities
-        .map(saved => cities.value.find(city => city.id === saved.id))
-        .filter(Boolean)
-      : []
+const {
+  createEllipse,
+  getColorWithAlpha,
+  getHatchPattern,
+  geoJsonToOlGeometry,
+  withCache,
+  createTileGridLayer
+} = useMapHelpers()
 
-    selectedCities.value = validSavedCities.length
-      ? validSavedCities
-      : (cities.value.length ? [cities.value[0]] : [])
-
-  } catch (error) {
-    console.error('Ошибка загрузки городов:', error)
-  }
-}
+const {
+  layersState,
+  selectedGridLayer,
+  initLayersState,
+  toggleLayer,
+  updateLayerZIndex
+} = useLayerSettings({ olLayers, modifyFlow })
 
 const {
   tileGridCache,
   currentTileSize,
   preloadTileGrids,
-  getTileSizeForZoom,
   applyTileSize,
   onAutoTileSizeChange,
   refreshTileGridByZoom,
-  refreshTileGrid,
-  updateTileGridLayer
+  refreshTileGrid
 } = useTileGrid({
   map,
   selectedCities,
@@ -910,8 +704,6 @@ const {
   showSimulationPanel,
   simulationStartData,
   simulationData,
-  previousSimulationData,
-  weatherBeforeSimulation,
   handleBuildSimulation,
   buildSimulation,
   closeSimulationPanel,
@@ -927,550 +719,166 @@ const {
   createEllipse
 })
 
-const cityDropdownOpen = ref(false)
-const editPanelOpen = ref(false)
+const {
+  showPopup,
+  hidePopup
+} = useMapPopup(map)
 
-const getUserPosition = () => {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
+let createModes = null
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        userPosition.value =
-        {
-          "type": "Point",
-          "coordinates": [position.coords.longitude, position.coords.latitude]
-        };
-        resolve(userPosition.value);
-      },
-      (error) => {
-        resolve(null);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  });
-};
+const {
+  isDeleteMode,
+  toggleDeleteMode,
+  stopDeleteMode
+} = useMapDelete({
+  map,
+  olLayers,
+  selectedCities,
+  updateLayers,
+  preloadTileGrids,
+  refreshTileGrid,
+  cancelCreateModes: () => createModes
+})
 
-const toggleCityDropdown = async () => {
-  if (!cityDropdownOpen.value) {
-    cityDropdownOpen.value = true
-    return
-  }
-
-  if (cityDropdownOpen.value) {
-    const lastCities = JSON.parse(localStorage.getItem("selectedCities") || '[]')
-    localStorage.setItem("selectedCities", JSON.stringify(selectedCities.value))
-
-    if (selectedCities.value.length === 1) {
-      try {
-        const selectedCity = await getCityById(selectedCities.value[0].id)
-        if (selectedCity?.location) {
-          const view = map.value.getView()
-          view.setCenter(fromLonLat(selectedCity.location.coordinates))
-          view.setZoom(12)
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки города:', error)
-      }
-    }
-
-    cityDropdownOpen.value = false
-    await updateLayers()
-
-    const {
-      singleDangerZones,
-      vehicleFlowDangerZones,
-      vehicleQueueDangerZones
-    } = await updateLayers()
+const {
+  createModeSingle,
+  showSingleSourceForm,
+  savingSingleSource,
+  singleSourceError,
+  newSingleSource,
+  singleSourceValidation,
+  isSingleSourceFormValid,
+  setSingleSourceLocation,
+  submitSingleSource
+} = useSingleEmissionSource({
+  afterSave: async () => {
+    const singleDangerZones = await updateSingleLayer()
 
     await preloadTileGrids(
       singleDangerZones,
+      latestDangerZones.vehicleFlow,
+      latestDangerZones.vehicleQueue,
+      true
+    )
+
+    await refreshTileGrid()
+  }
+})
+
+const {
+  showVehicleFlowForm,
+  savingVehicleFlow,
+  vehicleFlowError,
+  newVehicleFlow,
+  vehicleTypes,
+  vehicleFlowValidation,
+  isVehicleFlowFormValid,
+  setVehicleFlowData,
+  submitVehicleFlow,
+  closeVehicleFlowForm,
+  cities: vehicleFlowCities,
+  loadingCities,
+  citiesError
+} = useVehicleFlowSource({
+  afterSave: async () => {
+    const vehicleFlowDangerZones = await updateVehicleFlowLayer()
+
+    await preloadTileGrids(
+      latestDangerZones.single,
       vehicleFlowDangerZones,
+      latestDangerZones.vehicleQueue,
+      true
+    )
+
+    await refreshTileGrid()
+  }
+})
+
+const {
+  showTrafficLightQueueForm,
+  savingTrafficLightQueue,
+  trafficLightQueueError,
+  newTrafficLightQueue,
+  trafficLightQueueValidation,
+  isTrafficLightQueueFormValid,
+  setTrafficLightQueueLocation,
+  submitTrafficLightQueue,
+  closeTrafficLightQueueForm
+} = useTrafficLightQueueSource({
+  afterSave: async () => {
+    const vehicleQueueDangerZones = await updateVehicleQueueLayer()
+
+    await preloadTileGrids(
+      latestDangerZones.single,
+      latestDangerZones.vehicleFlow,
       vehicleQueueDangerZones,
       true
     )
 
     await refreshTileGrid()
   }
-}
-
-
-const toggleEditPanel = () => {
-  editPanelOpen.value = !editPanelOpen.value
-}
-
-function startCreateModeFlow() {
-  if (!map.value) return
-
-  cancelCreateModeSingle()
-  cancelCreateModeFlow()
-  stopDeleteMode()
-
-  createModeQueue.value = false
-  createModeFlow.value = true
-
-  const drawSource = new VectorSource()
-
-  const drawInteraction = new Draw({
-    source: drawSource,
-    type: 'LineString'
-  })
-
-  map.value.addInteraction(drawInteraction)
-
-  drawInteraction.once('drawend', (event) => {
-    const coordinates = event.feature
-      .getGeometry()
-      .getCoordinates()
-      .map(coord => toLonLat(coord))
-
-    const selectedCityId = selectedCities.value.length > 0
-      ? selectedCities.value[0].id
-      : null
-
-    createModeFlow.value = false
-
-    removeAllDrawInteractions()
-
-    setVehicleFlowData(coordinates, selectedCityId)
-  })
-}
-
-function cancelCreateModeFlow() {
-  removeAllDrawInteractions()
-
-  createModeFlow.value = false
-  createPoints.value = []
-}
-
-function startCreateModeQueue() {
-  createModeQueue.value = true
-}
-
-function geoJsonToOlGeometry(geometry) {
-  if (!geometry || !geometry.type) return null
-
-  switch (geometry.type) {
-    case 'Polygon': {
-      const rings = geometry.coordinates.map(ring =>
-        ring.map(([lon, lat]) => fromLonLat([lon, lat]))
-      )
-      return new Polygon(rings)
-    }
-
-    case 'MultiPolygon': {
-      const polys = geometry.coordinates.map(polygon =>
-        polygon.map(ring =>
-          ring.map(([lon, lat]) => fromLonLat([lon, lat]))
-        )
-      )
-      return new MultiPolygon(polys)
-    }
-
-    case 'GeometryCollection': {
-      const parts = geometry.geometries
-        .map(geoJsonToOlGeometry)
-        .filter(Boolean)
-      return parts.length ? new MultiPolygon(parts.flatMap(toPolygons)) : null
-    }
-
-    default:
-      console.warn('Неизвестный тип геометрии тайла:', geometry.type)
-      return null
-  }
-}
-
-function toPolygons(geom) {
-  if (geom instanceof Polygon) return [geom.getCoordinates()]
-  if (geom instanceof MultiPolygon) return geom.getCoordinates()
-  return []
-}
-
-async function createEllipse(dangerZone) {
-  const polygonCoords = dangerZone.polygon.coordinates[0];
-  const coords = polygonCoords.map(coord =>
-    fromLonLat(coord)
-  );
-
-  const ellipseFeature = new Feature({
-    geometry: new Polygon([coords])
-  });
-
-  const sourceData = await getSingleEmissionSourceById(dangerZone.emissionSourceId);
-
-  const s = Math.PI * Math.pow(sourceData.diameterSource, 2) / 4;
-  const v = sourceData.avgExitSpeed * s * 3600;
-
-  const coalConsumption = (v / 11) * (273 / (273 + sourceData.ejectedTemp));
-
-  dangerZone.coalConsumption = coalConsumption / 1000;
-
-  ellipseFeature.set('dangerData', dangerZone);
-  ellipseFeature.set('emissionSourceId', dangerZone.emissionSourceId);
-  ellipseFeature.set('dangerColor', dangerZone.color);
-  ellipseFeature.set('averageConcentration', dangerZone.averageConcentration || 'N/A');
-
-  return ellipseFeature;
-}
-
-function getColorWithAlpha(baseColor, alpha = 0.75) {
-  if (!baseColor) {
-    return [0, 0, 0, alpha];
-  }
-
-  return Array.isArray(baseColor)
-    ? [baseColor[0], baseColor[1], baseColor[2], alpha]
-    : asArray(baseColor).slice(0, 3).concat(alpha);
-}
-
-function createTileGridLayer(tileGridResult) {
-  const tileGridSource = new VectorSource();
-
-  const allTiles = tileGridResult.flatMap(city => city.tiles);
-
-  allTiles.forEach(tileInfo => {
-    const geometry = geoJsonToOlGeometry(tileInfo.tile)
-    if (!geometry) return
-
-    const feature = new Feature({
-      geometry,
-      color: tileInfo.color,
-      cityId: tileInfo.cityId
-    })
-
-    feature.set('dangerData', tileInfo)
-    tileGridSource.addFeature(feature)
-  })
-
-  return new VectorLayer({
-    source: tileGridSource,
-    visible: false,
-    zIndex: 3,
-    style: feature => {
-      const color = getColorWithAlpha(feature.get('color'), 0.6)
-      return new Style({
-        fill: new Fill({ color }),
-        stroke: new Stroke({
-          color: 'black',
-          width: 0.1
-        })
-      })
-    }
-  })
-}
-
-function createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, sanitaryAreas, tileGridResult, areaGridResult) {
-  const singleLayer = createSingleLayer(singleDangerZones);
-  const vehicleFlowLayer = createVehicleFlowLayer(vehicleFlowDangerZones);
-  const vehicleQueueLayer = createVehicleQueueLayer(vehicleQueueDangerZones);
-  const sanitaryAreaLayer = createSanitaryAreaLayer(sanitaryAreas);
-  const tileGridLayer = createTileGridLayer(tileGridResult);
-  const areaGridLayer = createTileGridLayer(areaGridResult);
-
-  olLayers.single = singleLayer;
-  olLayers.vehicleFlow = vehicleFlowLayer;
-  olLayers.vehicleQueue = vehicleQueueLayer;
-  olLayers.sanitaryArea = sanitaryAreaLayer;
-  olLayers.tile = tileGridLayer;
-  olLayers.area = areaGridLayer;
-
-  return { singleLayer, vehicleFlowLayer, vehicleQueueLayer, sanitaryAreaLayer, tileGridLayer, areaGridLayer };
-}
-
-onMounted(async () => {
-  await loadMapCities()
-
-  const baseLayer = baseLayers.osm
-
-  const currentWeather = await getCurrentWeather();
-  weather.value = {
-    temperature: currentWeather.temperature,
-    iconClass: currentWeather.iconClass,
-    windSpeed: currentWeather.windSpeed,
-    windDirection: currentWeather.windDirection,
-  }
-
-  const singleDangerZones = await calculateSingleDangerZones({
-    pollutant: 2, // solid particles 
-    airTemp: currentWeather.temperature,
-    windSpeed: currentWeather.windSpeed,
-    windDirection: currentWeather.windDirection,
-    cityIds: selectedCities.value.map(c => c.id)
-  });
-
-  const cityIds = selectedCities.value.map(c => c.id);
-
-  const vehicleFlowDangerZones = await withCache(
-    `vehicleFlow_${cityIds.join('_')}`,
-    () => calculateVehicleFlowDangerZones({ cityIds })
-  );
-
-  const vehicleQueueDangerZones = await withCache(
-    `vehicleQueue_${cityIds.join('_')}`,
-    () => calculateTrafficLightQueueDangerZones({ cityIds })
-  );
-
-  setLatestDangerZones({
-    single: singleDangerZones,
-    vehicleFlow: vehicleFlowDangerZones,
-    vehicleQueue: vehicleQueueDangerZones
-  })
-
-  await preloadTileGrids(
-    singleDangerZones,
-    vehicleFlowDangerZones,
-    vehicleQueueDangerZones
-  );
-
-  const tileGridResult = tileGridCache.value[750];
-
-  const areaGridResult = await withCache(
-    `areaGrid_${cityIds.join('_')}_750`,
-    () =>
-      calculateTileArea({
-        cityIds,
-        tileSize: 750,
-        singleDangerZones,
-        vehicleFlowDangerZones,
-        trafficLightQueueDangerZones: vehicleQueueDangerZones
-      })
-  );
-
-  const sanitaryAreas = await getAllEnterpriseSanitaryAreas(selectedCities.value.map(c => c.id));
-
-  const {
-    singleLayer,
-    vehicleFlowLayer,
-    vehicleQueueLayer,
-    sanitaryAreaLayer,
-    tileGridLayer,
-    areaGridLayer
-  } = createLayers(singleDangerZones, vehicleFlowDangerZones, vehicleQueueDangerZones, sanitaryAreas, tileGridResult, areaGridResult);
-
-  let coords = [86.811102, 53.848768]
-  if (selectedCities.value.length > 0) {
-    const selectedCity = await getCityById(selectedCities.value[0].id)
-    coords = selectedCity.location.coordinates;
-  }
-
-  map.value = new Map({
-    target: mapRoot.value,
-    layers: [
-      baseLayers.osm,
-      baseLayers.esri,
-      baseLayers.cartoVoyager,
-      baseLayers.cartoLight,
-      baseLayers.cartoDark,
-
-      singleLayer,
-      vehicleFlowLayer,
-      vehicleQueueLayer,
-      sanitaryAreaLayer,
-      tileGridLayer,
-      areaGridLayer,
-
-      measureLayer
-    ],
-    view: new View({
-      center: fromLonLat(coords),
-      zoom: 12
-    }),
-    controls: defaultControls({
-      zoom: false
-    })
-  });
-
-  if (selectedBaseMap.value !== 'osm') {
-    changeBaseMap()
-  }
-
-  initLayersState();
-
-  map.value.on('moveend', refreshTileGridByZoom);
-
-  await refreshTileGridByZoom();
-
-  map.value.on('singleclick', async (evt) => {
-    if (isDeleteMode.value) return
-
-    const pixel = evt.pixel;
-
-    let found = null;
-
-    map.value.forEachFeatureAtPixel(pixel, (feature, layer) => {
-      if (feature.getGeometry().getType() === 'Polygon' && layer === olLayers.single) {
-        const dangerData = feature.get('dangerData');
-        if (dangerData) {
-          found = dangerData;
-        }
-      }
-    });
-
-    if (createModeQueue.value) {
-      const coord3857 = evt.coordinate
-      const [lon, lat] = toLonLat(coord3857)
-
-      const selectedCityId = selectedCities.value.length > 0
-        ? selectedCities.value[0].id
-        : null;
-
-      await addTrafficLightQueueEmissionSource({
-        location: {
-          type: "Point",
-          coordinates: [lon, lat]
-        },
-        vehicleType: 1,
-        vehiclesCount: randomInt(1, 5),
-        trafficLightCycles: 12,
-        trafficLightStopTime: 60,
-        cityId: selectedCityId
-      })
-
-      await updateVehicleQueueLayer()
-
-      createModeQueue.value = false
-
-      return
-    }
-
-    if (isMeasuringArea.value) {
-      return
-    }
-
-    if (showSimulationPanel.value && found == null) {
-      await closeSimulationPanel();
-    } else if (found != null) {
-      if (simulationStartData.value != null) {
-        await closeSimulationPanel();
-      }
-
-      const emissionSource = await getSingleEmissionSourceById(
-        found.emissionSourceId
-      )
-
-      openSimulationPanel(emissionSource, found)
-    }
-  });
-
-  map.value.on('pointermove', (evt) => {
-    if (createModeFlow.value || createModeSingle.value) {
-      hidePopup()
-      return
-    }
-
-    if (evt.dragging || isMeasuringArea.value) {
-      hidePopup()
-      return
-    }
-
-    const pixel = evt.pixel
-
-    let popupFeature = null
-    let sourceType = null
-
-    map.value.forEachFeatureAtPixel(
-      pixel,
-      (feature, layer) => {
-        if (layer === olLayers.single) {
-          popupFeature = feature
-          sourceType = 'котельная'
-          return true
-        }
-
-        if (layer === olLayers.vehicleFlow) {
-          popupFeature = feature
-          sourceType = 'дорога'
-          return true
-        }
-
-        if (layer === olLayers.vehicleQueue) {
-          popupFeature = feature
-          sourceType = 'перекресток'
-          return true
-        }
-
-        return false
-      },
-      {
-        hitTolerance: 8
-      }
-    )
-
-    if (popupFeature) {
-      showPopup(evt.coordinate, popupFeature, sourceType)
-      map.value.getTargetElement().style.cursor = 'pointer'
-    } else {
-      hidePopup()
-      map.value.getTargetElement().style.cursor = ''
-    }
-  })
 })
 
-async function withCache(key, fn, ttl = 5 * 60 * 1000) {
-  const cached = localStorage.getItem(key);
+createModes = useMapCreateModes({
+  map,
+  selectedCities,
+  createModeSingle,
+  setSingleSourceLocation,
+  setVehicleFlowData,
+  setTrafficLightQueueLocation,
+  stopDeleteMode
+})
 
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      const isExpired = Date.now() - parsed.timestamp > ttl;
+const {
+  createModeFlow,
+  createModeQueue,
+  cancelCreateModeSingle,
+  cancelCreateModeFlow,
+  cancelCreateModeQueue,
+  startCreateModeSingle,
+  startCreateModeFlow,
+  startCreateModeQueue
+} = createModes
 
-      if (!isExpired) {
-        return parsed.data;
-      }
-    } catch (e) {
-      console.error('Ошибка парсинга кеша', e);
-    }
-  }
+const { cityDropdownOpen, toggleCityDropdown } = useMapControls({
+  map,
+  selectedCities,
+  updateLayers,
+  preloadTileGrids,
+  refreshTileGrid
+})
 
-  const data = await fn();
-
-  localStorage.setItem(
-    key,
-    JSON.stringify({
-      data,
-      timestamp: Date.now()
-    })
-  );
-
-  return data;
-}
-
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function getHatchPattern(size) {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-
-  canvas.width = size;
-  canvas.height = size;
-
-  context.strokeStyle = 'black';
-  context.lineWidth = 1.5;
-
-  context.beginPath();
-  context.moveTo(0, size);
-  context.lineTo(size, 0);
-  context.stroke();
-
-  return context.createPattern(canvas, 'repeat');
-}
-
-function removeAllDrawInteractions() {
-  if (!map.value) return
-
-  const interactions = map.value.getInteractions().getArray()
-
-  interactions
-    .filter(interaction => interaction instanceof Draw)
-    .forEach(interaction => {
-      interaction.abortDrawing()
-      map.value.removeInteraction(interaction)
-    })
-}
-
+useMapSetup({
+  map,
+  mapRoot,
+  baseLayers,
+  selectedBaseMap,
+  weather,
+  selectedCities,
+  olLayers,
+  measureLayer,
+  loadMapCities,
+  createTileGridLayer,
+  createSingleLayer,
+  createVehicleFlowLayer,
+  createVehicleQueueLayer,
+  createSanitaryAreaLayer,
+  withCache,
+  setLatestDangerZones,
+  preloadTileGrids,
+  tileGridCache,
+  refreshTileGridByZoom,
+  initLayersState,
+  showSimulationPanel,
+  simulationStartData,
+  closeSimulationPanel,
+  openSimulationPanel,
+  isDeleteMode,
+  createModeFlow,
+  createModeSingle,
+  isMeasuringArea,
+  changeBaseMap,
+  showPopup,
+  hidePopup
+})
 </script>

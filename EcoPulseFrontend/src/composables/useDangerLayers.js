@@ -118,6 +118,7 @@ export function useDangerLayers({
 
       feature.set('dangerColor', zone.color)
       feature.set('emissionSourceId', zone.emissionSourceId)
+      feature.set('dangerData', zone)
 
       source.addFeature(feature)
     }

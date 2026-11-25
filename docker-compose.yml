@@ -58,6 +58,14 @@ services:
       test: [ "CMD", "curl", "-f", "http://localhost:8500/v1/status/leader" ]
       interval: 10s
       timeout: 5s
+      
+  #tunnel:
+  #  image: cloudflare/cloudflared:latest
+  #  command: tunnel --no-autoupdate --url http://frontend:80
+  #  depends_on:
+  #    - frontend
+  #  networks:
+  #    - app-network
   
   weather-service:
     build:
